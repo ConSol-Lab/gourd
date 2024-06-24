@@ -152,7 +152,12 @@ impl<'de> Deserialize<'de> for InputMap {
                     values.insert(k, v);
                 }
 
-                let expanded = expand_globs(values)?;
+                let expanded =
+                    if let DeserState::User(fs) = IS_USER_FACING.with_borrow(|x| x.clone()) {
+                        expand_globs(values, &fs)?
+                    } else {
+                        values
+                    };
 
                 Ok(InputMap(expanded))
             }
@@ -200,7 +205,10 @@ where
 /// [inputs.test_input_glob_2]
 /// arguments = [ "/test/b/b.jpg" ]
 /// ```
-fn expand_globs<T>(inputs: BTreeMap<String, Input>) -> Result<BTreeMap<String, Input>, T>
+fn expand_globs<T>(
+    inputs: BTreeMap<String, Input>,
+    fs: &impl FileOperations,
+) -> Result<BTreeMap<String, Input>, T>
 where
     T: de::Error,
 {
@@ -216,7 +224,7 @@ where
             let mut next_globset = HashSet::new();
 
             for input_instance in &globset {
-                is_glob |= explode_globset(input_instance, arg_index, &mut next_globset)?;
+                is_glob |= explode_globset(input_instance, arg_index, &mut next_globset, fs)?;
             }
 
             swap(&mut globset, &mut next_globset);
@@ -239,7 +247,12 @@ where
 
 /// Given a `input` and `arg_index` expand the glob at that
 /// argument and put the results in `fill`.
-fn explode_globset<T>(input: &Input, arg_index: usize, fill: &mut HashSet<Input>) -> Result<bool, T>
+fn explode_globset<T>(
+    input: &Input,
+    arg_index: usize,
+    fill: &mut HashSet<Input>,
+    fs: &impl FileOperations,
+) -> Result<bool, T>
 where
     T: de::Error,
 {
@@ -255,15 +268,17 @@ where
         })? {
             let mut glob_instance = input.clone();
 
-            glob_instance.arguments[arg_index] = path
-                .map_err(|_| {
+            glob_instance.arguments[arg_index] = canon_path(
+                &path.map_err(|_| {
                     de::Error::custom(format!("the glob failed to evaluate at {no_escape:?}"))
-                })?
-                .to_str()
-                .ok_or(de::Error::custom(format!(
-                    "failed to stringify {no_escape:?}"
-                )))?
-                .to_string();
+                })?,
+                fs,
+            )?
+            .to_str()
+            .ok_or(de::Error::custom(format!(
+                "failed to stringify {no_escape:?}"
+            )))?
+            .to_string();
 
             fill.insert(glob_instance);
         }

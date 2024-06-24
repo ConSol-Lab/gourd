@@ -93,7 +93,7 @@ fn test_status_afterscript_labels() {
     fs::remove_file(&afterscript_path).unwrap();
     fs::write(
         &afterscript_path,
-        String::from("#/bin/bash\nmkdir ../output-was-`cat $1` && cat $1 > $2"),
+        String::from("#!/bin/bash\nmkdir ../output-was-`cat $1` && cat $1 > $2"),
     )
     .expect("Cannot create test afterscript file.");
     fs::set_permissions(&afterscript_path, Permissions::from_mode(0o755))

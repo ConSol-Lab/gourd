@@ -26,6 +26,7 @@ fn test_sh_script() {
     fs::write(&file_path, PREPROGRAMMED_SH_SCRIPT).unwrap();
 
     let res = run_script(
+        "sh",
         vec!["-C", &(file_path.into_os_string().to_str().unwrap())],
         tmp_dir.path(),
     );

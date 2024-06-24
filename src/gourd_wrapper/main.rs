@@ -101,6 +101,7 @@ fn process() -> Result<()> {
     let clock = start_measuring();
 
     eprintln!("RUNNING {:?}", &rc.binary_path);
+    eprintln!("ARGS {:?}", &rc.additional_args);
     #[allow(unused_mut)]
     let mut child = Command::new(&rc.binary_path)
         .current_dir(&rc.work_dir)
@@ -133,10 +134,9 @@ fn process() -> Result<()> {
     #[cfg(unix)]
     let (rusage_output, exit_code) = {
         use crate::measurement_unix::GetRUsage;
-        let (r, s) = child
+        child
             .wait_for_rusage()
-            .context("Could not rusage the child")?;
-        (Some(r), s)
+            .context("Could not rusage the child")?
     };
 
     let meas = stop_measuring(clock, exit_code, rusage_output);

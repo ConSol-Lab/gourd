@@ -120,7 +120,7 @@ pub const MAIL_TYPE_VALID_OPTIONS: [&str; 13] = [
 ];
 
 /// The maximal amount of runs before status only shows a short summary.
-pub const SHORTEN_STATUS_CUTOFF: usize = 100;
+pub const SHORTEN_STATUS_CUTOFF: usize = 40;
 
 /// Maximal number of individual prompts that the user can be asked when trying
 /// to rerun

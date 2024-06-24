@@ -68,21 +68,12 @@ pub fn run_afterscript_for_run(
     out_path: &PathBuf,
     work_dir: &Path,
 ) -> Result<ExitStatus> {
-    fs::metadata(after_path).with_context(ctx!(
-        "Could not find the afterscript at {:?}", &after_path;
-        "Check that the afterscript exists and the path to it is correct",
-    ))?;
-
     fs::metadata(res_path).with_context(ctx!(
         "Could not find the job result at {:?}", &res_path;
         "Check that the job result already exists",
     ))?;
 
     let args = vec![
-        after_path.as_os_str().to_str().with_context(ctx!(
-            "Could not turn {after_path:?} into a string", ;
-            "",
-        ))?,
         res_path.as_os_str().to_str().with_context(ctx!(
             "Could not turn {res_path:?} into a string", ;
             "",
@@ -93,7 +84,7 @@ pub fn run_afterscript_for_run(
         ))?,
     ];
 
-    let exit_status = run_script(args, work_dir).with_context(ctx!(
+    let exit_status = run_script(after_path, args, work_dir).with_context(ctx!(
         "Could not run the afterscript at {after_path:?} with job results at {res_path:?}", ;
         "Check that the afterscript is correct and job results exist at {:?}", res_path,
     ))?;
@@ -102,5 +93,6 @@ pub fn run_afterscript_for_run(
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "tests/mod.rs"]
 mod tests;

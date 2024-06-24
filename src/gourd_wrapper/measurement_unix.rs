@@ -7,12 +7,7 @@ use std::process::Child;
 use std::ptr::addr_of_mut;
 use std::time::Duration;
 
-use anyhow::anyhow;
-use anyhow::Context;
 use anyhow::Error;
-use gourd_lib::bailc;
-use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::measurement::RUsage;
 use libc::WIFEXITED;
 
@@ -22,7 +17,7 @@ unsafe fn empty_raw_rusage() -> libc::rusage {
 }
 
 impl GetRUsage for Child {
-    fn wait_for_rusage(&self) -> Result<(RUsage, i32), Error> {
+    fn wait_for_rusage(&self) -> Result<(Option<RUsage>, i32), Error> {
         let pid = self.id() as i32;
         let mut status: i32 = 0;
 
@@ -39,7 +34,7 @@ impl GetRUsage for Child {
 
         if WIFEXITED(status) {
             Ok((
-                RUsage {
+                Some(RUsage {
                     utime: duration_from_timeval(rusage.ru_utime),
                     stime: duration_from_timeval(rusage.ru_stime),
                     maxrss: rusage.ru_maxrss as usize,
@@ -56,11 +51,11 @@ impl GetRUsage for Child {
                     nsignals: rusage.ru_nsignals as usize,
                     nvcsw: rusage.ru_nvcsw as usize,
                     nivcsw: rusage.ru_nivcsw as usize,
-                },
+                }),
                 status,
             ))
         } else {
-            bailc!("Could not get the RUsage statistics.",;"",;"",)
+            Ok((None, -33))
         }
     }
 }
@@ -69,7 +64,7 @@ impl GetRUsage for Child {
 pub trait GetRUsage {
     /// Waits for the process to exit and returns its resource usage statistics.
     /// Works only on linux with wait4 syscall available.
-    fn wait_for_rusage(&self) -> Result<(RUsage, i32), Error>;
+    fn wait_for_rusage(&self) -> Result<(Option<RUsage>, i32), Error>;
 }
 
 /// Converts a `libc::timeval` to a `std::time::Duration`.

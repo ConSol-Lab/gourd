@@ -1,7 +1,9 @@
 use std::fs;
 use std::fs::File;
+use std::fs::Permissions;
 use std::io::Read;
 use std::io::Write;
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
 use gourd_lib::config::Config;
@@ -14,8 +16,7 @@ use crate::experiments::ExperimentExt;
 use crate::post::afterscript::run_afterscript_for_run;
 use crate::post::labels::assign_label;
 
-const PREPROGRAMMED_SH_SCRIPT: &str = r#"
-#!/bin/sh
+const PREPROGRAMMED_SH_SCRIPT: &str = r#"#!/bin/sh
 tr '[a-z]' '[A-Z]' <$1 >$2
 "#;
 
@@ -37,6 +38,11 @@ fn test_run_afterscript_for_run_good_weather() {
     let afterscript_path = tmp_dir.path().join("afterscript.sh");
     let afterscript_file = fs::File::create(&afterscript_path).unwrap();
     fs::write(&afterscript_path, PREPROGRAMMED_SH_SCRIPT).unwrap();
+    afterscript_file
+        .set_permissions(Permissions::from_mode(0o755))
+        .unwrap();
+
+    drop(afterscript_file);
 
     let output_path = tmp_dir.path().join("afterscript_output.toml");
 
@@ -56,7 +62,6 @@ fn test_run_afterscript_for_run_good_weather() {
     assert_eq!(contents, PREPROGRAMMED_RESULTS.to_ascii_uppercase());
 
     drop(results_file);
-    drop(afterscript_file);
 
     assert!(tmp_dir.close().is_ok());
 }

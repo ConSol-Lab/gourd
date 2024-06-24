@@ -264,15 +264,17 @@ where
         .x_label_style(style.clone())
         .y_label_style(style.clone())
         .label_style(style.clone())
+        .x_desc("Nanoseconds")
+        .y_desc("Runs")
         .draw()?;
 
-    for (idx, (_name, datas)) in (0..).zip(cactus_data) {
+    for (idx, (name, datas)) in (0..).zip(cactus_data) {
         chart
             .draw_series(LineSeries::new(
                 datas,
                 Into::<ShapeStyle>::into(Palette99::pick(idx)).stroke_width(3),
             ))?
-            .label(format!("program {}", idx))
+            .label(format!("{}", name))
             .legend(move |(x, y)| {
                 Rectangle::new(
                     [(x - 5, y - 5), (x + 5, y + 5)],
