@@ -5,12 +5,29 @@
 \input{version-history/definitions}
 % \version{x} for start of version x section
 
+\version{1.0.2}{Snake Gourd}{}
 
-\version{1.0.0}{Gourd}{release}
+This patch addresses the following:
+\begin{itemize}
+\item Improvements to how afterscripts are handled.
+\item Glob arguments now expand to absolute paths
+      before being evaluated.
+\end{itemize}
+
+\version{1.0.1}{Snake Gourd}{}
+
+This patch addresses the following:
+\begin{itemize}
+\item A bug affecting UNIX systems, where invalid
+      permissions were assigned to executable files
+      downloaded from a Web server.
+\end{itemize}
+
+\version{1.0.0}{Snake Gourd}{}
 
 This is the first stable release of the application,
-and also marks the moment the application was turned over
-to the client, the TuDelft Algorithmics department.
+marking the moment the application was turned over
+to the TU Delft Algorithmics group.
 
 \breakingchanges
 \begin{itemize}

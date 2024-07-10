@@ -46,7 +46,7 @@ pub fn print_version(script: bool) {
     let mut to_print = LOGO.replace(
         "{LINE1}",
         &format!(
-            "  at version {}{}{:#}",
+            "  at version {}{}{:#} \"Snake Gourd\"",
             PRIMARY_STYLE,
             crate_version!(),
             PRIMARY_STYLE
