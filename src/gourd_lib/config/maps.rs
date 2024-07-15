@@ -13,6 +13,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use glob::glob;
+use glob::GlobResult;
 use serde::de;
 use serde::de::MapAccess;
 use serde::de::Visitor;
@@ -26,6 +27,7 @@ use super::Program;
 use crate::constants::GLOB_ESCAPE;
 use crate::constants::INTERNAL_GLOB;
 use crate::constants::INTERNAL_PREFIX;
+use crate::constants::PATH_ESCAPE;
 use crate::file_system::FileOperations;
 use crate::file_system::FileSystemInteractor;
 
@@ -95,6 +97,20 @@ impl<'de> Deserialize<'de> for ProgramMap {
 
                         if let Some(relative) = v.afterscript.clone() {
                             v.afterscript = Some(canon_path(&relative, &fs)?);
+                        }
+
+                        for arg in &mut v.arguments {
+                            if let Some(path) = arg
+                                .strip_prefix(PATH_ESCAPE)
+                                .map(|s| canon_path(Path::new(s), &fs)?)
+                            {
+                                *arg = path
+                                    .to_str()
+                                    .ok_or(de::Error::custom(format!(
+                                        "failed to stringify {no_escape:?}"
+                                    )))?
+                                    .to_string();
+                            }
                         }
 
                         disallow_substring(&k, INTERNAL_PREFIX)?;
@@ -245,7 +261,7 @@ where
     Ok(result)
 }
 
-/// Given a `input` and `arg_index` expand the glob at that
+/// Given a `input` and `arg_index` expand the glob or path at that
 /// argument and put the results in `fill`.
 fn explode_globset<T>(
     input: &Input,
@@ -266,28 +282,48 @@ where
                 any arguments starting with `{GLOB_ESCAPE}` are considered globs"
             ))
         })? {
-            let mut glob_instance = input.clone();
-
-            glob_instance.arguments[arg_index] = canon_path(
-                &path.map_err(|_| {
-                    de::Error::custom(format!("the glob failed to evaluate at {no_escape:?}"))
-                })?,
-                fs,
-            )?
-            .to_str()
-            .ok_or(de::Error::custom(format!(
-                "failed to stringify {no_escape:?}"
-            )))?
-            .to_string();
-
-            fill.insert(glob_instance);
+            let path_buf = path.map_err(|_| {
+                de::Error::custom(format!("the glob failed to evaluate at {no_escape:?}"))
+            })?;
+            fill.insert(input_with_canon_path(input, arg_index, &path_buf, fs)?);
         }
 
         Ok(true)
+    } else if let Some(path) = arg.strip_prefix(PATH_ESCAPE) {
+        fill.insert(input_with_canon_path(
+            input,
+            arg_index,
+            Path::new(path),
+            fs,
+        )?);
+        Ok(false)
     } else {
         fill.insert(input.clone());
         Ok(false)
     }
+}
+
+/// Given a `input`, `arg_index`, and `path`, return a new input with a
+/// canonicalised version of that path inserted at that argument.
+fn input_with_canon_path<T>(
+    input: &Input,
+    arg_index: usize,
+    path: &Path,
+    fs: &impl FileOperations,
+) -> Result<Input, T>
+where
+    T: de::Error,
+{
+    let mut glob_instance = input.clone();
+
+    glob_instance.arguments[arg_index] = canon_path(path, fs)?
+        .to_str()
+        .ok_or(de::Error::custom(format!(
+            "failed to stringify {no_escape:?}"
+        )))?
+        .to_string();
+
+    Ok(glob_instance)
 }
 
 /// Make sure that a substring is not part of a string.
