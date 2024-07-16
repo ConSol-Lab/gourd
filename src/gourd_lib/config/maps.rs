@@ -13,7 +13,6 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use glob::glob;
-use glob::GlobResult;
 use serde::de;
 use serde::de::MapAccess;
 use serde::de::Visitor;
@@ -100,14 +99,11 @@ impl<'de> Deserialize<'de> for ProgramMap {
                         }
 
                         for arg in &mut v.arguments {
-                            if let Some(path) = arg
-                                .strip_prefix(PATH_ESCAPE)
-                                .map(|s| canon_path(Path::new(s), &fs)?)
-                            {
-                                *arg = path
+                            if let Some(path) = arg.strip_prefix(PATH_ESCAPE) {
+                                *arg = canon_path(Path::new(path), &fs)?
                                     .to_str()
                                     .ok_or(de::Error::custom(format!(
-                                        "failed to stringify {no_escape:?}"
+                                        "failed to stringify {path:?}"
                                     )))?
                                     .to_string();
                             }
@@ -318,9 +314,7 @@ where
 
     glob_instance.arguments[arg_index] = canon_path(path, fs)?
         .to_str()
-        .ok_or(de::Error::custom(format!(
-            "failed to stringify {no_escape:?}"
-        )))?
+        .ok_or(de::Error::custom(format!("failed to stringify {path:?}")))?
         .to_string();
 
     Ok(glob_instance)
