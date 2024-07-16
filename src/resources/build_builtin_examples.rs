@@ -19,8 +19,8 @@ const GOURD_INIT_EXAMPLE_FOLDERS: &str = "src/resources/gourd_init_examples";
 fn build_builtin_examples(out_folder: &Path, completions_command: Command) -> Result<Command> {
     let _ = fs::create_dir(out_folder);
 
-    // println!("cargo::rerun-if-changed={}", GOURD_INIT_EXAMPLE_FOLDERS);
-    // println!("cargo::rerun-if-changed=src/resources/build_builtin_examples.rs");
+    println!("cargo::rerun-if-changed={}", GOURD_INIT_EXAMPLE_FOLDERS);
+    println!("cargo::rerun-if-changed=src/resources/build_builtin_examples.rs");
 
     let mut possible_ids: Vec<Str> = vec![];
 

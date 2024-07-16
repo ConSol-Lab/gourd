@@ -101,12 +101,9 @@ fn main() -> Result<()> {
     {
         let _ = fs::create_dir(&docs);
 
-        // Uncomment for local builds.
-        // The point of this is the rebuild the documentation whenever it is updated.
-        // We cannot run this on the CI, thus it is disabled by default.
-        // println!("cargo::rerun-if-changed=docs/");
-        // println!("cargo::rerun-if-changed=src/resources/install.sh");
-        // println!("cargo::rerun-if-changed=src/resources/uninstall.sh");
+        println!("cargo::rerun-if-changed=docs/");
+        println!("cargo::rerun-if-changed=src/resources/install.sh");
+        println!("cargo::rerun-if-changed=src/resources/uninstall.sh");
 
         let gourd = generate_man(GOURD_MANPAGE.parse()?, &docs)?;
         generate_pdf(GOURD_MANPAGE.parse()?, &docs)?;
