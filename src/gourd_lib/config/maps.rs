@@ -29,33 +29,6 @@ use crate::constants::INTERNAL_PREFIX;
 use crate::file_system::FileOperations;
 use crate::file_system::FileSystemInteractor;
 
-/// The current setting of the deserializer.
-#[derive(Clone)]
-pub enum DeserState<T>
-where
-    T: FileOperations,
-{
-    /// A user facing deserializer with the following fs interactor.
-    User(T),
-    /// An internal deserializer (this for example will not expand "glob|"s).
-    NotUser,
-}
-
-// Q: Why is this done like this? This pattern seems to be harmful.
-// A: There was a lot of invesigation into other ways of solving the problem.
-// In short: We need DeserializeSeed but this is impossible without seriously
-// polluting the codebase.
-//
-// In long: See: https://github.com/serde-rs/serde/issues/881
-// And: https://github.com/Marwes/serde_state/issues/8#issuecomment-904697217
-// And the state of: https://github.com/Marwes/serde_state
-//
-// Thus this solution was chosen.
-thread_local! {
-  pub(crate) static IS_USER_FACING: RefCell<DeserState<FileSystemInteractor>> =
-      const { RefCell::new(DeserState::NotUser) };
-}
-
 /// A wrapper around [BTreeMap] to allow serde expansion of globs.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Default, Serialize)]
 pub struct InputMap(pub BTreeMap<String, Input>);

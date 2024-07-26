@@ -56,12 +56,11 @@ pub use regex::Regex;
 #[serde(deny_unknown_fields)]
 pub struct Program {
     /// The path to the executable.
-    ///
-    /// # Permissions
-    ///
-    /// If this file is fetched on unix the permissions
-    /// for it are: `rwxr-xr--`.
-    pub binary: FetchedPath<0o754>,
+    pub binary: Option<PathBuf>,
+
+    pub url: Option<String>,
+
+
 
     /// The cli arguments for the executable.
     #[serde(default = "EMPTY_ARGS")]
@@ -71,13 +70,11 @@ pub struct Program {
     #[serde(default = "AFTERSCRIPT_DEFAULT")]
     pub afterscript: Option<PathBuf>,
 
-    /// The path to the postprocess job, if there is one.
-    #[serde(default = "POSTPROCESS_JOB_DEFAULT")]
-    pub postprocess_job: Option<String>,
-
     /// Resource limits to optionally overwrite default resource limits.
     #[serde(default = "PROGRAM_RESOURCES_DEFAULT")]
     pub resource_limits: Option<ResourceLimits>,
+
+    pub runs_after: Option<String>,
 }
 
 /// A pair of a path to an input and additional cli arguments.
@@ -276,10 +273,6 @@ pub struct Config {
     #[serde(default = "WRAPPER_DEFAULT")]
     pub wrapper: String,
 
-    /// The list of postprocessing programs.
-    #[serde(rename = "postprocess_program", default = "POSTPROCESS_JOBS_DEFAULT")]
-    pub postprocess_programs: Option<ProgramMap>,
-
     /// Allow custom labels to be assigned based on the afterscript output.
     ///
     /// syntax is:
@@ -410,7 +403,6 @@ impl Default for Config {
             slurm: None,
             resource_limits: None,
             postprocess_resource_limits: None,
-            postprocess_programs: None,
             labels: Some(BTreeMap::new()),
             warn_on_label_overlap: true,
         }
@@ -421,39 +413,16 @@ impl Config {
     /// Load a `Config` struct instance from a TOML file at the provided path.
     /// Returns a valid `Config` or an explanatory
     /// `GourdError::ConfigLoadError`.
-    pub fn from_file(path: &Path, skip_checks: bool, fs: &FileSystemInteractor) -> Result<Config> {
-        // Why? see the comment on the variable.
-        if !skip_checks {
-            IS_USER_FACING.with_borrow_mut(|x| *x = DeserState::User(*fs));
-        }
-
+    pub fn from_file(path: &Path, fs: &FileSystemInteractor) -> Result<Config> {
         let mut initial: Config = fs.try_read_toml(path).with_context(ctx!(
           "Could not parse {path:?}", ;
           "More help and examples can be found with \
           {CMD_STYLE}man gourd.toml{CMD_STYLE:#}",
         ))?;
 
-        IS_USER_FACING.with_borrow_mut(|x| *x = DeserState::NotUser);
-
         if let Some(schema) = &initial.input_schema {
             initial.inputs = Self::parse_schema_inputs(schema.as_path(), initial.inputs, fs)?;
             initial.input_schema = None;
-        }
-
-        if let Some(postprocessors) = &initial.postprocess_programs {
-            if let Some(overlap) = initial
-                .programs
-                .keys()
-                .collect::<HashSet<&String>>()
-                .intersection(&postprocessors.keys().collect::<HashSet<&String>>())
-                .next()
-            {
-                bailc!(
-                  "Intersection not empty", ;
-                  "Program names in the config must be unique", ;
-                  "The name \"{overlap}\" appears twice: {:?}", initial
-                );
-            }
         }
 
         if let Some(parameters) = &initial.parameters {
