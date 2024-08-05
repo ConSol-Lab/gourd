@@ -18,6 +18,7 @@ EOF
 "#;
 
 #[test]
+#[cfg(unix)]
 fn test_sh_script() {
     let tmp_dir = TempDir::new("testing").unwrap();
     let file_path = tmp_dir.path().join("test.sh");
