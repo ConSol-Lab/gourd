@@ -17,26 +17,25 @@ pub fn assign_label(
     let mut result_label: Option<String> = None;
 
     let text = fs.read_utf8(source_file)?;
-    if let Some(label_map) = &experiment.config.labels {
-        let mut keys = label_map.keys().collect::<Vec<&String>>();
-        keys.sort_unstable_by(|a, b| label_map[*b].priority.cmp(&label_map[*a].priority));
+    let label_map = &experiment.labels.map;
+    let mut keys = label_map.keys().collect::<Vec<&String>>();
+    keys.sort_unstable_by(|a, b| label_map[*b].priority.cmp(&label_map[*a].priority));
 
-        for l in keys {
-            let label = &label_map[l];
-            if label.regex.is_match(&text) {
-                if let Some(ref r) = result_label {
-                    trace!("{text} matches multiple labels: {r} and {l}");
+    for l in keys {
+        let label = &label_map[l];
+        if label.regex.is_match(&text) {
+            if let Some(ref r) = result_label {
+                trace!("{text} matches multiple labels: {r} and {l}");
 
-                    if experiment.config.warn_on_label_overlap {
-                        warn!(
-                            "The source file {:?} matches multiple labels: {} and {}",
-                            source_file, r, l
-                        );
-                    }
-                } else {
-                    trace!("{text} matches {l}");
-                    result_label = Some(l.clone());
+                if experiment.labels.warn_on_label_overlap {
+                    warn!(
+                        "The source file {:?} matches multiple labels: {} and {}",
+                        source_file, r, l
+                    );
                 }
+            } else {
+                trace!("{text} matches {l}");
+                result_label = Some(l.clone());
             }
         }
     }

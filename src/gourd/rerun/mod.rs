@@ -53,24 +53,9 @@ fn update_program_resource_limits(
     experiment: &mut Experiment,
     new_rss: ResourceLimits,
 ) {
-    match &experiment.runs[run_id].program {
-        FieldRef::Regular(name) => {
-            experiment
-                .config
-                .programs
-                .get_mut(name)
-                .unwrap()
-                .resource_limits = Some(new_rss);
-        }
-        FieldRef::Postprocess(name) => {
-            experiment
-                .config
-                .postprocess_programs
-                .as_mut()
-                .unwrap()
-                .get_mut(name)
-                .unwrap()
-                .resource_limits = Some(new_rss);
-        }
-    }
+    experiment
+        .programs
+        .get_mut(&experiment.runs[run_id].program)
+        .unwrap()
+        .limits = new_rss;
 }

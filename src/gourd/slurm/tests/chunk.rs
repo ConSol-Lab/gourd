@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use gourd_lib::config::FetchedPath;
-use gourd_lib::config::Input;
-use gourd_lib::config::Program;
+use gourd_lib::config::UserInput;
+use gourd_lib::config::UserProgram;
 use gourd_lib::experiment::FieldRef;
 
 use super::*;
@@ -12,7 +12,7 @@ use crate::test_utils::create_sample_experiment;
 
 #[test]
 fn get_unscheduled_runs_test() {
-    let prog = Program {
+    let prog = UserProgram {
         binary: FetchedPath(PathBuf::new()),
         arguments: vec![],
         afterscript: None,
@@ -20,7 +20,7 @@ fn get_unscheduled_runs_test() {
         resource_limits: None,
     };
 
-    let input = Input {
+    let input = UserInput {
         input: None,
         arguments: vec![],
     };
@@ -61,7 +61,7 @@ fn get_unscheduled_runs_test() {
 
 #[test]
 fn create_chunks_basic_test() {
-    let prog = Program {
+    let prog = UserProgram {
         binary: FetchedPath(PathBuf::new()),
         arguments: vec![],
         afterscript: None,
@@ -69,7 +69,7 @@ fn create_chunks_basic_test() {
         resource_limits: None,
     };
 
-    let input = Input {
+    let input = UserInput {
         input: None,
         arguments: vec![],
     };
@@ -130,7 +130,7 @@ fn create_chunks_basic_test() {
 
 #[test]
 fn create_chunks_greedy_test() {
-    let prog_a = Program {
+    let prog_a = UserProgram {
         binary: FetchedPath(PathBuf::new().join("a")),
         arguments: vec![],
         afterscript: None,
@@ -138,7 +138,7 @@ fn create_chunks_greedy_test() {
         resource_limits: None,
     };
 
-    let prog_b = Program {
+    let prog_b = UserProgram {
         binary: FetchedPath(PathBuf::new().join("b")),
         arguments: vec![],
         afterscript: None,
@@ -146,12 +146,12 @@ fn create_chunks_greedy_test() {
         resource_limits: None,
     };
 
-    let input_a = Input {
+    let input_a = UserInput {
         input: Some(FetchedPath(PathBuf::new().join("a"))),
         arguments: vec![],
     };
 
-    let input_b = Input {
+    let input_b = UserInput {
         input: Some(FetchedPath(PathBuf::new().join("b"))),
         arguments: vec![],
     };

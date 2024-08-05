@@ -3,9 +3,9 @@
 use std::collections::BTreeMap;
 
 use gourd_lib::config::FetchedPath;
-use gourd_lib::config::Input;
 use gourd_lib::config::Label;
 use gourd_lib::config::Regex;
+use gourd_lib::config::UserInput;
 
 use crate::config;
 use crate::gourd;
@@ -19,12 +19,12 @@ fn gourd_run_test() {
 
     let conf = config!(env; "slow_fib", "fast_fib", "hello"; (
         "input_ten".to_string(),
-        Input {
+        UserInput {
             input: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
             arguments: vec![],
         }),
         ("input_hello".to_string(),
-        Input {
+        UserInput {
             input: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
             arguments: vec![],
         });
@@ -66,12 +66,12 @@ fn gourd_status_test() {
 
     let conf1 = config!(env; "slow_fib", "fast_fib", "hello"; (
         "input_ten".to_string(),
-        Input {
+        UserInput {
             input: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
             arguments: vec![],
         }),
         ("input_hello".to_string(),
-        Input {
+        UserInput {
             input: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
             arguments: vec![],
         });
@@ -88,7 +88,7 @@ fn gourd_status_test() {
 
     let conf2 = config!(env; "slow_fib"; (
         "input_ten".to_string(),
-        Input {
+        UserInput {
             input: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
             arguments: vec![],
         })
@@ -151,12 +151,12 @@ fn gourd_rerun_test() {
 
     let conf = config!(env; "slow_fib", "fast_fib", "hello"; (
         "input_ten".to_string(),
-        Input {
+        UserInput {
             input: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
             arguments: vec![],
         }),
         ("input_hello".to_string(),
-        Input {
+        UserInput {
             input: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
             arguments: vec![],
         });

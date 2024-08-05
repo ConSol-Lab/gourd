@@ -197,8 +197,8 @@ impl Status {
         };
         let c = match &self.fs_status.afterscript_completion {
             Some(Some(label)) => {
-                if let Some(labels) = &experiment.config.labels {
-                    labels[label].rerun_by_default
+                if let Some(l) = &experiment.labels.map.get(label) {
+                    l.rerun_by_default
                 } else {
                     false
                 }

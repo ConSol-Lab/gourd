@@ -3,7 +3,7 @@ use std::io::Write;
 use std::process::Stdio;
 use std::string::String;
 
-use gourd_lib::config::Input;
+use gourd_lib::config::UserInput;
 
 use crate::config;
 use crate::gourd;
@@ -16,7 +16,7 @@ fn test_dry_one_run() {
     let env = init();
     let conf = config!(&env; "fibonacci"; (
         "input_ten".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["10".to_string()],
         },
@@ -40,7 +40,7 @@ fn test_two_one_run() {
     let env = init();
     let conf = config!(&env; "fibonacci"; (
         "input_ten".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["10".to_string()],
         },
@@ -64,17 +64,17 @@ fn test_setting_resource_limits() {
     let env = init();
     let conf = config!(&env; "fibonacci", "fast_fib";
         ("input_one".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["1".to_string()],
         }),
         ("input_two".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["2".to_string()],
         }),
         ("input_five".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["5".to_string()],
         })

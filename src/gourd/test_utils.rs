@@ -8,8 +8,8 @@ use anstyle::Color;
 use anstyle::Style;
 use chrono::Local;
 use gourd_lib::config::Config;
-use gourd_lib::config::InputMap;
-use gourd_lib::config::ProgramMap;
+use gourd_lib::config::UserInputMap;
+use gourd_lib::config::UserProgramMap;
 use gourd_lib::constants::style_from_fg;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
@@ -38,7 +38,10 @@ pub fn get_compiled_example(contents: &str, extra_args: Option<Vec<&str>>) -> (P
     (out, tmp)
 }
 
-pub fn create_sample_experiment(prog: ProgramMap, inputs: InputMap) -> (Experiment, Config) {
+pub fn create_sample_experiment(
+    prog: UserProgramMap,
+    inputs: UserInputMap,
+) -> (Experiment, Config) {
     let conf = Config {
         output_path: TempDir::new("output").unwrap().into_path(),
         metrics_path: TempDir::new("metrics").unwrap().into_path(),

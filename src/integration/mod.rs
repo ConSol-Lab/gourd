@@ -42,8 +42,8 @@ use anyhow::anyhow;
 use anyhow::Result;
 use gourd_lib::config::Config;
 use gourd_lib::config::FetchedPath;
-use gourd_lib::config::Program;
-use gourd_lib::config::ProgramMap;
+use gourd_lib::config::UserProgram;
+use gourd_lib::config::UserProgramMap;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileSystemInteractor;
 use tempdir::TempDir;
@@ -54,7 +54,7 @@ struct TestEnv {
     gourd_path: PathBuf,
     wrapper_path: PathBuf,
     temp_dir: TempDir,
-    programs: ProgramMap,
+    programs: UserProgramMap,
     input_files: BTreeMap<String, PathBuf>,
     fs: FileSystemInteractor,
 }
@@ -131,7 +131,7 @@ fn compile_example(dir: &PathBuf, contents: &str, extra_args: Option<Vec<&str>>)
 }
 
 fn new_program(
-    prog: &mut ProgramMap,
+    prog: &mut UserProgramMap,
     name: &str,
     dir: &PathBuf,
     contents: &str,
@@ -140,7 +140,7 @@ fn new_program(
 ) {
     prog.insert(
         name.to_string(),
-        Program {
+        UserProgram {
             binary: FetchedPath(compile_example(dir, contents, None)),
             arguments: extra_args.iter().map(|s| s.to_string()).collect(),
             afterscript: None,
@@ -183,7 +183,7 @@ fn init() -> TestEnv {
     let temp_dir = TempDir::new_in(env!("CARGO_TARGET_TMPDIR"), "resources").unwrap();
     let p = temp_dir.path().to_path_buf();
     // initialise the programs and input files available in the testing environment.
-    let mut programs = ProgramMap::default();
+    let mut programs = UserProgramMap::default();
     let mut input_files = BTreeMap::new();
 
     // compiled examples
@@ -263,7 +263,7 @@ macro_rules! config {
                 metrics_path: $env.temp_dir.path().join("metrics"),
                 experiments_folder: $env.temp_dir.path().join("experiments"),
                 programs: $crate::keep(&$env.programs.clone(), &[$($prog.to_string()),*]),
-                inputs: std::collections::BTreeMap::<String, gourd_lib::config::Input>::from([$($inp),*]).into(),
+                inputs: std::collections::BTreeMap::<String, gourd_lib::config::UserInput>::from([$($inp),*]).into(),
                 parameters: None,
                 wrapper: $env.wrapper_path.to_str().unwrap().to_string(),
                 input_schema: None,
@@ -284,7 +284,7 @@ macro_rules! config {
                 metrics_path: $env.temp_dir.path().join("metrics"),
                 experiments_folder: $env.temp_dir.path().join("experiments"),
                 programs: $crate::keep(&$env.programs.clone(), &[$($prog.to_string()),*]),
-                inputs: std::collections::BTreeMap::<String, gourd_lib::config::Input>::from([$($inp),*]).into(),
+                inputs: std::collections::BTreeMap::<String, gourd_lib::config::UserInput>::from([$($inp),*]).into(),
                 parameters: None,
                 wrapper: $env.wrapper_path.to_str().unwrap().to_string(),
                 input_schema: None,

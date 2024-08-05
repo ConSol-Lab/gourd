@@ -20,6 +20,7 @@ use gourd_lib::ctx;
 use gourd_lib::error::Ctx;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
+use gourd_lib::file_system::FileOperations;
 use gourd_lib::file_system::FileSystemInteractor;
 use indicatif::MultiProgress;
 use indicatif_log_bridge::LogWrapper;
@@ -27,6 +28,7 @@ use log::debug;
 use log::info;
 use log::trace;
 use log::LevelFilter;
+use gourd_lib::experiment::scheduling::RunStatus;
 
 use super::def::ContinueStruct;
 use super::def::RerunOptions;
@@ -48,12 +50,10 @@ use crate::experiments::ExperimentExt;
 use crate::init::init_experiment_setup;
 use crate::init::list_init_examples;
 use crate::local::run_local;
-use crate::post::postprocess_job::schedule_post_jobs;
 use crate::rerun;
 use crate::rerun::slurm::query_changing_resource_limits;
 use crate::setlim;
-use crate::slurm::checks::get_slurm_options_from_config;
-use crate::slurm::chunk::Chunkable;
+use crate::slurm::checks::slurm_options_from_experiment;
 use crate::slurm::handler::SlurmHandler;
 use crate::slurm::interactor::SlurmCli;
 use crate::slurm::SlurmInteractor;
@@ -100,30 +100,26 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
         experiment_id: &Option<usize>,
         cmd: &Cli,
         file_system: &FileSystemInteractor,
-    ) -> Result<(Experiment, Config)> {
+    ) -> Result<Experiment> {
         debug!("Reading the config: {:?}", cmd.config);
 
-        let config = Config::from_file(&cmd.config, false, file_system)?;
-
-        let experiment = match experiment_id {
-            Some(id) => {
-                Experiment::experiment_from_folder(*id, &config.experiments_folder, file_system)?
-            }
-            None => {
-                Experiment::latest_experiment_from_folder(&config.experiments_folder, file_system)?
-            }
+        let conf: Config = file_system.try_read_toml(&cmd.config)?;
+        let exp = if let Some(id) = experiment_id {
+            Experiment::experiment_from_folder(*id, &conf.experiments_folder, file_system)?
+        } else {
+            Experiment::latest_experiment_from_folder(&conf.experiments_folder, file_system)?
         };
 
-        debug!("Found the newest experiment with id: {}", experiment.seq);
+        debug!("Found the newest experiment with id: {}", exp.seq);
 
-        Ok((experiment, config))
+        Ok(exp)
     }
 
     match &cmd.command {
         GourdCommand::Run(args) => {
             debug!("Reading the config: {:?}", cmd.config);
 
-            let config = Config::from_file(&cmd.config, false, &file_system)?;
+            let config = Config::from_file(&cmd.config, &file_system)?;
 
             debug!("Creating a new experiment");
             trace!("The config is: {config:#?}");
@@ -138,7 +134,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 &file_system,
             )?;
 
-            let exp_path = experiment.save(&config.experiments_folder, &file_system)?;
+            let exp_path = experiment.save(&file_system)?;
             debug!("Saved the experiment at {exp_path:?}");
 
             match args.subcommand {
@@ -162,17 +158,17 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 RunSubcommand::Slurm { .. } => {
                     let s: SlurmHandler<SlurmCli> = SlurmHandler::default();
                     s.check_version()?;
-                    s.check_partition(&get_slurm_options_from_config(&config)?.partition)?;
+                    s.check_partition(&slurm_options_from_experiment(&experiment)?.partition)?;
 
                     if cmd.dry {
                         info!("Would have scheduled the experiment on slurm (dry)");
                     } else {
-                        s.run_experiment(&config, &mut experiment, exp_path.clone(), file_system)?;
+                        s.run_experiment(&mut experiment, exp_path.clone(), file_system)?;
                         print_scheduling(&experiment, true)?;
                         info!("Experiment started");
                     }
 
-                    experiment.save(&config.experiments_folder, &file_system)?;
+                    experiment.save(&file_system)?;
                 }
             }
 
@@ -200,7 +196,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             full,
             ..
         }) => {
-            let (experiment, _) = read_experiment(experiment_id, cmd, &file_system)?;
+            let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             let statuses = get_statuses(&experiment, &mut file_system)?;
 
@@ -250,7 +246,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             experiment_id,
             output,
         }) => {
-            let (experiment, config) = read_experiment(experiment_id, cmd, &file_system)?;
+            let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             let statuses = get_statuses(&experiment, &mut file_system)?;
 
@@ -267,7 +263,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 return Ok(());
             }
 
-            let mut output_path = config.experiments_folder.clone();
+            let mut output_path = experiment.home.clone();
 
             if completed_runs.next().is_some() {
                 match &output[..] {
@@ -314,7 +310,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             all,
         }) => {
             let s: SlurmHandler<SlurmCli> = SlurmHandler::default();
-            let (experiment, _) = read_experiment(experiment_id, cmd, &file_system)?;
+            let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             let id_list = if *all {
                 s.internal.get_scheduled_jobs()?
@@ -381,23 +377,22 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
         GourdCommand::Version => print_version(cmd.script),
 
         GourdCommand::Continue(ContinueStruct { experiment_id }) => {
-            let (mut experiment, config) = read_experiment(experiment_id, cmd, &file_system)?;
+            let mut experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
-            // Scheduling postprocessing jobs
-            debug!("Checking for postprocess jobs to be run");
+            let statuses = get_statuses(&experiment, &mut file_system)?;
+            for (run, status) in statuses {
+                if status.is_completed() {
+                    experiment.runs[run].status = RunStatus::Finished;
+                }
+            }
 
-            let mut statuses = get_statuses(&experiment, &mut file_system)?;
-            schedule_post_jobs(&mut experiment, &mut statuses, &file_system)?;
-
-            info!("Postprocessing scheduled for available jobs");
-
-            if experiment.get_unscheduled_runs()?.is_empty() {
+            if experiment.unscheduled().is_empty() {
                 info!("Nothing more to continue :D");
                 return Ok(());
             }
 
             // Continuing the experiment
-            let exp_path = experiment.save(&config.experiments_folder, &file_system)?;
+            let exp_path = experiment.save(&file_system)?;
 
             if experiment.env == Environment::Local {
                 if cmd.dry {
@@ -415,19 +410,18 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             } else if experiment.env == Environment::Slurm {
                 let s: SlurmHandler<SlurmCli> = SlurmHandler::default();
                 s.check_version()?;
-                s.check_partition(&get_slurm_options_from_config(&config)?.partition)?;
+                s.check_partition(&slurm_options_from_experiment(&experiment)?.partition)?;
 
                 if cmd.dry {
                     info!("Would have continued the experiment on slurm (dry)");
                 } else {
-                    let sched =
-                        s.run_experiment(&config, &mut experiment, exp_path, file_system)?;
+                    let sched = s.run_experiment(&mut experiment, exp_path, file_system)?;
                     print_scheduling(&experiment, false)?;
                     info!("Experiment continued you just scheduled {sched} chunks");
                 }
             }
 
-            let p = experiment.save(&config.experiments_folder, &file_system)?;
+            let p = experiment.save(&file_system)?;
             if cmd.script {
                 println!("{}", p.display());
             }
@@ -437,7 +431,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             experiment_id,
             run_ids,
         }) => {
-            let (mut experiment, _) = read_experiment(experiment_id, cmd, &file_system)?;
+            let mut experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             let selected_runs = rerun::runs::get_runs_from_rerun_options(
                 run_ids,
@@ -461,17 +455,19 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
 
                 experiment.runs.push(generate_new_run(
                     new_id,
-                    old_run.program.clone(),
+                    &experiment.get_program(old_run)?,
                     old_run.input.clone(),
                     experiment.seq,
-                    &experiment.config,
+                    None,               // todo: dependencies for reruns
+                    Default::default(), // todo: resource limits for reruns
+                    &experiment,
                     &file_system,
                 )?);
 
                 experiment.runs[*run_id].rerun = Some(new_id);
             }
 
-            experiment.save(&experiment.config.experiments_folder, &file_system)?;
+            experiment.save(&file_system)?;
 
             if selected_runs.is_empty() {
                 info!("No new runs to schedule");
@@ -493,7 +489,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             cpu,
             time,
         }) => {
-            let (mut experiment, _) = read_experiment(experiment_id, cmd, &file_system)?;
+            let mut experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             if *all {
                 debug!("Selected all programs to change limits");
@@ -518,7 +514,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 bailc!("No program specified to change the limits for.")
             }
 
-            experiment.save(&experiment.config.experiments_folder, &file_system)?;
+            experiment.save(&file_system)?;
         }
     }
 

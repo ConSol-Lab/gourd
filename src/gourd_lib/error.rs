@@ -96,7 +96,7 @@ impl<A: Display, B: Display> Display for Ctx<A, B> {
 #[macro_export]
 macro_rules! ctx {
     {$cause: expr,  $($arg_cause: expr)*; $help: expr, $($arg_help: tt)*} => {
-      || Ctx(format!($cause, $($arg_cause)*), format!($help, $($arg_help)*))
+      || $crate::error::Ctx(format!($cause, $($arg_cause)*), format!($help, $($arg_help)*))
     };
 }
 
@@ -137,11 +137,11 @@ macro_rules! ctx {
 #[macro_export]
 macro_rules! bailc {
     {$text: expr,  $($arg_text: expr)*; $cause: expr,  $($arg_cause: expr)*; $help: expr, $($arg_help: tt)*} => {
-        return Err(anyhow!($text, $($arg_text)*)).with_context(ctx!($cause, $($arg_cause)*; $help, $($arg_help)*));
+        return Err(anyhow::anyhow!($text, $($arg_text)*)).with_context($crate::error::ctx!($cause, $($arg_cause)*; $help, $($arg_help)*));
     };
     {$text: expr $(,$arg_text: expr)*} => {
-        return Err(anyhow!($text, $($arg_text)*)).with_context(ctx!("",;"",));
+        return Err(anyhow::anyhow!($text, $($arg_text)*)).with_context($crate::error::ctx!("",;"",));
     };
 }
 
-pub(crate) use ctx;
+pub use ctx;

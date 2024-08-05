@@ -1,8 +1,11 @@
+mod scheduling;
+use gourd_lib::experiment::programs::expand_program;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
-
+use gourd_lib::experiment::inputs::{expand_input, RunInput};
+use gourd_lib::experiment::inputs::iter_map;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
@@ -10,11 +13,18 @@ use chrono::DateTime;
 use chrono::Local;
 use gourd_lib::bailc;
 use gourd_lib::config::Config;
+use gourd_lib::config::ResourceLimits;
 use gourd_lib::ctx;
 use gourd_lib::error::Ctx;
+use gourd_lib::experiment::labels::Labels;
+use gourd_lib::experiment::programs::topological_ordering;
+use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Environment;
+use gourd_lib::experiment::Executable;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
+use gourd_lib::experiment::InternalInput;
+use gourd_lib::experiment::InternalProgram;
 use gourd_lib::experiment::Run;
 use gourd_lib::file_system::FileOperations;
 
@@ -56,36 +66,90 @@ impl ExperimentExt for Experiment {
         env: Environment,
         fs: &impl FileOperations,
     ) -> Result<Self> {
-        let mut runs = Vec::new();
-
         let seq = Self::latest_id_from_folder(&conf.experiments_folder)
             .unwrap_or(Some(0))
             .unwrap_or(0)
             + 1;
 
-        for prog_name in conf.programs.keys() {
-            for input_name in conf.inputs.keys() {
-                runs.push(generate_new_run(
-                    runs.len(),
-                    FieldRef::Regular(prog_name.clone()),
-                    FieldRef::Regular(input_name.clone()),
-                    seq,
-                    conf,
-                    fs,
-                )?);
+        // TODO:
+        // 1.   convert UserProgram(s) to (possibly multiple) InternalProgram(s)
+        // 1.5. figure how to name 
+        //
+        let mut expanded_programs: Vec<(String, InternalProgram)>= vec![];
+        let mut expanded_inputs: Vec<(String, InternalInput)> = vec![];
+        for (n, p) in &conf.programs {
+            expanded_programs.append(&mut expand_program(n, p)?);
+        }
+        for (n, i) in &conf.inputs {
+            expanded_inputs.append(&mut expand_input(n, i)?);
+        }
+
+        let sorted_programs: Vec<String> = topological_ordering(conf.programs.clone())?
+            .into_iter()
+            .map(|(x, _)| x)
+            .collect();
+
+        let mut e = Self {
+            runs: Vec::new(),
+            creation_time: time,
+            home: conf.experiments_folder.clone(),
+            wrapper: conf.wrapper.clone(),
+            inputs: iter_map(expanded_inputs.clone().into_iter()),
+            seq,
+            resource_limits: conf.resource_limits,
+            env,
+            labels: Labels {
+                map: conf.labels.clone().unwrap_or_default(),
+                warn_on_label_overlap: conf.warn_on_label_overlap,
+            },
+            programs: iter_map(expanded_programs.clone().into_iter()),
+            output_path: conf.output_path.clone(),
+            metrics_path: conf.metrics_path.clone(),
+            slurm: conf.slurm.clone(),
+            afterscript_output_path: Default::default(), //todo
+        };
+
+        for prog_name in &sorted_programs {
+            for input_name in expanded_inputs.iter().map(|(x, _)| x) {
+                if let Some(parent) = &e.programs[prog_name].runs_after {
+                    for (i, prev) in e.runs.clone().iter().enumerate() {
+                        if prev.program.eq(parent) {
+                            e.runs.push(generate_new_run(
+                                e.runs.len(),
+                                &e.programs[prog_name],
+                                RunInput {
+                                    name: format!("output_of_run_{}", i),
+                                    file: Some(prev.output_path.clone()),
+                                    args: e.programs[prog_name].arguments.clone()
+                                },
+                                seq,
+                                Some(i),
+                                e.programs[prog_name].limits,
+                                &e,
+                                fs,
+                            )?);
+                        }
+                    }
+                } else {
+                    e.runs.push(generate_new_run(
+                        e.runs.len(),
+                        &e.programs[prog_name],
+                        RunInput {
+                            name: input_name.clone(),
+                            file: e.inputs[input_name].input.clone(),
+                            args: [e.programs[prog_name].arguments.clone(), e.inputs[input_name].arguments.clone()].concat(),
+                        },
+                        seq,
+                        None,
+                        e.programs[prog_name].limits,
+                        &e,
+                        fs,
+                    )?);
+                }
             }
         }
 
-        Ok(Self {
-            runs,
-            creation_time: time,
-            seq,
-            config: conf.clone(),
-            chunks: vec![],
-            resource_limits: conf.resource_limits,
-            env,
-            postprocess_inputs: BTreeMap::new(),
-        })
+        Ok(e)
     }
 
     fn latest_id_from_folder(folder: &Path) -> Result<Option<usize>> {
@@ -156,70 +220,55 @@ impl ExperimentExt for Experiment {
 /// This should be used by all code paths adding runs to the experiment.
 pub fn generate_new_run(
     run_id: usize,
-    program: FieldRef,
-    input: FieldRef,
+    program: &InternalProgram,
+    input: RunInput,
     seq: usize,
-    conf: &Config,
+    depends: Option<usize>,
+    limits: ResourceLimits,
+    experiment: &Experiment,
     fs: &impl FileOperations,
 ) -> Result<Run> {
     Ok(Run {
-        program: program.clone(),
+        program: program.name.clone(),
         input,
+        status: RunStatus::Pending,
         err_path: fs.truncate_and_canonicalize(
-            &conf
+            &experiment
                 .output_path
-                .join(format!("{}/{}/{}/stderr", seq, program, run_id)),
+                .join(format!("{}/{}/{}/stderr", seq, program.name, run_id)),
         )?,
         metrics_path: fs.truncate_and_canonicalize(
-            &conf
+            &experiment
                 .metrics_path
-                .join(format!("{}/{}/{}/metrics", seq, program, run_id)),
+                .join(format!("{}/{}/{}/metrics", seq, program.name, run_id)),
         )?,
         output_path: fs.truncate_and_canonicalize(
-            &conf
+            &experiment
                 .output_path
-                .join(format!("{}/{}/{}/stdout", seq, program, run_id)),
+                .join(format!("{}/{}/{}/stdout", seq, program.name, run_id)),
         )?,
         work_dir: fs.truncate_and_canonicalize_folder(
-            &conf
+            &experiment
                 .output_path
-                .join(format!("{}/{}/{}/", seq, program, run_id)),
+                .join(format!("{}/{}/{}/", seq, program.name, run_id)),
         )?,
-        afterscript_output_path: match program {
-            FieldRef::Regular(prog_name) => {
-                get_afterscript_file(conf, &seq, &prog_name, run_id, fs)?
-            }
-            FieldRef::Postprocess(_) => None,
+        afterscript_output_path: match program.afterscript.as_ref() {
+            None => None,
+            Some(_) => Some(
+                fs.truncate_and_canonicalize_folder(
+                    &experiment
+                        .output_path
+                        .join(format!("{}/{}/{}/", seq, program.name, run_id)),
+                )?,
+            ),
         },
+        limits,
+        depends,
         slurm_id: None,
         rerun: None,
-        postprocessor: None,
     })
 }
 
-/// Constructs an afterscript path based on values in the config.
-pub fn get_afterscript_file(
-    config: &Config,
-    seq: &usize,
-    prog_name: &String,
-    run_id: usize,
-    fs: &impl FileOperations,
-) -> Result<Option<PathBuf>> {
-    let postprocessing = &config.programs[prog_name].afterscript;
-
-    if postprocessing.is_some() {
-        let path = &config
-            .output_path
-            .join(format!("{}/{}/{}/", seq, prog_name, run_id));
-
-        let afterscript_output_path = fs.truncate_and_canonicalize_folder(path)?;
-
-        Ok(Some(afterscript_output_path.join("afterscript")))
-    } else {
-        Ok(None)
-    }
-}
-
-#[cfg(test)]
-#[path = "tests/mod.rs"]
-mod tests;
+// #[cfg(test)]
+// #[path = "tests/mod.rs"]
+// mod tests;

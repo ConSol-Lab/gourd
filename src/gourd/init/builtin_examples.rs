@@ -51,7 +51,7 @@ impl InitExample<'_> {
             let config_path = PathBuf::from("gourd.toml");
 
             debug!("Checking for a \"gourd.toml\" at {:?}.", config_path);
-            match Config::from_file(Path::new("gourd.toml"), false, file_system) {
+            match Config::from_file(Path::new("gourd.toml"), file_system) {
                 Err(e) => {
                     debug!("Configuration check failed: {}", e.root_cause());
                     warn!(

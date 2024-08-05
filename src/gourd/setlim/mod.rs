@@ -2,13 +2,14 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use gourd_lib::bailc;
-use gourd_lib::config::Program;
 use gourd_lib::config::ResourceLimits;
+use gourd_lib::config::UserProgram;
 use gourd_lib::constants::CMD_STYLE;
 use gourd_lib::constants::TERTIARY_STYLE;
 use gourd_lib::ctx;
 use gourd_lib::error::Ctx;
 use gourd_lib::experiment::Experiment;
+use gourd_lib::experiment::InternalProgram;
 use log::debug;
 use log::info;
 use log::trace;
@@ -16,19 +17,13 @@ use log::trace;
 use crate::cli::printing::query_update_resource_limits;
 
 /// Get all simple and postprocess programs to update limits.
+/// todo: fix docs
 pub fn get_setlim_programs(experiment: &Experiment) -> Result<Vec<String>> {
-    let mut programs = experiment
-        .config
+    let programs = experiment
         .programs
         .iter()
         .map(|(x, _)| x.clone())
         .collect::<Vec<String>>();
-
-    if let Some(list) = &experiment.config.postprocess_programs {
-        let mut post = list.iter().map(|(x, _)| x.clone()).collect::<Vec<String>>();
-
-        programs.append(&mut post);
-    }
 
     Ok(programs)
 }
@@ -44,7 +39,7 @@ pub fn query_changing_limits_for_all_programs(
 
     for name in programs {
         let program = get_program_from_name(experiment, &name)?;
-        program.resource_limits = Some(new_rss);
+        program.limits = new_rss;
     }
 
     experiment.resource_limits = Some(new_rss);
@@ -73,18 +68,15 @@ pub fn query_changing_limits_for_program(
     cpu: Option<usize>,
     time: Option<std::time::Duration>,
 ) -> Result<()> {
-    let base_resources = experiment.resource_limits.unwrap_or_default();
+    // let base_resources = experiment.resource_limits.unwrap_or_default();
 
     let program = get_program_from_name(experiment, name)?;
 
-    let old_rss = match program.resource_limits {
-        Some(inner) => inner,
-        None => base_resources,
-    };
+    let old_rss = program.limits;
 
     let new_rss = query_update_resource_limits(&old_rss, script, mem, cpu, time)?;
 
-    program.resource_limits = Some(new_rss);
+    program.limits = new_rss;
 
     info!("Updating resource limits for program {name}.");
 
@@ -103,21 +95,11 @@ pub fn query_changing_limits_for_program(
 pub fn get_program_from_name<'a>(
     experiment: &'a mut Experiment,
     name: &String,
-) -> Result<&'a mut Program> {
+) -> Result<&'a mut InternalProgram> {
     let available_programs = get_setlim_programs(experiment)?;
 
-    if experiment.config.programs.contains_key(name) {
-        Ok(experiment.config.programs.get_mut(name).unwrap())
-    } else if let Some(post) = &mut experiment.config.postprocess_programs {
-        if post.contains_key(name) {
-            Ok((*post).get_mut(name).unwrap())
-        } else {
-            bailc!(
-                "No program found with the name {:?}", name;
-                "", ;
-                "Available programs are: {TERTIARY_STYLE}{}{TERTIARY_STYLE:#}", available_programs.join(", ")
-            );
-        }
+    if experiment.programs.contains_key(name) {
+        Ok(experiment.programs.get_mut(name).unwrap())
     } else {
         bailc!(
             "No program found with the name {:?}", name;

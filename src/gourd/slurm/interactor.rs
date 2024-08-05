@@ -13,8 +13,8 @@ use gourd_lib::config::SlurmConfig;
 use gourd_lib::constants::SLURM_VERSIONS;
 use gourd_lib::ctx;
 use gourd_lib::error::Ctx;
-use gourd_lib::experiment::Chunk;
-use gourd_lib::experiment::ChunkRunStatus;
+use gourd_lib::experiment::scheduling::Chunk;
+use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Experiment;
 use log::debug;
 use log::trace;
@@ -117,24 +117,18 @@ impl SlurmInteractor for SlurmCli {
     fn schedule_chunk(
         &self,
         slurm_config: &SlurmConfig,
-        chunk: &mut Chunk,
-        chunk_id: usize,
+        chunk: &Chunk,
         experiment: &mut Experiment,
         exp_path: &Path,
     ) -> Result<()> {
-        let resource_limits = chunk
-            .resource_limits
-            .ok_or(anyhow!("Could not get slurm resource limits"))
-            .with_context(
-                ctx!("",;"Specyfing resource limits in the config is required for slurm runs",),
-            )?;
+        let resource_limits = chunk.limits();
 
         let optional_args = parse_optional_args(slurm_config);
 
         let contents = format!(
             "#!/bin/bash
 #SBATCH --job-name=\"{}\"
-#SBATCH --array=\"{}-{}\"
+#SBATCH --array=\"{}\"
 #SBATCH --ntasks=1
 #SBATCH --partition=\"{}\"
 #SBATCH --time=\"{}\"
@@ -143,20 +137,18 @@ impl SlurmInteractor for SlurmCli {
 #SBATCH --account=\"{}\"
 {}
 
-{} {} {} $SLURM_ARRAY_TASK_ID
+{} {} $SLURM_ARRAY_TASK_ID
 ",
             slurm_config.experiment_name,
-            0,
-            &chunk.runs.len() - 1,
+            chunk.runs.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","),
             slurm_config.partition,
             format_slurm_duration(resource_limits.time_limit),
             resource_limits.cpus,
             resource_limits.mem_per_cpu,
             slurm_config.account,
             optional_args,
-            experiment.config.wrapper,
-            chunk_id,
-            exp_path.display()
+            experiment.wrapper,
+            exp_path.display(),
         );
 
         debug!("Sbatch file: {}", contents);
@@ -198,12 +190,7 @@ impl SlurmInteractor for SlurmCli {
             .to_string();
 
         trace!("This chunk was scheduled with id: {batch_id}");
-        chunk.status = ChunkRunStatus::Scheduled(batch_id.clone());
-
-        for (job_subid, run_id) in chunk.runs.iter().enumerate() {
-            let job_id = format!("{}_{}", batch_id, job_subid);
-            experiment.runs[*run_id].slurm_id = Some(job_id.clone());
-        }
+        experiment.mark_chunk_scheduled(chunk, batch_id);
 
         Ok(())
     }
