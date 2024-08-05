@@ -1,4 +1,4 @@
-use gourd_lib::config::Input;
+use gourd_lib::config::UserInput;
 
 use crate::config;
 use crate::gourd;
@@ -13,7 +13,7 @@ fn test_one_run() {
     // Create a new experiment configuration in the tempdir.
     let conf = config!(env; "fibonacci"; (
         "input_ten".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["10".to_string()],
         },

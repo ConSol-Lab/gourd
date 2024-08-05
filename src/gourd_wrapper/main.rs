@@ -155,38 +155,31 @@ fn process() -> Result<()> {
 
 /// Process the command line arguments passed to the wrapper.
 fn process_args(args: &[String], fs: &impl FileOperations) -> Result<RunConf> {
-    let exp_path: PathBuf = args[2]
+    let exp_path: PathBuf = args[1]
         .parse()
         .context(format!("The experiment file path is invalid: {}", args[1]))?;
 
     let exp = fs.try_read_toml::<Experiment>(exp_path.as_path())?;
 
-    let chunk_id: usize = args[1].parse().with_context(ctx!(
-        "Could not parse the chunk id from the arguments {:?}", args;
-        "Ensure that Slurm is configured correctly",
-    ))?;
-
-    let slurm_id: usize = args[3].parse().with_context(ctx!(
+    let run_id: usize = args[2].parse().with_context(ctx!(
         "Could not parse the run id from the arguments {:?}", args;
         "Ensure that Slurm is configured correctly",
     ))?;
 
-    let id = exp.chunks[chunk_id].runs[slurm_id];
+    let program = &exp.get_program(&exp.runs[run_id])?;
 
-    let program = &exp.get_program(&exp.runs[id])?;
-
-    let input = &exp.get_input(&exp.runs[id])?;
+    let input = &exp.runs[run_id].input;
 
     let mut additional_args = program.arguments.clone();
-    additional_args.append(&mut input.arguments.clone());
+    additional_args.append(&mut input.args.clone());
 
     Ok(RunConf {
         binary_path: program.binary.clone().to_path_buf(),
-        input_path: input.input.clone().map(|x| x.to_path_buf()),
-        output_path: exp.runs[id].output_path.clone(),
-        result_path: exp.runs[id].metrics_path.clone(),
-        work_dir: exp.runs[id].work_dir.clone(),
-        err_path: exp.runs[id].err_path.clone(),
+        input_path: input.file.clone().map(|x| x.to_path_buf()),
+        output_path: exp.runs[run_id].output_path.clone(),
+        result_path: exp.runs[run_id].metrics_path.clone(),
+        work_dir: exp.runs[run_id].work_dir.clone(),
+        err_path: exp.runs[run_id].err_path.clone(),
         additional_args,
     })
 }

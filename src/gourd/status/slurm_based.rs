@@ -57,9 +57,9 @@ where
         let statuses: Vec<SacctOutput> = flatten_job_id(
             connection.get_accounting_data(
                 experiment
-                    .chunks
+                    .runs
                     .iter()
-                    .filter_map(|x| x.get_slurm_id())
+                    .filter_map(|x| x.slurm_id.clone())
                     .collect(),
             )?,
         )?;
@@ -92,8 +92,9 @@ where
 
                 "RUNNING" | "R" => Running,
 
-                "REQUEUED" | "RQ" => Pending, /* For now we treat it as pending, but it may need */
-                // its own label for example State::Requeued
+                "REQUEUED" | "RQ" => Pending, // For now we treat it as pending,
+                // but it may need its own label, for example State::Requeued
+
                 "RESIZING" | "RS" => Running, // Needs a label, did not think of any suitable
 
                 "REVOKED" | "RV" => Pending, // Also will probably need a label
@@ -151,7 +152,7 @@ pub fn flatten_slurm_id(id: String) -> Result<Vec<String>> {
 
     // Match job ids in form NUMBER_[ranges]
     // Where ranges are a comma separated list where
-    // every values is either NUM or NUM-NUM
+    // every value is either NUM or NUM-NUM
     let range = Regex::new(r"([0-9]+)_\[(..*?)\]$").with_context(ctx!("",;"",))?;
 
     // Match job ids in form NUMBER_NUMBER

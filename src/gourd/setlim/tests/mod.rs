@@ -4,14 +4,14 @@ use std::time::Duration;
 
 use gourd_lib::config::Config;
 use gourd_lib::config::FetchedPath;
-use gourd_lib::config::ProgramMap;
+use gourd_lib::config::UserProgramMap;
 
 use super::*;
 
 #[test]
 fn test_get_program_from_name_simple() {
     let mut config = Config::default();
-    let mut program = Program {
+    let mut program = UserProgram {
         binary: FetchedPath(PathBuf::from("fake_path")),
         arguments: vec![],
         afterscript: None,
@@ -39,7 +39,7 @@ fn test_get_program_from_name_simple() {
 #[test]
 fn test_get_program_from_name_post() {
     let mut config = Config::default();
-    let mut program = Program {
+    let mut program = UserProgram {
         binary: FetchedPath(PathBuf::from("fake_path")),
         arguments: vec![],
         afterscript: None,
@@ -47,7 +47,7 @@ fn test_get_program_from_name_post() {
         resource_limits: None,
     };
 
-    let mut post_progs = ProgramMap::default();
+    let mut post_progs = UserProgramMap::default();
     post_progs.insert("name".to_string(), program.clone());
     config.postprocess_programs = Some(post_progs);
 
@@ -86,7 +86,7 @@ fn test_get_program_from_name_error() {
 #[test]
 fn test_query_changing_limits_for_program() {
     let mut config = Config::default();
-    let program = Program {
+    let program = UserProgram {
         binary: FetchedPath(PathBuf::from("fake_path")),
         arguments: vec![],
         afterscript: None,
@@ -130,7 +130,7 @@ fn test_query_changing_limits_for_all_programs() {
     let programs = vec!["name1".to_string(), "name2".to_string()];
 
     let mut config = Config::default();
-    let program = Program {
+    let program = UserProgram {
         binary: FetchedPath(PathBuf::from("fake_path")),
         arguments: vec![],
         afterscript: None,
@@ -140,7 +140,7 @@ fn test_query_changing_limits_for_all_programs() {
 
     config.programs.insert("name1".to_string(), program.clone());
 
-    let mut post_progs = ProgramMap::default();
+    let mut post_progs = UserProgramMap::default();
     post_progs.insert("name2".to_string(), program.clone());
     config.postprocess_programs = Some(post_progs);
 
@@ -176,7 +176,7 @@ fn test_query_changing_limits_for_all_programs() {
 #[test]
 fn test_get_setlim_programs() {
     let mut config = Config::default();
-    let program = Program {
+    let program = UserProgram {
         binary: FetchedPath(PathBuf::from("fake_path")),
         arguments: vec![],
         afterscript: None,
@@ -187,7 +187,7 @@ fn test_get_setlim_programs() {
     config.programs.insert("name1".to_string(), program.clone());
     config.programs.insert("name2".to_string(), program.clone());
 
-    let mut post_progs = ProgramMap::default();
+    let mut post_progs = UserProgramMap::default();
     post_progs.insert("name_post".to_string(), program.clone());
     config.postprocess_programs = Some(post_progs);
 

@@ -8,8 +8,8 @@ use std::time::Duration;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
-use maps::DeserState;
-use maps::IS_USER_FACING;
+use chrono::DateTime;
+use chrono::Local;
 use parameters::expand_parameters;
 use serde::Deserialize;
 use serde::Serialize;
@@ -35,7 +35,7 @@ use crate::file_system::FileSystemInteractor;
 mod duration;
 
 /// Deserializer for the maps.
-mod maps;
+pub mod maps;
 
 /// Deserializer for the regexes.
 mod regex;
@@ -47,20 +47,21 @@ mod parameters;
 mod fetching;
 
 pub use fetching::FetchedPath;
-pub use maps::InputMap;
-pub use maps::ProgramMap;
+pub use maps::UserInputMap;
+pub use maps::UserProgramMap;
 pub use regex::Regex;
+
+use crate::experiment::Environment;
+use crate::experiment::Experiment;
 
 /// A pair of a path to a binary and cli arguments.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
 #[serde(deny_unknown_fields)]
-pub struct Program {
+pub struct UserProgram {
     /// The path to the executable.
     pub binary: Option<PathBuf>,
 
     pub url: Option<String>,
-
-
 
     /// The cli arguments for the executable.
     #[serde(default = "EMPTY_ARGS")]
@@ -74,7 +75,8 @@ pub struct Program {
     #[serde(default = "PROGRAM_RESOURCES_DEFAULT")]
     pub resource_limits: Option<ResourceLimits>,
 
-    pub runs_after: Option<String>,
+    /// The program to postprocess
+    pub runs_after: Option<Vec<String>>,
 }
 
 /// A pair of a path to an input and additional cli arguments.
@@ -93,7 +95,7 @@ pub struct Program {
 /// Will run `test a b c`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
 #[serde(deny_unknown_fields)]
-pub struct Input {
+pub struct UserInput {
     /// The path to the input.
     ///
     /// If not specified, nothing is provided on the program's input.
@@ -102,7 +104,7 @@ pub struct Input {
     ///
     /// If this file is fetched on unix the permissions
     /// for it are: `rw-r--r--`.
-    pub input: Option<FetchedPath<0o644>>,
+    pub input: Option<PathBuf>,
 
     /// The additional cli arguments for the executable.
     ///
@@ -128,7 +130,7 @@ pub struct Input {
 pub struct InputSchema {
     /// 0 or more `[[input]]` instances
     #[serde(rename = "input")]
-    pub inputs: Vec<Input>,
+    pub inputs: Vec<UserInput>,
 }
 
 /// A parameter.
@@ -157,7 +159,7 @@ pub struct InputSchema {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Parameter {
-    /// Subparameters of this parameter.
+    /// Sub-parameters of this parameter.
     ///
     /// To be used exclusively without values of parameter.
     pub sub: Option<BTreeMap<String, SubParameter>>,
@@ -242,13 +244,13 @@ pub struct Config {
 
     /// The list of tested algorithms.
     #[serde(rename = "program")]
-    pub programs: ProgramMap,
+    pub programs: UserProgramMap,
 
     /// The list of inputs for each of them.
     ///
     /// The name of an input cannot contain '_i_'.
     #[serde(rename = "input")]
-    pub inputs: InputMap,
+    pub inputs: UserInputMap,
 
     /// A path to a TOML file that contains input combinations.
     pub input_schema: Option<PathBuf>,
@@ -263,10 +265,6 @@ pub struct Config {
     /// If running on a SLURM cluster, the initial global resource limits.
     pub resource_limits: Option<ResourceLimits>,
 
-    /// If running on a SLURM cluster, the initial postprocessing resource
-    /// limits.
-    pub postprocess_resource_limits: Option<ResourceLimits>,
-
     //
     // Advanced settings.
     /// The command to execute to get to the wrapper.
@@ -278,8 +276,11 @@ pub struct Config {
     /// syntax is:
     /// ```toml
     /// [labels.<label_name>]
-    /// regex = "<regex>" # the regex where if it matches then this label is assigned
-    /// rerun_by_default = true # whether using rerun failed will rerun this job- ie is this label a "failure"
+    /// // the regex where if it matches then this label is assigned
+    /// regex = "<regex>"
+    /// // whether using rerun failed will rerun this job-
+    /// // i.e. is this label a "failure"
+    /// rerun_by_default = true
     /// ```
     #[serde(rename = "label")]
     pub labels: Option<BTreeMap<String, Label>>,
@@ -355,7 +356,10 @@ pub struct SBatchArg {
 #[serde(deny_unknown_fields)]
 pub struct ResourceLimits {
     /// Maximum time allowed _for each_ job.
-    #[serde(deserialize_with = "duration::deserialize_human_time_duration")]
+    #[serde(
+        deserialize_with = "duration::deserialize_human_time_duration",
+        serialize_with = "duration::serialize_duration"
+    )]
     pub time_limit: Duration,
 
     /// CPUs to use per job
@@ -368,7 +372,7 @@ pub struct ResourceLimits {
 impl Default for ResourceLimits {
     fn default() -> Self {
         ResourceLimits {
-            time_limit: std::time::Duration::from_secs(60),
+            time_limit: Duration::from_secs(60),
             cpus: 1,
             mem_per_cpu: 32,
         }
@@ -396,13 +400,12 @@ impl Default for Config {
             metrics_path: PathBuf::from("run-metrics"),
             experiments_folder: PathBuf::from("experiments"),
             wrapper: WRAPPER_DEFAULT(),
-            programs: ProgramMap::default(),
-            inputs: InputMap::default(),
+            programs: UserProgramMap::default(),
+            inputs: UserInputMap::default(),
             input_schema: None,
             parameters: None,
             slurm: None,
             resource_limits: None,
-            postprocess_resource_limits: None,
             labels: Some(BTreeMap::new()),
             warn_on_label_overlap: true,
         }
@@ -451,9 +454,9 @@ impl Config {
     /// Parse the additional inputs toml file and add them to the inputs map.
     fn parse_schema_inputs(
         path_buf: &Path,
-        mut inputs: InputMap,
+        mut inputs: UserInputMap,
         fso: &impl FileOperations,
-    ) -> Result<InputMap> {
+    ) -> Result<UserInputMap> {
         let hi = fso.try_read_toml::<InputSchema>(path_buf)?;
         for (idx, input) in hi.inputs.iter().enumerate() {
             inputs.insert(

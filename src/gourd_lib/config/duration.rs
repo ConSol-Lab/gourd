@@ -4,9 +4,7 @@ use std::time::Duration;
 use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
-
-use crate::config::maps::DeserState;
-use crate::config::maps::IS_USER_FACING;
+use serde::Serializer;
 
 /// Deserializing duration from a human-readable string.
 pub fn deserialize_human_time_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
@@ -33,9 +31,9 @@ where
         }
     }
 
-    if IS_USER_FACING.with_borrow(|x| matches!(x, DeserState::User(_))) {
-        deserializer.deserialize_str(DurationVisitor {})
-    } else {
-        Duration::deserialize(deserializer)
-    }
+    deserializer.deserialize_str(DurationVisitor {})
+}
+
+pub fn serialize_duration<S: Serializer>(duration: &Duration, ser: S) -> Result<S::Ok, S::Error> {
+    S::serialize_str(ser, &humantime::format_duration(*duration).to_string())
 }

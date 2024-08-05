@@ -6,9 +6,9 @@ use anyhow::Context;
 use anyhow::Result;
 use log::trace;
 
-use super::Input;
-use super::InputMap;
 use super::Parameter;
+use super::UserInput;
+use super::UserInputMap;
 use crate::bailc;
 use crate::constants::INTERNAL_PARAMETER;
 use crate::constants::INTERNAL_PREFIX;
@@ -55,10 +55,10 @@ use crate::error::Ctx;
 /// arguments = [ "const", "2", "b", "60" ]
 /// ```
 pub fn expand_parameters(
-    inputs: InputMap,
+    inputs: UserInputMap,
     parameters: &BTreeMap<String, Parameter>,
-) -> Result<InputMap> {
-    let mut result: BTreeMap<String, Input> = BTreeMap::new();
+) -> Result<UserInputMap> {
+    let mut result: BTreeMap<String, UserInput> = BTreeMap::new();
 
     check_subparameter_size_is_equal(parameters)?;
 
@@ -109,7 +109,7 @@ pub fn expand_parameters(
         }
     }
 
-    Ok(InputMap(result))
+    Ok(result)
 }
 
 /// Checks if all subparameters of each paramterers specified in `parameters`
@@ -148,7 +148,7 @@ fn check_subparameter_size_is_equal(parameters: &BTreeMap<String, Parameter>) ->
 ///
 /// Saves map of Index to Parameter name in `map`
 fn get_expandable_parameters(
-    input: &Input,
+    input: &UserInput,
     map: &mut BTreeMap<String, Vec<(usize, Option<String>)>>,
     expandable_parameters: &mut BTreeSet<String>,
 ) -> Result<()> {

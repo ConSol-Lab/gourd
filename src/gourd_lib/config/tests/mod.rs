@@ -12,12 +12,12 @@ use std::path::PathBuf;
 
 use tempdir::TempDir;
 
-use crate::config::maps::InputMap;
-use crate::config::maps::ProgramMap;
+use crate::config::maps::UserInputMap;
+use crate::config::maps::UserProgramMap;
 use crate::config::Config;
 use crate::config::FetchedPath;
-use crate::config::Input;
-use crate::config::Program;
+use crate::config::UserInput;
+use crate::config::UserProgram;
 use crate::constants::WRAPPER_DEFAULT;
 use crate::test_utils::create_sample_toml;
 use crate::test_utils::REAL_FS;
@@ -33,9 +33,9 @@ fn breaking_changes_config_struct() {
         metrics_path: PathBuf::from(""),
         experiments_folder: PathBuf::from(""),
         wrapper: "".to_string(),
-        inputs: InputMap::default(),
+        inputs: UserInputMap::default(),
         parameters: None,
-        programs: ProgramMap::default(),
+        programs: UserProgramMap::default(),
         postprocess_programs: None,
         input_schema: None,
         slurm: None,
@@ -74,9 +74,9 @@ fn breaking_changes_config_file_all_values() {
             metrics_path: PathBuf::from("./vulfpeck"),
             experiments_folder: PathBuf::from("./parcels/"),
             wrapper: "gourd_wrapper".to_string(),
-            inputs: InputMap::default(),
+            inputs: UserInputMap::default(),
             parameters: None,
-            programs: ProgramMap::default(),
+            programs: UserProgramMap::default(),
             postprocess_programs: None,
             input_schema: None,
             slurm: None,
@@ -114,9 +114,9 @@ fn breaking_changes_config_file_required_values() {
             metrics_path: PathBuf::from("./vulfpeck"),
             experiments_folder: PathBuf::from(""),
             wrapper: "gourd_wrapper".to_string(),
-            inputs: InputMap::default(),
+            inputs: UserInputMap::default(),
             parameters: None,
-            programs: ProgramMap::default(),
+            programs: UserProgramMap::default(),
             postprocess_programs: None,
             input_schema: None,
             slurm: None,
@@ -236,7 +236,7 @@ fn test_globs() {
     file.write_all(config_contents.as_bytes())
         .expect("The test file could not be written.");
 
-    let mut inputs = InputMap::default();
+    let mut inputs = UserInputMap::default();
 
     inputs.insert(
         format!(
@@ -244,7 +244,7 @@ fn test_globs() {
             crate::constants::INTERNAL_PREFIX,
             crate::constants::INTERNAL_GLOB
         ),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["-f".to_string(), in_pathbuf.to_str().unwrap().to_string()],
         },
@@ -257,7 +257,7 @@ fn test_globs() {
             experiments_folder: PathBuf::from(""),
             wrapper: "gourd_wrapper".to_string(),
             inputs,
-            programs: ProgramMap::default(),
+            programs: UserProgramMap::default(),
             parameters: None,
             postprocess_programs: None,
             input_schema: None,
@@ -383,7 +383,7 @@ fn parse_valid_escape_hatch_file() {
         parameters: None,
         programs: vec![(
             "x".to_string(),
-            Program {
+            UserProgram {
                 binary: FetchedPath("/bin/sleep".into()),
                 arguments: vec![],
                 afterscript: None,
@@ -392,7 +392,7 @@ fn parse_valid_escape_hatch_file() {
             },
         )]
         .into_iter()
-        .collect::<BTreeMap<String, Program>>()
+        .collect::<BTreeMap<String, UserProgram>>()
         .into(),
         inputs: vec![
             (
@@ -401,7 +401,7 @@ fn parse_valid_escape_hatch_file() {
                     crate::constants::INTERNAL_PREFIX,
                     crate::constants::INTERNAL_SCHEMA_INPUTS
                 ),
-                crate::config::Input {
+                crate::config::UserInput {
                     input: None,
                     arguments: vec!["hello".to_string()],
                 },
@@ -412,14 +412,14 @@ fn parse_valid_escape_hatch_file() {
                     crate::constants::INTERNAL_PREFIX,
                     crate::constants::INTERNAL_SCHEMA_INPUTS
                 ),
-                crate::config::Input {
+                crate::config::UserInput {
                     input: None,
                     arguments: vec!["hi".to_string()],
                 },
             ),
         ]
         .into_iter()
-        .collect::<BTreeMap<String, Input>>()
+        .collect::<BTreeMap<String, UserInput>>()
         .into(),
         input_schema: None,
         slurm: None,

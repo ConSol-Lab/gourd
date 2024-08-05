@@ -6,7 +6,7 @@ fn test_expand_parameters_ok_no_expandable() {
     let mut inputs = BTreeMap::new();
     inputs.insert(
         "first".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["nice".to_string()],
         },
@@ -22,7 +22,7 @@ fn test_expand_parameters_ok_parameter() {
     let mut inputs = BTreeMap::new();
     inputs.insert(
         "first".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["-e".to_string(), "param|x".to_string()],
         },
@@ -39,21 +39,21 @@ fn test_expand_parameters_ok_parameter() {
     let mut expected = BTreeMap::new();
     expected.insert(
         format!("first_x_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["-e".to_string(), "a".to_string()],
         },
     );
     expected.insert(
         format!("first_x_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["-e".to_string(), "b".to_string()],
         },
     );
     expected.insert(
         format!("first_x_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["-e".to_string(), "c".to_string()],
         },
@@ -67,7 +67,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
     let mut inputs = BTreeMap::new();
     inputs.insert(
         "first".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -89,7 +89,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
     let mut expected = BTreeMap::new();
     expected.insert(
         format!("first_x_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -101,7 +101,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
     );
     expected.insert(
         format!("first_x_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -113,7 +113,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
     );
     expected.insert(
         format!("first_x_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -131,7 +131,7 @@ fn test_expand_parameters_ok_subparameter() {
     let mut inputs = BTreeMap::new();
     inputs.insert(
         "first".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -166,7 +166,7 @@ fn test_expand_parameters_ok_subparameter() {
     let mut expected = BTreeMap::new();
     expected.insert(
         format!("first_x_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -178,7 +178,7 @@ fn test_expand_parameters_ok_subparameter() {
     );
     expected.insert(
         format!("first_x_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -190,7 +190,7 @@ fn test_expand_parameters_ok_subparameter() {
     );
     expected.insert(
         format!("first_x_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -208,7 +208,7 @@ fn test_expand_parameters_ok_both() {
     let mut inputs = BTreeMap::new();
     inputs.insert(
         "first".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -258,7 +258,7 @@ fn test_expand_parameters_ok_both() {
     let mut expected = BTreeMap::new();
     expected.insert(
         format!("first_x_0_y_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -272,7 +272,7 @@ fn test_expand_parameters_ok_both() {
     );
     expected.insert(
         format!("first_x_1_y_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -286,7 +286,7 @@ fn test_expand_parameters_ok_both() {
     );
     expected.insert(
         format!("first_x_2_y_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -300,7 +300,7 @@ fn test_expand_parameters_ok_both() {
     );
     expected.insert(
         format!("first_x_0_y_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -314,7 +314,7 @@ fn test_expand_parameters_ok_both() {
     );
     expected.insert(
         format!("first_x_1_y_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -328,7 +328,7 @@ fn test_expand_parameters_ok_both() {
     );
     expected.insert(
         format!("first_x_2_y_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -342,7 +342,7 @@ fn test_expand_parameters_ok_both() {
     );
     expected.insert(
         format!("first_x_0_y_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -356,7 +356,7 @@ fn test_expand_parameters_ok_both() {
     );
     expected.insert(
         format!("first_x_1_y_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -370,7 +370,7 @@ fn test_expand_parameters_ok_both() {
     );
     expected.insert(
         format!("first_x_2_y_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),
@@ -390,7 +390,7 @@ fn test_expand_parameters_fail_subparameter_not_declared() {
     let mut inputs = BTreeMap::new();
     inputs.insert(
         "first".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["-e".to_string(), "param|x".to_string()],
         },
@@ -404,7 +404,7 @@ fn test_expand_parameters_fail_subparameter_size_not_match() {
     let mut inputs = BTreeMap::new();
     inputs.insert(
         "first".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec![
                 "-e".to_string(),

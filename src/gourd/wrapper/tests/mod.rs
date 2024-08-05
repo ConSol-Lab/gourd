@@ -4,8 +4,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use gourd_lib::config::FetchedPath;
-use gourd_lib::config::Input;
-use gourd_lib::config::Program;
+use gourd_lib::config::UserInput;
+use gourd_lib::config::UserProgram;
 
 use super::*;
 use crate::slurm::chunk::Chunkable;
@@ -46,7 +46,7 @@ fn non_matching_arch() {
 
     first.insert(
         "any".to_string(),
-        Program {
+        UserProgram {
             binary: FetchedPath(out),
             arguments: vec![],
             afterscript: None,
@@ -59,7 +59,7 @@ fn non_matching_arch() {
 
     second.insert(
         "test1".to_string(),
-        Input {
+        UserInput {
             input: Some(FetchedPath(input.clone())),
             arguments: vec![],
         },
@@ -99,7 +99,7 @@ fn matching_arch() {
 
     first.insert(
         "any".to_string(),
-        Program {
+        UserProgram {
             binary: FetchedPath(out.clone()),
             arguments: vec![],
             afterscript: None,
@@ -112,7 +112,7 @@ fn matching_arch() {
 
     second.insert(
         "test1".to_string(),
-        Input {
+        UserInput {
             input: Some(FetchedPath(input.clone())),
             arguments: vec![],
         },

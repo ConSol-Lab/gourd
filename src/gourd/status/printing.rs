@@ -240,7 +240,7 @@ fn long_status(
     let mut longest_index: usize = 0;
 
     for (run_id, run_data) in runs.iter().enumerate() {
-        longest_input = max(longest_input, run_data.input.to_string().len());
+        longest_input = max(longest_input, run_data.input.name.chars().count());
         longest_index = max(longest_index, run_id.to_string().len());
 
         if let Some(for_this_prog) = by_program.get_mut(&run_data.program) {
@@ -253,10 +253,7 @@ fn long_status(
     for (prog, prog_runs) in by_program {
         writeln!(f)?;
 
-        match prog {
-            FieldRef::Regular(name) => writeln!(f, "For program {}:", name)?,
-            FieldRef::Postprocess(name) => writeln!(f, "For postprocess {}:", name)?,
-        }
+        writeln!(f, "For program {}:", prog)?;
 
         for run_id in prog_runs {
             let run = &experiment.runs[run_id];
@@ -270,7 +267,7 @@ fn long_status(
                 f,
                 "  {: >numw$}. {NAME_STYLE}{:.<width$}{NAME_STYLE:#}.... {}",
                 run_id,
-                run.input.to_string(),
+                run.input.name,
                 if let Some(r) = run.rerun {
                     format!("reran as {NAME_STYLE}{r}{NAME_STYLE:#}")
                 } else {
@@ -291,23 +288,21 @@ fn long_status(
             writeln!(f)?;
 
             if let Some(Some(label_text)) = &status.fs_status.afterscript_completion {
-                if let Some(label_map) = &experiment.config.labels {
-                    let display_style = if label_map[label_text].rerun_by_default {
-                        ERROR_STYLE
-                    } else {
-                        PRIMARY_STYLE
-                    };
+                let display_style = if experiment.labels.map[label_text].rerun_by_default {
+                    ERROR_STYLE
+                } else {
+                    PRIMARY_STYLE
+                };
 
-                    write!(
-                        f,
-                        "  {: >numw$}a {:.<width$}.... \
+                write!(
+                    f,
+                    "  {: >numw$}a {:.<width$}.... \
                             label: {display_style}{label_text}{display_style:#}",
-                        run_id,
-                        "afterscript",
-                        numw = longest_index,
-                        width = longest_input,
-                    )?;
-                }
+                    run_id,
+                    "afterscript",
+                    numw = longest_index,
+                    width = longest_input,
+                )?;
 
                 writeln!(f)?;
             } else if let Some(None) = &status.fs_status.afterscript_completion {
@@ -347,22 +342,20 @@ pub fn display_job(
     if let Some(run) = exp.runs.get(id) {
         let program = exp.get_program(run)?;
 
-        let input = &exp.get_input(run)?;
-
         writeln!(f, "{NAME_STYLE}program{NAME_STYLE:#}: {}", run.program)?;
-        writeln!(f, "  {NAME_STYLE}binary{NAME_STYLE:#}: {}", program.binary)?;
+        writeln!(
+            f,
+            "  {NAME_STYLE}binary{NAME_STYLE:#}: {:?}",
+            program.binary
+        )?;
 
-        writeln!(f, "{NAME_STYLE}input{NAME_STYLE:#}: {}", run.input)?;
+        writeln!(f, "{NAME_STYLE}input{NAME_STYLE:#}: {}", run.input.name)?;
 
-        if let Some(input_file) = &input.input {
-            writeln!(f, "  {NAME_STYLE}file{NAME_STYLE:#}:   {}", input_file)?;
+        if let Some(input_file) = &run.input.file {
+            writeln!(f, "  {NAME_STYLE}file{NAME_STYLE:#}:   {:?}", input_file)?;
         }
 
-        let mut args = vec![];
-        args.append(&mut program.arguments.clone());
-        args.append(&mut input.arguments.clone());
-
-        writeln!(f, "{NAME_STYLE}arguments{NAME_STYLE:#}: {:?}\n", args)?;
+        writeln!(f, "{NAME_STYLE}arguments{NAME_STYLE:#}: {:?}\n", run.input.args)?;
 
         writeln!(
             f,
@@ -380,13 +373,8 @@ pub fn display_job(
             run.metrics_path
         )?;
 
-        if let Some(slurm_id) = &run.slurm_id {
-            writeln!(f, "scheduled on slurm as {}", slurm_id)?;
-            if let Some(in_chunk) = exp.chunks.iter().find(|x| x.runs.contains(&id)) {
-                if let Some(limits) = in_chunk.resource_limits {
-                    writeln!(f, "scheduled on slurm with these limits:\n{}", limits)?;
-                }
-            }
+        if let Some(slurm_id) = &run.slurm_id { // todo
+            writeln!(f, "scheduled on slurm as {} with limits {}", slurm_id, run.limits)?;
         }
 
         let status = &statuses[&id];
@@ -394,19 +382,17 @@ pub fn display_job(
         writeln!(f, "{status:#}")?;
 
         if let Some(Some(label_text)) = &status.fs_status.afterscript_completion {
-            if let Some(label_map) = &exp.config.labels {
-                let display_style = if label_map[label_text].rerun_by_default {
-                    ERROR_STYLE
-                } else {
-                    PRIMARY_STYLE
-                };
+            let display_style = if exp.labels.map[label_text].rerun_by_default {
+                ERROR_STYLE
+            } else {
+                PRIMARY_STYLE
+            };
 
-                writeln!(
-                    f,
-                    "{NAME_STYLE}afterscript ran and assigned \
-                        label{NAME_STYLE:#}: {display_style}{label_text}{display_style:#}",
-                )?;
-            }
+            writeln!(
+                f,
+                "{NAME_STYLE}afterscript ran and assigned \
+                    label{NAME_STYLE:#}: {display_style}{label_text}{display_style:#}",
+            )?;
 
             writeln!(f)?;
         } else if let Some(None) = &status.fs_status.afterscript_completion {
@@ -418,10 +404,10 @@ pub fn display_job(
             writeln!(f)?;
         }
 
-        if let Some(newid) = run.rerun {
+        if let Some(new_id) = run.rerun {
             writeln!(
                 f,
-                "{NAME_STYLE}this job has been reran as {newid}{NAME_STYLE:#}",
+                "{NAME_STYLE}this job has been reran as {new_id}{NAME_STYLE:#}",
             )?;
 
             writeln!(f)?;

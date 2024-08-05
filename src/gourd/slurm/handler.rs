@@ -13,10 +13,9 @@ use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
 use gourd_lib::experiment::Run;
 use gourd_lib::file_system::FileOperations;
-use log::debug;
+use log::{debug, error};
 
-use crate::slurm::checks::get_slurm_options_from_config;
-use crate::slurm::chunk::Chunkable;
+use crate::slurm::checks::slurm_options_from_experiment;
 use crate::slurm::SlurmInteractor;
 
 /// Functionality associated with running on slurm
@@ -51,54 +50,35 @@ where
     /// The amount of chunks that have been scheduled.
     pub fn run_experiment(
         &self,
-        config: &Config,
         experiment: &mut Experiment,
         exp_path: PathBuf,
         fs: impl FileOperations,
     ) -> Result<usize> {
-        let slurm_config = get_slurm_options_from_config(config)?;
-        let runs = experiment.get_unscheduled_runs()?;
+        let slurm_config = slurm_options_from_experiment(experiment)?;
 
-        let mut chunks_to_schedule = experiment.create_chunks_with_resource_limits(
-            slurm_config.array_count_limit,
-            // TODO: correctly handle ongoing array jobs causing a lower limit
-            slurm_config.array_size_limit,
-            get_limits,
-            runs.into_iter(),
-        )?;
-
-        experiment.chunks.append(&mut chunks_to_schedule);
-        let mut chunks_to_iterate = experiment.chunks.clone();
-
-        experiment.save(&config.experiments_folder, &fs)?;
+        let chunks_to_schedule = experiment.next_chunks(slurm_config.array_size_limit)?;
 
         let mut counter = 0;
-        for (chunk_id, chunk) in chunks_to_iterate.iter_mut().enumerate() {
-            if matches!(
-                chunk.status,
-                gourd_lib::experiment::ChunkRunStatus::Scheduled(_)
-            ) {
-                continue;
-            }
-
+        for (chunk_id, chunk) in chunks_to_schedule.iter().enumerate() {
             debug!(
                 "Scheduling chunk {} with {} runs",
                 chunk_id,
                 chunk.runs.len()
             );
 
-            self.internal.schedule_chunk(
-                slurm_config,
+            if let Err(e) = self.internal.schedule_chunk(
+                &slurm_config,
                 chunk,
-                chunk_id,
                 experiment,
                 &fs.canonicalize(&exp_path)?,
-            )?;
+            ) {
+                error!("Could not schedule chunk #{}: {:?}", chunk_id, e);
+                break;
+            }
+
             counter += 1;
         }
-
-        experiment.chunks = chunks_to_iterate;
-        experiment.save(&config.experiments_folder, &fs)?;
+        experiment.save(&fs)?;
 
         Ok(counter)
     }
@@ -128,50 +108,6 @@ pub fn parse_optional_args(slurm_config: &SlurmConfig) -> String {
     }
 
     result
-}
-
-/// Get resource limits depending on if it is a regular program or
-/// postprocessing program
-pub fn get_limits(run: &Run, experiment: &Experiment) -> Result<ResourceLimits> {
-    let program = experiment.get_program(run)?;
-
-    // If there are program-specific limits, those overwrite defaults
-    if program.resource_limits.is_some() {
-        return program
-            .resource_limits
-            .ok_or(anyhow!(
-                "Could not get the program-specific resource limits"
-            ))
-            .with_context(ctx!(
-                "Could not get the resource limits of the program", ;
-                "Please ensure that the program resource limits are specified for the experiment",
-            ));
-    }
-
-    match &run.program {
-        FieldRef::Regular(_) => {
-            // Defaults of regular programs
-            experiment
-            .config
-            .resource_limits
-            .ok_or(anyhow!("Could not get the default resource limits"))
-            .with_context(ctx!(
-                "Could not get the default resource limits", ;
-                "Please ensure that the default resource limits are specified for the experiment",
-            ))
-        }
-        FieldRef::Postprocess(_) => {
-            // Defaults of postprocess programs
-            experiment
-            .config
-            .postprocess_resource_limits
-            .ok_or(anyhow!("Could not get the postprocessing resource limits"))
-            .with_context(ctx!(
-                "Could not get the postprocessing resource limits of the program", ;
-                "Please ensure that the postprocessing resource limits are specified for the experiment",
-            ))
-        }
-    }
 }
 
 #[cfg(test)]

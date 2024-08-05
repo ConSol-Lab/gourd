@@ -24,7 +24,6 @@ use crate::rerun::runs::re_runnable;
 use crate::rerun::status::status_of_single_run;
 use crate::rerun::update_program_resource_limits;
 use crate::rerun::RerunStatus;
-use crate::slurm::handler::get_limits;
 use crate::status::get_statuses;
 use crate::status::ExperimentStatus;
 use crate::status::SlurmState;
@@ -167,12 +166,20 @@ pub fn query_changing_limits_for_programs(
         let mut run_programs = BTreeMap::new();
 
         for run in runs {
-            run_programs.insert(*run, experiment.get_program(&experiment.runs[*run])?);
+            run_programs.insert(
+                *run,
+                experiment.programs[&experiment.runs[*run].program].clone(),
+            );
         }
 
         let mut choices = run_programs
             .keys()
-            .map(|p| format!("{NAME_STYLE}{}{NAME_STYLE:#}", experiment.runs[*p].program))
+            .map(|p| {
+                format!(
+                    "{NAME_STYLE}{}{NAME_STYLE:#}",
+                    experiment.runs[*p].program.clone()
+                )
+            })
             .collect::<Vec<String>>();
         choices.dedup();
         choices.push("Done".to_string());
@@ -190,7 +197,7 @@ pub fn query_changing_limits_for_programs(
                             continue;
                         }
                         let new_rss = query_update_resource_limits(
-                            &get_limits(&experiment.runs[*run_id], experiment)?,
+                            &experiment.runs[*run_id].limits,
                             false,
                             None,
                             None,
@@ -198,7 +205,7 @@ pub fn query_changing_limits_for_programs(
                         )?;
 
                         debug!("Updating resource limits for run {}", run_id);
-                        trace!("Old resource limits: {:?}", program.resource_limits);
+                        trace!("Old resource limits: {:?}", program.limits);
                         trace!("New resource limits: {:?}", new_rss);
 
                         update_program_resource_limits(*run_id, experiment, new_rss);

@@ -2,7 +2,7 @@ use std::path::Path;
 
 use anyhow::Result;
 use gourd_lib::config::SlurmConfig;
-use gourd_lib::experiment::Chunk;
+use gourd_lib::experiment::scheduling::Chunk;
 use gourd_lib::experiment::Experiment;
 
 use crate::status::slurm_based::SacctOutput;
@@ -31,8 +31,7 @@ pub trait SlurmInteractor {
     fn schedule_chunk(
         &self,
         slurm_config: &SlurmConfig,
-        chunk: &mut Chunk,
-        chunk_id: usize,
+        chunk: &Chunk,
         experiment: &mut Experiment,
         exp_path: &Path,
     ) -> Result<()>;

@@ -3,8 +3,8 @@ use std::time::Duration;
 use std::vec;
 
 use gourd_lib::config::FetchedPath;
-use gourd_lib::config::Input;
-use gourd_lib::config::Program;
+use gourd_lib::config::UserInput;
+use gourd_lib::config::UserProgram;
 use gourd_lib::config::ResourceLimits;
 use tempdir::TempDir;
 
@@ -264,7 +264,7 @@ fn afterscript_info_when_exists() {
 
     config.programs.insert(
         String::from("a"),
-        Program {
+        UserProgram {
             binary: FetchedPath(PathBuf::from(tempdir.path())),
             arguments: vec![],
             afterscript: Some(PathBuf::from(tempdir.path())),
@@ -275,7 +275,7 @@ fn afterscript_info_when_exists() {
 
     config.inputs.insert(
         String::from("d"),
-        Input {
+        UserInput {
             input: Some(FetchedPath(PathBuf::from(tempdir.path()))),
             arguments: vec![],
         },
@@ -303,7 +303,7 @@ fn afterscript_info_when_not_exist() {
 
     config.programs.insert(
         String::from("a"),
-        Program {
+        UserProgram {
             binary: FetchedPath(PathBuf::from(tempdir.path())),
             arguments: vec![],
             afterscript: None,
@@ -314,7 +314,7 @@ fn afterscript_info_when_not_exist() {
 
     config.inputs.insert(
         String::from("d"),
-        Input {
+        UserInput {
             input: Some(FetchedPath(PathBuf::from(tempdir.path()))),
             arguments: vec![],
         },

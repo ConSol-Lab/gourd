@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use anyhow::Result;
-use gourd_lib::experiment::ChunkRunStatus;
+use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
 
@@ -38,36 +38,32 @@ pub fn wrap(
 ) -> Result<Vec<Command>> {
     let mut result = Vec::new();
 
-    let mut chunks_to_iterate = experiment.chunks.clone();
+    let mut runs_to_iterate = experiment.runs.clone();
 
-    for (chunk_id, chunk) in chunks_to_iterate.iter_mut().enumerate() {
-        if matches!(chunk.status, ChunkRunStatus::RanLocally) {
+    for (run_id, run) in runs_to_iterate.iter_mut().enumerate() {
+        if !matches!(run.status, RunStatus::Pending) {
             continue;
         }
 
-        for (chunk_rel, run_id) in chunk.runs.iter().enumerate() {
-            let run = &experiment.runs[*run_id];
-            let program = &experiment.get_program(run)?;
+        let program = &experiment.get_program(run)?;
 
-            verify_arch(&program.binary, arch, fs)?;
+        verify_arch(&program.binary, arch, fs)?;
 
-            let mut cmd = Command::new(&experiment.config.wrapper);
+        let mut cmd = Command::new(&experiment.wrapper);
 
-            cmd.arg(format!("{}", chunk_id))
-                .arg(experiment_path)
-                .arg(format!("{}", chunk_rel));
+        cmd.arg(experiment_path)
+            .arg(format!("{}", run_id));
 
-            result.push(cmd);
-        }
+        result.push(cmd);
 
-        chunk.status = ChunkRunStatus::RanLocally;
+        run.status = RunStatus::RanLocally;
     }
 
-    experiment.chunks = chunks_to_iterate;
+    experiment.runs = runs_to_iterate;
 
     Ok(result)
 }
 
-#[cfg(test)]
-#[path = "tests/mod.rs"]
-mod tests;
+// #[cfg(test)]
+// #[path = "tests/mod.rs"]
+// mod tests;

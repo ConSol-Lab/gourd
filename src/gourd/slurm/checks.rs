@@ -4,6 +4,7 @@ use anyhow::Result;
 use gourd_lib::config::Config;
 use gourd_lib::ctx;
 use gourd_lib::error::Ctx;
+use gourd_lib::experiment::Experiment;
 
 use crate::cli::printing::format_table;
 use crate::slurm::handler::SlurmHandler;
@@ -65,13 +66,13 @@ where
 }
 
 /// Check the config that it has the necessary fields
-pub fn get_slurm_options_from_config(config: &Config) -> Result<&SlurmConfig> {
-    config.slurm.as_ref()
+pub fn slurm_options_from_experiment(experiment: &Experiment) -> Result<SlurmConfig> {
+    experiment.slurm.as_ref()
         .ok_or_else(|| anyhow!("No SLURM configuration found"))
         .with_context(ctx!(
               "Tried to execute on Slurm but the configuration field for the Slurm options in gourd.toml was empty", ;
               "Make sure that your gourd.toml includes the required fields under [slurm]",
-            ))
+            )).cloned()
 }
 
 #[cfg(test)]

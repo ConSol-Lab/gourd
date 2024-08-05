@@ -4,8 +4,8 @@ use std::fs;
 use std::fs::Permissions;
 use std::os::unix::fs::PermissionsExt;
 
-use gourd_lib::config::Input;
 use gourd_lib::config::Label;
+use gourd_lib::config::UserInput;
 
 use crate::config;
 use crate::gourd;
@@ -44,17 +44,17 @@ fn test_status_afterscript_labels() {
     // Create a new experiment configuration in the tempdir.
     let mut conf = config!(&env; "fibonacci";
         ("input_one".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["1".to_string()],
         }),
         ("input_two".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["2".to_string()],
         }),
         ("input_five".to_string(),
-        Input {
+        UserInput {
             input: None,
             arguments: vec!["5".to_string()],
         })

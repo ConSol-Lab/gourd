@@ -1,7 +1,8 @@
 use std::fs::File;
 use std::path::Path;
 
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
+use anyhow::Context;
 use anyhow::Result;
 
 use crate::ctx;
@@ -28,7 +29,9 @@ pub fn get_resources(filepaths: Vec<&Path>) -> Result<Vec<File>> {
 /// Downloads a file given a url.
 pub fn download_file(url: &str, output_path: &Path, fs: &impl FileOperations) -> Result<()> {
     #[cfg(not(feature = "fetching"))]
-    Err(anyhow!("this version of gourd was built without fetching support, you cannot use urls as inputs"));
+    Err(anyhow!(
+        "this version of gourd was built without fetching support, you cannot use urls as inputs"
+    ));
     #[cfg(feature = "fetching")]
     {
         let response = ureq::get(url).call().with_context(ctx!(
@@ -41,9 +44,9 @@ pub fn download_file(url: &str, output_path: &Path, fs: &impl FileOperations) ->
             .into_reader()
             .read_to_end(&mut body)
             .with_context(ctx!(
-            "Could not parse the resource at {url}", ;
-            "Check that the url is not misspelled",
-        ))?;
+                "Could not parse the resource at {url}", ;
+                "Check that the url is not misspelled",
+            ))?;
 
         fs.write_bytes_truncate(output_path, &body)?;
         Ok(())
