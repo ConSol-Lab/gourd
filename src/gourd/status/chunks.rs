@@ -2,6 +2,7 @@ use anyhow::Result;
 use gourd_lib::constants::PRIMARY_STYLE;
 use gourd_lib::constants::SCHEDULE_BAR_WIDTH;
 use gourd_lib::constants::TERTIARY_STYLE;
+use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Experiment;
 use log::info;
 
