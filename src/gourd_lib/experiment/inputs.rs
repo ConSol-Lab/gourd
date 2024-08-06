@@ -66,10 +66,11 @@ pub fn expand_inputs(
                 for glob in glob::glob(&glob)? {
                     let p = glob?;
                     if let Some(f) = p.file_stem() {
+                        let name = format!("{n}_glob_{f:?}");
                         out.insert(
-                            format!("{n}_glob_{f:?}"),
+                            name.clone(),
                             InternalInput {
-                                name: format!("{n}_glob_{f:?}"),
+                                name,
                                 input: Some(canon_path(&p, fs)?),
                                 arguments: u.arguments.clone(),
                                 metadata: Metadata { is_glob: true },
@@ -79,17 +80,28 @@ pub fn expand_inputs(
                 }
             }
             (None, None, Some(fetched)) => {
+                let name = format!("{n}_fetched");
                 out.insert(
-                    n.clone(),
+                    name.clone(),
                     InternalInput {
-                        name: format!("{n}_fetched"),
+                        name,
                         input: Some(canon_path(&fetched.fetch(fs)?, fs)?),
                         arguments: u.arguments.clone(),
                         metadata: Metadata { is_glob: false },
                     },
                 );
             }
-            (None, None, None) => {}
+            (None, None, None) => {
+                out.insert(
+                    n.clone(),
+                    InternalInput {
+                        name: n.clone(),
+                        input: None,
+                        arguments: u.arguments.clone(),
+                        metadata: Metadata { is_glob: false },
+                    },
+                );
+            }
             _ => {
                 bailc!(
                     "More than one file source specified.",;

@@ -83,8 +83,8 @@ fn process() -> Result<()> {
     let fs = FileSystemInteractor { dry_run: false };
 
     let rc = match args.len() {
-        4 => process_args(&args, &fs)?,
-        _ => bail!("gourd_wrapper needs an experiment file path and a job id"),
+        3 => process_args(&args, &fs)?,
+        _ => bail!("gourd_wrapper needs an experiment file path and a run id"),
     };
 
     fs::write(
