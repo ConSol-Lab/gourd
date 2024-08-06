@@ -45,10 +45,11 @@ pub fn expand_programs(
         if let Some(dependencies) = u.runs_after {
             for parent in dependencies {
                 if prog.contains_key(&parent) {
+                    let name = format!("{n}_runs_on_{parent}");
                     out.insert(
-                        n.clone(), // this must match below \/
+                        name.clone(),
                         InternalProgram {
-                            name: n.clone(), // this must match above /\
+                            name,
                             binary: file.clone(),
                             afterscript: u.afterscript.clone(),
                             limits,
@@ -65,10 +66,11 @@ pub fn expand_programs(
                 }
             }
         } else {
+            let name = n;
             out.insert(
-                n.clone(), // this must match below \/
+                name.clone(),
                 InternalProgram {
-                    name: n.clone(), // this must match above /\
+                    name,
                     binary: file.clone(),
                     afterscript: u.afterscript.clone(),
                     limits,
