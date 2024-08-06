@@ -11,8 +11,9 @@ use crate::config::maps::canon_path;
 use crate::config::maps::expand_argument_globs;
 use crate::config::maps::InternalInputMap;
 use crate::config::parameters::expand_parameters;
+use crate::config::parameters::validate_parameters;
 use crate::config::Parameter;
-use crate::config::UserInputMap;
+use crate::config::UserInput;
 use crate::experiment::FieldRef;
 use crate::experiment::InternalInput;
 use crate::experiment::Metadata;
@@ -24,8 +25,10 @@ use crate::file_system::FileOperations;
 pub struct RunInput {
     /// The name of this input, as specified by the user.
     pub name: FieldRef,
+
     /// A file whose contents to be passed into the program's `stdin`
     pub file: Option<PathBuf>,
+
     /// Command line arguments for this binary execution.
     ///
     /// Holds the concatenation of [`UserProgram`] specified arguments and
@@ -36,76 +39,78 @@ pub struct RunInput {
 /// Convert a [`UserInput`] to a list of [`InternalInput`]s, expanding globs and
 /// fetching remote resources.
 pub fn expand_inputs(
-    inp: &UserInputMap,
+    inp: &BTreeMap<String, UserInput>,
     parameters: &Option<BTreeMap<String, Parameter>>,
     fs: &impl FileOperations,
 ) -> Result<InternalInputMap> {
     let mut initial = inp.clone();
     let mut out = BTreeMap::new();
-    // 1. expand globs in arguments
+
+    // Expand globs in arguments.
     initial = expand_argument_globs(&initial, fs)?;
-    // 2. expand parameters
+
+    // Expand parameters.
     if let Some(params) = parameters {
+        validate_parameters(params)?;
         initial = expand_parameters(initial, params)?;
     }
-    // 3. expand file input
-    for (n, u) in initial {
-        match (u.file, u.glob, u.fetch) {
+
+    // Expand file input
+    for (name, user) in initial {
+        match (user.file, user.glob, user.fetch) {
             (Some(f), None, None) => {
                 out.insert(
-                    n.clone(),
+                    name.clone(),
                     InternalInput {
-                        name: n.clone(),
                         input: Some(canon_path(&f, fs)?),
-                        arguments: u.arguments.clone(),
-                        metadata: Metadata { is_glob: false },
+                        arguments: user.arguments.clone(),
+                        metadata: Metadata {
+                            glob_from: None,
+                            is_fetched: false,
+                        },
                     },
                 );
             }
+
             (None, Some(glob), None) => {
                 for glob in glob::glob(&glob)? {
-                    let p = glob?;
-                    if let Some(f) = p.file_stem() {
-                        let name = format!("{n}_glob_{f:?}");
+                    let path = glob?;
+
+                    if let Some(f) = path.file_stem() {
                         out.insert(
-                            name.clone(),
+                            format!("{}_i_{f:?}", name.clone()),
                             InternalInput {
-                                name,
-                                input: Some(canon_path(&p, fs)?),
-                                arguments: u.arguments.clone(),
-                                metadata: Metadata { is_glob: true },
+                                input: Some(canon_path(&path, fs)?),
+                                arguments: user.arguments.clone(),
+                                metadata: Metadata {
+                                    glob_from: Some(name.clone()),
+                                    is_fetched: false,
+                                },
                             },
                         );
                     }
                 }
             }
+
             (None, None, Some(fetched)) => {
-                let name = format!("{n}_fetched");
+                let name = format!("{name}_fetched");
                 out.insert(
                     name.clone(),
                     InternalInput {
-                        name,
                         input: Some(canon_path(&fetched.fetch(fs)?, fs)?),
-                        arguments: u.arguments.clone(),
-                        metadata: Metadata { is_glob: false },
-                    },
-                );
-            }
-            (None, None, None) => {
-                out.insert(
-                    n.clone(),
-                    InternalInput {
-                        name: n.clone(),
-                        input: None,
-                        arguments: u.arguments.clone(),
-                        metadata: Metadata { is_glob: false },
+                        arguments: user.arguments.clone(),
+                        metadata: Metadata {
+                            glob_from: None,
+                            is_fetched: true,
+                        },
                     },
                 );
             }
             _ => {
                 bailc!(
-                    "More than one file source specified.",;
-                    "Input {n} has more than one file/glob/fetch specified",;
+                    "More than one file source specified or none.",;
+                    "Input {name} has more than one file/glob/fetch specified
+                    or none",;
                     "Split this input into one for each file/glob/fetch",
                 );
             }
@@ -113,15 +118,4 @@ pub fn expand_inputs(
     }
 
     Ok(out)
-}
-
-/// Convert an iterator of tuples into a BTreeMap
-pub fn iter_map<X: Ord, Y>(i: std::vec::IntoIter<(X, Y)>) -> BTreeMap<X, Y> {
-    let mut map = BTreeMap::new();
-
-    for (x, y) in i {
-        map.insert(x, y);
-    }
-
-    map
 }

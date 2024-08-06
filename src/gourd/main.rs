@@ -71,6 +71,9 @@ pub mod post;
 /// Rerun subcommand helper functions
 pub mod rerun;
 
+/// An implementation for allocating queued jobs to chunks
+pub mod chunks;
+
 /// Analysing runs - collecting metrics, exporting, plotting.
 pub mod analyse;
 

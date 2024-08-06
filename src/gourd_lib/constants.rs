@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -7,7 +8,7 @@ use anstyle::Color::Ansi;
 use anstyle::Style;
 
 use crate::config::ResourceLimits;
-use crate::config::UserProgramMap;
+use crate::config::UserProgram;
 
 /// The default path to the wrapper, that is, we assume `gourd_wrapper` is in
 /// $PATH.
@@ -18,12 +19,6 @@ pub const AFTERSCRIPT_DEFAULT: fn() -> Option<PathBuf> = || None;
 
 /// The default postprocess job name.
 pub const POSTPROCESS_JOB_DEFAULT: fn() -> Option<String> = || None;
-
-/// The default path to the output of a postprocess job.
-pub const POSTPROCESS_JOB_OUTPUT_DEFAULT: fn() -> Option<PathBuf> = || None;
-
-/// The default list of postprocess programs.
-pub const POSTPROCESS_JOBS_DEFAULT: fn() -> Option<UserProgramMap> = || None;
 
 /// The default value of resource limits for a program.
 pub const PROGRAM_RESOURCES_DEFAULT: fn() -> Option<ResourceLimits> = || None;
