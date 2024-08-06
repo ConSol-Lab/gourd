@@ -17,7 +17,6 @@ use gourd_lib::constants::ERROR_STYLE;
 use gourd_lib::constants::PRIMARY_STYLE;
 use gourd_lib::constants::TERTIARY_STYLE;
 use gourd_lib::ctx;
-use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
@@ -35,6 +34,7 @@ use super::log::LogTokens;
 use super::printing::get_styles;
 use crate::analyse::analysis_csv;
 use crate::analyse::analysis_plot;
+use crate::chunks::Chunkable;
 use crate::cli::def::AnalyseStruct;
 use crate::cli::def::CancelStruct;
 use crate::cli::def::Cli;
@@ -55,9 +55,9 @@ use crate::slurm::interactor::SlurmCli;
 use crate::slurm::SlurmInteractor;
 use crate::status::blocking_status;
 use crate::status::chunks::print_scheduling;
-use crate::status::get_statuses;
 use crate::status::printing::display_job;
 use crate::status::printing::display_statuses;
+use crate::status::DynamicStatus;
 
 /// This function parses command that gourd was run with.
 pub async fn parse_command() {
@@ -159,7 +159,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     if cmd.dry {
                         info!("Would have scheduled the experiment on slurm (dry)");
                     } else {
-                        s.run_experiment(&mut experiment, exp_path.clone(), file_system)?;
+                        s.run_experiment(&mut experiment, exp_path.clone(), &file_system)?;
                         print_scheduling(&experiment, true)?;
                         info!("Experiment started");
                     }
@@ -194,7 +194,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
         }) => {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
-            let statuses = get_statuses(&experiment, &mut file_system)?;
+            let statuses = experiment.status(&file_system)?;
 
             match run_id {
                 Some(id) => {
@@ -244,7 +244,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
         }) => {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
-            let statuses = get_statuses(&experiment, &mut file_system)?;
+            let statuses = experiment.status(&file_system)?;
 
             // Checking if there are completed jobs to analyse.
             let mut completed_runs = statuses
@@ -375,9 +375,9 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
         GourdCommand::Continue(ContinueStruct { experiment_id }) => {
             let mut experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
-            let statuses = get_statuses(&experiment, &mut file_system)?;
+            let statuses = experiment.status(&file_system)?;
 
-            if experiment.unscheduled(statuses).is_empty() {
+            if experiment.unscheduled().is_empty() {
                 info!("Nothing more to continue :D");
                 return Ok(());
             }
@@ -406,7 +406,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 if cmd.dry {
                     info!("Would have continued the experiment on slurm (dry)");
                 } else {
-                    let sched = s.run_experiment(&mut experiment, exp_path, file_system)?;
+                    let sched = s.run_experiment(&mut experiment, exp_path, &file_system)?;
                     print_scheduling(&experiment, false)?;
                     info!("Experiment continued you just scheduled {sched} chunks");
                 }
@@ -448,9 +448,10 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
 
                 experiment.runs.push(generate_new_run(
                     new_id,
-                    &experiment.get_program(old_run)?,
+                    old_run.program.clone(),
                     old_run.input.clone(),
-                    None,               // todo: dependencies for reruns
+                    None,               // todo: (child) dependencies for reruns
+                    None,               // todo: (parent) dependencies for reruns
                     Default::default(), // todo: resource limits for reruns
                     &experiment,
                     &file_system,

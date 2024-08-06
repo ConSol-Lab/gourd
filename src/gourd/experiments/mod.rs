@@ -10,15 +10,11 @@ use gourd_lib::config::Config;
 use gourd_lib::config::ResourceLimits;
 use gourd_lib::ctx;
 use gourd_lib::experiment::inputs::expand_inputs;
-use gourd_lib::experiment::inputs::RunInput;
 use gourd_lib::experiment::labels::Labels;
 use gourd_lib::experiment::programs::expand_programs;
-use gourd_lib::experiment::programs::topological_ordering;
-use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
-use gourd_lib::experiment::InternalInput;
-use gourd_lib::experiment::InternalProgram;
+use gourd_lib::experiment::FieldRef;
 use gourd_lib::experiment::Run;
 use gourd_lib::file_system::FileOperations;
 
@@ -104,20 +100,20 @@ impl ExperimentExt for Experiment {
             for (input_name, input) in &experiment.inputs {
                 let mut next_ids = Vec::new();
 
-                for next_step in prog.next {
+                for next_step in prog.next.iter() {
                     next_ids.push(experiment.runs.len());
 
                     experiment.runs.push(generate_new_run(
                         experiment.runs.len(),
-                        next_step,
+                        next_step.clone(),
                         // TODO: The new input from dfs
-                        input,
+                        input_name.clone(),
                         None,
                         None,
-                        limits,
+                        ResourceLimits::default(), //todo
                         &experiment,
                         fs,
-                    ));
+                    )?);
                 }
 
                 let parent_id = experiment.runs.len();
@@ -127,18 +123,18 @@ impl ExperimentExt for Experiment {
 
                 experiment.runs.push(generate_new_run(
                     experiment.runs.len(),
-                    prog_name,
-                    input,
+                    prog_name.clone(),
+                    input_name.clone(), // TODO: input for runs
                     None,
                     None,
-                    limits,
+                    ResourceLimits::default(), //todo
                     &experiment,
                     fs,
-                ));
+                )?);
             }
         }
 
-        Ok(e)
+        Ok(experiment)
     }
 
     fn latest_id_from_folder(folder: &Path) -> Result<Option<usize>> {
@@ -217,13 +213,12 @@ pub fn generate_new_run(
     experiment: &Experiment,
     fs: &impl FileOperations,
 ) -> Result<Run> {
-    let internal_prog = experiment.programs[program];
-    let internal_input = experiment.inputs[input];
+    let internal_prog = &experiment.programs[&program];
+    let internal_input = &experiment.inputs[&input];
 
     Ok(Run {
         program: program.clone(),
         input: input.clone(),
-        status: RunStatus::Pending,
         err_path: fs.truncate_and_canonicalize(
             &experiment
                 .output_folder
@@ -242,23 +237,23 @@ pub fn generate_new_run(
         work_dir: fs.truncate_and_canonicalize_folder(
             &experiment
                 .output_folder
-                .join(format!("{}/{}/{}/", experiment.seq, program.name, run_id)),
+                .join(format!("{}/{}/{}/", experiment.seq, program, run_id)),
         )?,
-        afterscript_output_path: match program.afterscript.as_ref() {
+        afterscript_output_path: match experiment.programs[&program].afterscript.as_ref() {
             None => None,
             Some(_) => Some(
                 fs.truncate_and_canonicalize_folder(
                     &experiment
                         .output_folder
-                        .join(format!("{}/{}/{}/", experiment.seq, program.name, run_id)),
+                        .join(format!("{}/{}/{}/", experiment.seq, program, run_id)),
                 )?,
             ),
         },
         limits,
-        child,
         parent,
         slurm_id: None,
         rerun: None,
+        children: vec![],
     })
 }
 

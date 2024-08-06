@@ -167,7 +167,7 @@ fn process_args(args: &[String], fs: &impl FileOperations) -> Result<RunConf> {
 
     let program = &exp.get_program(&exp.runs[run_id])?;
 
-    let input = &exp.runs[run_id].input;
+    let input = &exp.get_input(&exp.runs[run_id])?;
 
     let mut additional_args = program.arguments.clone();
 
@@ -176,7 +176,7 @@ fn process_args(args: &[String], fs: &impl FileOperations) -> Result<RunConf> {
 
     Ok(RunConf {
         binary_path: program.binary.clone().to_path_buf(),
-        input_path: input.clone().map(|x| x.into()),
+        input_path: input.input.clone().map(|x| x.into()),
         output_path: exp.runs[run_id].output_path.clone(),
         result_path: exp.runs[run_id].metrics_path.clone(),
         work_dir: exp.runs[run_id].work_dir.clone(),

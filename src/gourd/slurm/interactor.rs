@@ -12,13 +12,14 @@ use gourd_lib::bailc;
 use gourd_lib::config::SlurmConfig;
 use gourd_lib::constants::SLURM_VERSIONS;
 use gourd_lib::ctx;
-use gourd_lib::experiment::scheduling::Chunk;
 use gourd_lib::experiment::Experiment;
 use log::debug;
 use log::trace;
 
 use super::handler::parse_optional_args;
 use super::SacctOutput;
+use crate::chunks::Chunk;
+use crate::chunks::Chunkable;
 use crate::slurm::SlurmInteractor;
 use crate::status::slurm_based::flatten_slurm_id;
 

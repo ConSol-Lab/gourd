@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -8,7 +7,6 @@ use anstyle::Color::Ansi;
 use anstyle::Style;
 
 use crate::config::ResourceLimits;
-use crate::config::UserProgram;
 
 /// The default path to the wrapper, that is, we assume `gourd_wrapper` is in
 /// $PATH.

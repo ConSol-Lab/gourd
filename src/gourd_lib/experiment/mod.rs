@@ -16,7 +16,6 @@ use crate::config::SlurmConfig;
 use crate::experiment::labels::Labels;
 use crate::file_system::FileOperations;
 
-
 /// Dealing with [`UserInput`]s and [`InternalInput`]s
 pub mod inputs;
 
@@ -81,7 +80,7 @@ pub struct Run {
     pub program: FieldRef,
 
     /// The path to the file to pass into stdin
-    pub input: Option<FieldRef>,
+    pub input: FieldRef,
 
     /// The path to the stderr output.
     pub err_path: PathBuf,
@@ -205,6 +204,14 @@ impl Experiment {
     pub fn get_program(&self, run: &Run) -> Result<InternalProgram> {
         self.programs
             .get(&run.program)
+            .cloned()
+            .ok_or_else(|| anyhow!("Could not find program for run {:?}", &run))
+    }
+
+    /// Get (a clone of) the [`InternalInput`] used for a given [`Run`].
+    pub fn get_input(&self, run: &Run) -> Result<InternalInput> {
+        self.inputs
+            .get(&run.input)
             .cloned()
             .ok_or_else(|| anyhow!("Could not find program for run {:?}", &run))
     }

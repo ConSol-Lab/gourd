@@ -8,8 +8,10 @@ use gourd_lib::file_system::FileOperations;
 use log::debug;
 use log::error;
 
+use crate::chunks::Chunkable;
 use crate::slurm::checks::slurm_options_from_experiment;
 use crate::slurm::SlurmInteractor;
+use crate::status::DynamicStatus;
 
 /// Functionality associated with running on slurm
 #[derive(Debug, Clone, Copy)]
@@ -45,11 +47,12 @@ where
         &self,
         experiment: &mut Experiment,
         exp_path: PathBuf,
-        fs: impl FileOperations,
+        fs: &impl FileOperations,
     ) -> Result<usize> {
         let slurm_config = slurm_options_from_experiment(experiment)?;
 
-        let chunks_to_schedule = experiment.next_chunks(slurm_config.array_size_limit)?;
+        let status = experiment.status(fs)?;
+        let chunks_to_schedule = experiment.next_chunks(slurm_config.array_size_limit, status)?;
 
         let mut counter = 0;
         for (chunk_id, chunk) in chunks_to_schedule.iter().enumerate() {
@@ -71,7 +74,7 @@ where
 
             counter += 1;
         }
-        experiment.save(&fs)?;
+        experiment.save(fs)?;
 
         Ok(counter)
     }

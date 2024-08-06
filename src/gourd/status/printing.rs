@@ -239,7 +239,7 @@ fn long_status(
     let mut longest_index: usize = 0;
 
     for (run_id, run_data) in runs.iter().enumerate() {
-        longest_input = max(longest_input, run_data.input.name.chars().count());
+        longest_input = max(longest_input, run_data.input.chars().count());
         longest_index = max(longest_index, run_id.to_string().len());
 
         if let Some(for_this_prog) = by_program.get_mut(&run_data.program) {
@@ -266,7 +266,7 @@ fn long_status(
                 f,
                 "  {: >numw$}. {NAME_STYLE}{:.<width$}{NAME_STYLE:#}.... {}",
                 run_id,
-                run.input.name,
+                run.input,
                 if let Some(r) = run.rerun {
                     format!("reran as {NAME_STYLE}{r}{NAME_STYLE:#}")
                 } else {
@@ -348,17 +348,13 @@ pub fn display_job(
             program.binary
         )?;
 
-        writeln!(f, "{NAME_STYLE}input{NAME_STYLE:#}: {}", run.input.name)?;
+        writeln!(f, "{NAME_STYLE}input{NAME_STYLE:#}: {}", run.input)?;
 
-        if let Some(input_file) = &run.input.file {
+        if let Some(input_file) = exp.get_input(run)?.input {
             writeln!(f, "  {NAME_STYLE}file{NAME_STYLE:#}:   {:?}", input_file)?;
         }
 
-        writeln!(
-            f,
-            "{NAME_STYLE}arguments{NAME_STYLE:#}: {:?}\n",
-            run.input.args
-        )?;
+        writeln!(f, "{NAME_STYLE}arguments{NAME_STYLE:#}: {:?}\n", run.input)?;
 
         writeln!(
             f,
@@ -379,7 +375,10 @@ pub fn display_job(
         if let Some(slurm_id) = &run.slurm_id {
             writeln!(
                 f,
-                "scheduled on slurm as {} with limits {}",
+                "scheduled on slurm as {}
+                  with limits
+                 {}
+                ",
                 slurm_id, run.limits
             )?;
         }

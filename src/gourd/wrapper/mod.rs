@@ -11,10 +11,10 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use anyhow::Result;
-use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
 
+use crate::status::DynamicStatus;
 #[cfg(target_os = "linux")]
 use crate::wrapper::check_binary_linux::verify_arch;
 #[cfg(target_os = "macos")]
@@ -40,9 +40,13 @@ pub fn wrap(
 
     let mut runs_to_iterate = experiment.runs.clone();
 
+    let status = experiment.status(fs)?;
+
     for (run_id, run) in runs_to_iterate.iter_mut().enumerate() {
-        if !matches!(run.status, RunStatus::Pending) {
-            continue;
+        if status[&run_id].is_scheduled() || status[&run_id].is_completed() {
+            continue; // i assume we ignore the scenario where a run is locally
+                      // still running? (for example
+                      // multiple terminals in the same gourd experiment)
         }
 
         let program = &experiment.get_program(run)?;
@@ -54,8 +58,6 @@ pub fn wrap(
         cmd.arg(experiment_path).arg(format!("{}", run_id));
 
         result.push(cmd);
-
-        run.status = RunStatus::RanLocally;
     }
 
     experiment.runs = runs_to_iterate;
