@@ -5,7 +5,6 @@ use anyhow::Context;
 use anyhow::Result;
 use gourd_lib::bailc;
 use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::experiment::Experiment;
 use log::trace;
 use regex_lite::Regex;
@@ -94,7 +93,6 @@ where
 
                 "REQUEUED" | "RQ" => Pending, // For now we treat it as pending,
                 // but it may need its own label, for example State::Requeued
-
                 "RESIZING" | "RS" => Running, // Needs a label, did not think of any suitable
 
                 "REVOKED" | "RV" => Pending, // Also will probably need a label

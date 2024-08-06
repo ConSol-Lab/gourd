@@ -5,7 +5,10 @@ use serde::Serialize;
 
 use crate::config::Label;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+/// Label information of an [`Experiment`].
+///
+/// (struct not complete)
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Default)]
 pub struct Labels {
     /// The labels of the experiment.
     pub map: BTreeMap<String, Label>,

@@ -96,7 +96,7 @@ impl<A: Display, B: Display> Display for Ctx<A, B> {
 #[macro_export]
 macro_rules! ctx {
     {$cause: expr,  $($arg_cause: expr)*; $help: expr, $($arg_help: tt)*} => {
-      || $crate::error::Ctx(format!($cause, $($arg_cause)*), format!($help, $($arg_help)*))
+      || {$crate::error::Ctx(format!($cause, $($arg_cause)*), format!($help, $($arg_help)*))}
     };
 }
 

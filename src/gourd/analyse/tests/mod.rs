@@ -5,6 +5,8 @@ use std::time::Duration;
 
 use csv::Reader;
 use csv::StringRecord;
+use gourd_lib::experiment::inputs::RunInput;
+use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Run;
 use gourd_lib::measurement::Measurement;
@@ -149,26 +151,38 @@ fn test_analysis_png_plot_success() {
     statuses.insert(2, status_with_rusage.clone());
     statuses.insert(3, status_with_rusage);
     let run = Run {
-        program: FieldRef::Regular(String::from("Program A")),
-        input: FieldRef::Regular(String::from("Input A")),
+        program: String::from("Program A"),
+        input: RunInput {
+            name: String::from("Input A"),
+            file: None,
+            args: vec![],
+        },
+        status: RunStatus::Pending,
         err_path: Default::default(),
         output_path: Default::default(),
         metrics_path: Default::default(),
         work_dir: Default::default(),
         slurm_id: None,
         afterscript_output_path: None,
-        postprocessor: None,
         rerun: None,
+        limits: Default::default(),
+        depends: None,
     };
     let experiment = Experiment {
         runs: vec![run.clone(), run.clone(), run.clone(), run],
-        chunks: vec![],
         resource_limits: None,
         creation_time: Default::default(),
-        config: Default::default(),
+        home: Default::default(),
+        wrapper: "".to_string(),
+        inputs: Default::default(),
+        programs: Default::default(),
+        output_folder: Default::default(),
+        metrics_folder: Default::default(),
         seq: 0,
         env: Environment::Local,
-        postprocess_inputs: Default::default(),
+        labels: Default::default(),
+        afterscript_output_folder: Default::default(),
+        slurm: None,
     };
 
     let png_output_path = tmp_dir.path().join("analysis.png");
@@ -294,19 +308,19 @@ fn test_get_completion_time() {
 #[test]
 fn test_get_data_for_plot_exists() {
     let mut completions: BTreeMap<FieldRef, Vec<u128>> = BTreeMap::new();
-    completions.insert(FieldRef::Regular("first".to_string()), vec![1, 2, 5]);
-    completions.insert(FieldRef::Regular("second".to_string()), vec![1, 3]);
+    completions.insert("first".to_string(), vec![1, 2, 5]);
+    completions.insert("second".to_string(), vec![1, 3]);
 
     let max_time = 5;
     let max_count = 3;
 
     let mut data: BTreeMap<FieldRef, Vec<(u128, u128)>> = BTreeMap::new();
     data.insert(
-        FieldRef::Regular("first".to_string()),
+        "first".to_string(),
         vec![(0, 0), (1, 1), (1, 1), (2, 2), (4, 2), (5, 3), (5, 3)],
     );
     data.insert(
-        FieldRef::Regular("second".to_string()),
+        "second".to_string(),
         vec![(0, 0), (1, 1), (2, 1), (3, 2), (5, 2)],
     );
 
@@ -328,11 +342,11 @@ fn test_make_plot() {
 
     let mut data: BTreeMap<FieldRef, Vec<(u128, u128)>> = BTreeMap::new();
     data.insert(
-        FieldRef::Regular("first".to_string()),
+        "first".to_string(),
         vec![(0, 0), (1, 1), (2, 2), (3, 2), (4, 2), (5, 3)],
     );
     data.insert(
-        FieldRef::Regular("second".to_string()),
+        "second".to_string(),
         vec![(0, 0), (1, 1), (2, 1), (3, 2), (4, 2), (5, 2)],
     );
 

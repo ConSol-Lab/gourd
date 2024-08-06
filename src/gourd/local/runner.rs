@@ -3,15 +3,12 @@ use std::process;
 use std::process::Command;
 use std::process::Output;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use gourd_lib::bailc;
 use gourd_lib::constants::NAME_STYLE;
 use gourd_lib::constants::PRIMARY_STYLE;
 use gourd_lib::constants::TASK_LIMIT;
-use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use log::error;
 use log::trace;
 use tokio::task::JoinSet;

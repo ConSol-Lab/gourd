@@ -1,12 +1,6 @@
-mod scheduling;
-use gourd_lib::experiment::programs::expand_program;
-use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
-use std::path::PathBuf;
-use gourd_lib::experiment::inputs::{expand_input, RunInput};
-use gourd_lib::experiment::inputs::iter_map;
-use anyhow::anyhow;
+
 use anyhow::Context;
 use anyhow::Result;
 use chrono::DateTime;
@@ -15,15 +9,14 @@ use gourd_lib::bailc;
 use gourd_lib::config::Config;
 use gourd_lib::config::ResourceLimits;
 use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
+use gourd_lib::experiment::inputs::expand_inputs;
+use gourd_lib::experiment::inputs::RunInput;
 use gourd_lib::experiment::labels::Labels;
+use gourd_lib::experiment::programs::expand_programs;
 use gourd_lib::experiment::programs::topological_ordering;
 use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Environment;
-use gourd_lib::experiment::Executable;
 use gourd_lib::experiment::Experiment;
-use gourd_lib::experiment::FieldRef;
-use gourd_lib::experiment::InternalInput;
 use gourd_lib::experiment::InternalProgram;
 use gourd_lib::experiment::Run;
 use gourd_lib::file_system::FileOperations;
@@ -71,20 +64,10 @@ impl ExperimentExt for Experiment {
             .unwrap_or(0)
             + 1;
 
-        // TODO:
-        // 1.   convert UserProgram(s) to (possibly multiple) InternalProgram(s)
-        // 1.5. figure how to name 
-        //
-        let mut expanded_programs: Vec<(String, InternalProgram)>= vec![];
-        let mut expanded_inputs: Vec<(String, InternalInput)> = vec![];
-        for (n, p) in &conf.programs {
-            expanded_programs.append(&mut expand_program(n, p)?);
-        }
-        for (n, i) in &conf.inputs {
-            expanded_inputs.append(&mut expand_input(n, i)?);
-        }
+        let expanded_programs = expand_programs(&conf.programs, conf, fs)?;
+        let expanded_inputs = expand_inputs(&conf.inputs, &conf.parameters, fs)?;
 
-        let sorted_programs: Vec<String> = topological_ordering(conf.programs.clone())?
+        let sorted_programs: Vec<String> = topological_ordering(&expanded_programs)?
             .into_iter()
             .map(|(x, _)| x)
             .collect();
@@ -94,7 +77,7 @@ impl ExperimentExt for Experiment {
             creation_time: time,
             home: conf.experiments_folder.clone(),
             wrapper: conf.wrapper.clone(),
-            inputs: iter_map(expanded_inputs.clone().into_iter()),
+            inputs: expanded_inputs.clone(),
             seq,
             resource_limits: conf.resource_limits,
             env,
@@ -102,15 +85,15 @@ impl ExperimentExt for Experiment {
                 map: conf.labels.clone().unwrap_or_default(),
                 warn_on_label_overlap: conf.warn_on_label_overlap,
             },
-            programs: iter_map(expanded_programs.clone().into_iter()),
-            output_path: conf.output_path.clone(),
-            metrics_path: conf.metrics_path.clone(),
+            programs: expanded_programs,
+            output_folder: conf.output_path.clone(),
+            metrics_folder: conf.metrics_path.clone(),
             slurm: conf.slurm.clone(),
-            afterscript_output_path: Default::default(), //todo
+            afterscript_output_folder: Default::default(), //todo
         };
 
         for prog_name in &sorted_programs {
-            for input_name in expanded_inputs.iter().map(|(x, _)| x) {
+            for input_name in expanded_inputs.keys() {
                 if let Some(parent) = &e.programs[prog_name].runs_after {
                     for (i, prev) in e.runs.clone().iter().enumerate() {
                         if prev.program.eq(parent) {
@@ -120,9 +103,8 @@ impl ExperimentExt for Experiment {
                                 RunInput {
                                     name: format!("output_of_run_{}", i),
                                     file: Some(prev.output_path.clone()),
-                                    args: e.programs[prog_name].arguments.clone()
+                                    args: e.programs[prog_name].arguments.clone(),
                                 },
-                                seq,
                                 Some(i),
                                 e.programs[prog_name].limits,
                                 &e,
@@ -137,9 +119,12 @@ impl ExperimentExt for Experiment {
                         RunInput {
                             name: input_name.clone(),
                             file: e.inputs[input_name].input.clone(),
-                            args: [e.programs[prog_name].arguments.clone(), e.inputs[input_name].arguments.clone()].concat(),
+                            args: [
+                                e.programs[prog_name].arguments.clone(),
+                                e.inputs[input_name].arguments.clone(),
+                            ]
+                            .concat(),
                         },
-                        seq,
                         None,
                         e.programs[prog_name].limits,
                         &e,
@@ -222,7 +207,6 @@ pub fn generate_new_run(
     run_id: usize,
     program: &InternalProgram,
     input: RunInput,
-    seq: usize,
     depends: Option<usize>,
     limits: ResourceLimits,
     experiment: &Experiment,
@@ -232,33 +216,30 @@ pub fn generate_new_run(
         program: program.name.clone(),
         input,
         status: RunStatus::Pending,
-        err_path: fs.truncate_and_canonicalize(
-            &experiment
-                .output_path
-                .join(format!("{}/{}/{}/stderr", seq, program.name, run_id)),
-        )?,
-        metrics_path: fs.truncate_and_canonicalize(
-            &experiment
-                .metrics_path
-                .join(format!("{}/{}/{}/metrics", seq, program.name, run_id)),
-        )?,
-        output_path: fs.truncate_and_canonicalize(
-            &experiment
-                .output_path
-                .join(format!("{}/{}/{}/stdout", seq, program.name, run_id)),
-        )?,
+        err_path: fs.truncate_and_canonicalize(&experiment.output_folder.join(format!(
+            "{}/{}/{}/stderr",
+            experiment.seq, program.name, run_id
+        )))?,
+        metrics_path: fs.truncate_and_canonicalize(&experiment.metrics_folder.join(format!(
+            "{}/{}/{}/metrics",
+            experiment.seq, program.name, run_id
+        )))?,
+        output_path: fs.truncate_and_canonicalize(&experiment.output_folder.join(format!(
+            "{}/{}/{}/stdout",
+            experiment.seq, program.name, run_id
+        )))?,
         work_dir: fs.truncate_and_canonicalize_folder(
             &experiment
-                .output_path
-                .join(format!("{}/{}/{}/", seq, program.name, run_id)),
+                .output_folder
+                .join(format!("{}/{}/{}/", experiment.seq, program.name, run_id)),
         )?,
         afterscript_output_path: match program.afterscript.as_ref() {
             None => None,
             Some(_) => Some(
                 fs.truncate_and_canonicalize_folder(
                     &experiment
-                        .output_path
-                        .join(format!("{}/{}/{}/", seq, program.name, run_id)),
+                        .output_folder
+                        .join(format!("{}/{}/{}/", experiment.seq, program.name, run_id)),
                 )?,
             ),
         },

@@ -48,13 +48,11 @@ pub fn create_sample_experiment(
         experiments_folder: TempDir::new("experiments").unwrap().into_path(),
         wrapper: "".to_string(),
         programs: prog,
-        postprocess_programs: None,
         inputs,
         input_schema: None,
         parameters: None,
         slurm: None,
         resource_limits: None,
-        postprocess_resource_limits: None,
         labels: Some(BTreeMap::new()),
         warn_on_label_overlap: false,
     };

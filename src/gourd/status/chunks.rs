@@ -4,7 +4,6 @@ use gourd_lib::constants::SCHEDULE_BAR_WIDTH;
 use gourd_lib::constants::TERTIARY_STYLE;
 use gourd_lib::experiment::Experiment;
 use log::info;
-use gourd_lib::experiment::scheduling::RunStatus;
 
 /// Print user readable infomation about the scheduling status.
 pub fn print_scheduling(exp: &Experiment, starting: bool) -> Result<()> {
@@ -22,9 +21,7 @@ pub fn print_scheduling(exp: &Experiment, starting: bool) -> Result<()> {
 
     let total_runs: usize = exp.runs.len();
 
-    let total_scheduled: usize = exp.runs.iter().filter(|r| matches!(r.status, RunStatus::Scheduled(_))).count();
-
-    // let total_chunks: usize = exp.chunks.len(); // todo
+    let total_scheduled: usize = total_runs - exp.unscheduled().len();
 
     info!("There are {total_runs} total runs,");
     info!(

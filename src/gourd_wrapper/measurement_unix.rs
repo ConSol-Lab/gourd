@@ -7,12 +7,9 @@ use std::process::Child;
 use std::ptr::addr_of_mut;
 use std::time::Duration;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Error;
 use gourd_lib::bailc;
-use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::measurement::RUsage;
 use libc::WIFEXITED;
 

@@ -36,11 +36,9 @@ fn breaking_changes_config_struct() {
         inputs: UserInputMap::default(),
         parameters: None,
         programs: UserProgramMap::default(),
-        postprocess_programs: None,
         input_schema: None,
         slurm: None,
         resource_limits: None,
-        postprocess_resource_limits: None,
         labels: Some(BTreeMap::new()),
         warn_on_label_overlap: false,
     };
@@ -77,16 +75,13 @@ fn breaking_changes_config_file_all_values() {
             inputs: UserInputMap::default(),
             parameters: None,
             programs: UserProgramMap::default(),
-            postprocess_programs: None,
             input_schema: None,
             slurm: None,
             resource_limits: None,
-            postprocess_resource_limits: None,
             labels: None,
             warn_on_label_overlap: false,
         },
-        Config::from_file(file_pathbuf.as_path(), true, &REAL_FS)
-            .expect("Unexpected config read error.")
+        Config::from_file(file_pathbuf.as_path(), &REAL_FS).expect("Unexpected config read error.")
     );
     dir.close().unwrap();
 }
@@ -117,16 +112,13 @@ fn breaking_changes_config_file_required_values() {
             inputs: UserInputMap::default(),
             parameters: None,
             programs: UserProgramMap::default(),
-            postprocess_programs: None,
             input_schema: None,
             slurm: None,
             resource_limits: None,
-            postprocess_resource_limits: None,
             labels: None,
             warn_on_label_overlap: false,
         },
-        Config::from_file(file_pb.as_path(), true, &REAL_FS)
-            .expect("Unexpected config read error.")
+        Config::from_file(file_pb.as_path(), &REAL_FS).expect("Unexpected config read error.")
     );
     dir.close().unwrap();
 }
@@ -136,7 +128,7 @@ fn config_nonexistent_file() {
     let dir = TempDir::new("config_folder").unwrap();
     let file_pathbuf = dir.path().join("file.toml");
 
-    if Config::from_file(file_pathbuf.as_path(), true, &REAL_FS).is_ok() {
+    if Config::from_file(file_pathbuf.as_path(), &REAL_FS).is_ok() {
         panic!("Error expected.")
     }
 
@@ -155,7 +147,7 @@ fn config_unreadable_file() {
     file.set_permissions(Permissions::from_mode(0o000))
         .expect("Could not set permissions of 'unreadable' test file to 000.");
 
-    if Config::from_file(file_pathbuf.as_path(), true, &REAL_FS).is_ok() {
+    if Config::from_file(file_pathbuf.as_path(), &REAL_FS).is_ok() {
         panic!("Error expected.")
     }
     dir.close().unwrap();
@@ -168,7 +160,7 @@ fn config_unparseable_file() {
 
     File::create(file_pathbuf.as_path()).expect("A file folder could not be created.");
 
-    if Config::from_file(file_pathbuf.as_path(), true, &REAL_FS).is_ok() {
+    if Config::from_file(file_pathbuf.as_path(), &REAL_FS).is_ok() {
         panic!("Error expected.")
     }
     dir.close().unwrap();
@@ -183,8 +175,7 @@ fn config_ok_file() {
 
     assert_eq!(
         Config::default(),
-        Config::from_file(file_pb.as_path(), true, &REAL_FS)
-            .expect("Unexpected config read error.")
+        Config::from_file(file_pb.as_path(), &REAL_FS).expect("Unexpected config read error.")
     );
     dir.close().unwrap();
 }
@@ -203,9 +194,7 @@ fn disallow_glob_names() {
             [program]
         "#,
     );
-    assert!(
-        format!("{:?}", Config::from_file(file_pb.as_path(), true, &REAL_FS)).contains("_glob_")
-    );
+    assert!(format!("{:?}", Config::from_file(file_pb.as_path(), &REAL_FS)).contains("_glob_"));
     dir.close().unwrap();
 }
 
@@ -245,7 +234,9 @@ fn test_globs() {
             crate::constants::INTERNAL_GLOB
         ),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["-f".to_string(), in_pathbuf.to_str().unwrap().to_string()],
         },
     );
@@ -259,16 +250,13 @@ fn test_globs() {
             inputs,
             programs: UserProgramMap::default(),
             parameters: None,
-            postprocess_programs: None,
             input_schema: None,
             slurm: None,
             resource_limits: None,
-            postprocess_resource_limits: None,
             labels: None,
             warn_on_label_overlap: false,
         },
-        Config::from_file(file_pathbuf.as_path(), false, &REAL_FS)
-            .expect("Unexpected config read error.")
+        Config::from_file(file_pathbuf.as_path(), &REAL_FS).expect("Unexpected config read error.")
     );
     dir.close().unwrap();
 }
@@ -288,7 +276,7 @@ fn test_globs_invalid_pattern() {
             [input]
         "#,
     );
-    assert!(Config::from_file(file_pb.as_path(), false, &REAL_FS).is_err());
+    assert!(Config::from_file(file_pb.as_path(), &REAL_FS).is_err());
 }
 
 #[test]
@@ -305,8 +293,8 @@ fn test_regex_that_do_match() {
             [input]
         "#,
     );
-    let config = Config::from_file(file_pb.as_path(), false, &REAL_FS)
-        .expect("Unexpected config read error.");
+    let config =
+        Config::from_file(file_pb.as_path(), &REAL_FS).expect("Unexpected config read error.");
     assert!(
         regex_lite::Regex::new(config.labels.unwrap().get("stefan").unwrap().regex.as_str())
             .unwrap()
@@ -328,7 +316,7 @@ fn test_invalid_regex_gives_error() {
             [input]
         "#,
     );
-    assert!(Config::from_file(file_pathbuf.as_path(), false, &REAL_FS).is_err());
+    assert!(Config::from_file(file_pathbuf.as_path(), &REAL_FS).is_err());
 }
 
 #[test]
@@ -374,8 +362,7 @@ fn parse_valid_escape_hatch_file() {
         )
         .unwrap();
 
-    let c1 =
-        Config::from_file(f1.as_path(), true, &REAL_FS).expect("Unexpected config read error.");
+    let c1 = Config::from_file(f1.as_path(), &REAL_FS).expect("Unexpected config read error.");
     let c2 = Config {
         output_path: dir.path().join("42"),
         metrics_path: dir.path().join("43"),
@@ -384,11 +371,12 @@ fn parse_valid_escape_hatch_file() {
         programs: vec![(
             "x".to_string(),
             UserProgram {
-                binary: FetchedPath("/bin/sleep".into()),
+                binary: Some(PathBuf::from("/bin/sleep".to_string())),
+                fetch: None,
                 arguments: vec![],
                 afterscript: None,
-                postprocess_job: None,
                 resource_limits: None,
+                runs_after: None,
             },
         )]
         .into_iter()
@@ -401,8 +389,10 @@ fn parse_valid_escape_hatch_file() {
                     crate::constants::INTERNAL_PREFIX,
                     crate::constants::INTERNAL_SCHEMA_INPUTS
                 ),
-                crate::config::UserInput {
-                    input: None,
+                UserInput {
+                    file: None,
+                    glob: None,
+                    fetch: None,
                     arguments: vec!["hello".to_string()],
                 },
             ),
@@ -412,8 +402,10 @@ fn parse_valid_escape_hatch_file() {
                     crate::constants::INTERNAL_PREFIX,
                     crate::constants::INTERNAL_SCHEMA_INPUTS
                 ),
-                crate::config::UserInput {
-                    input: None,
+                UserInput {
+                    file: None,
+                    glob: None,
+                    fetch: None,
                     arguments: vec!["hi".to_string()],
                 },
             ),
@@ -424,9 +416,7 @@ fn parse_valid_escape_hatch_file() {
         input_schema: None,
         slurm: None,
         resource_limits: None,
-        postprocess_resource_limits: None,
         wrapper: WRAPPER_DEFAULT(),
-        postprocess_programs: None,
         labels: None,
         warn_on_label_overlap: false,
     };

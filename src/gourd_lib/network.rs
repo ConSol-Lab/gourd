@@ -1,12 +1,10 @@
 use std::fs::File;
 use std::path::Path;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 
 use crate::ctx;
-use crate::error::Ctx;
 use crate::file_system::FileOperations;
 
 /// Gets the files given the file paths.
@@ -29,9 +27,11 @@ pub fn get_resources(filepaths: Vec<&Path>) -> Result<Vec<File>> {
 /// Downloads a file given a url.
 pub fn download_file(url: &str, output_path: &Path, fs: &impl FileOperations) -> Result<()> {
     #[cfg(not(feature = "fetching"))]
-    Err(anyhow!(
-        "this version of gourd was built without fetching support, you cannot use urls as inputs"
-    ));
+    bailc!(
+        "Could not download file at {}", url;
+        "This version of gourd was built without fetching support",;
+        "You cannot use urls as inputs",
+    );
     #[cfg(feature = "fetching")]
     {
         let response = ureq::get(url).call().with_context(ctx!(

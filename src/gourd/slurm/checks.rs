@@ -1,9 +1,7 @@
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
-use gourd_lib::config::Config;
 use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::experiment::Experiment;
 
 use crate::cli::printing::format_table;
