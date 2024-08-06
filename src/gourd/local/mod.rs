@@ -20,7 +20,6 @@ pub async fn run_local(
     force: bool,
     sequential: bool,
 ) -> Result<()> {
-
     let cmds = wrap(experiment, exp_path, env::consts::ARCH, fs)?;
     trace!("Running cmds {:#?}", cmds);
 

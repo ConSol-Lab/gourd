@@ -13,7 +13,7 @@ fn test_analyse_csv() {
     let conf = config!(&env; "fibonacci"; (
         "input_ten".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["10".to_string()],
         },
     ));

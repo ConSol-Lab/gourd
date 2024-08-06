@@ -17,7 +17,7 @@ use gourd_lib::constants::ERROR_STYLE;
 use gourd_lib::constants::PRIMARY_STYLE;
 use gourd_lib::constants::TERTIARY_STYLE;
 use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
+use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
@@ -28,7 +28,6 @@ use log::debug;
 use log::info;
 use log::trace;
 use log::LevelFilter;
-use gourd_lib::experiment::scheduling::RunStatus;
 
 use super::def::ContinueStruct;
 use super::def::RerunOptions;
@@ -41,10 +40,8 @@ use crate::cli::def::CancelStruct;
 use crate::cli::def::Cli;
 use crate::cli::def::GourdCommand;
 use crate::cli::def::RunSubcommand;
-use crate::cli::def::SetLimitsStruct;
 use crate::cli::def::StatusStruct;
 use crate::cli::printing::print_version;
-use crate::cli::printing::query_update_resource_limits;
 use crate::experiments::generate_new_run;
 use crate::experiments::ExperimentExt;
 use crate::init::init_experiment_setup;
@@ -52,7 +49,6 @@ use crate::init::list_init_examples;
 use crate::local::run_local;
 use crate::rerun;
 use crate::rerun::slurm::query_changing_resource_limits;
-use crate::setlim;
 use crate::slurm::checks::slurm_options_from_experiment;
 use crate::slurm::handler::SlurmHandler;
 use crate::slurm::interactor::SlurmCli;
@@ -442,6 +438,8 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
 
             trace!("Selected runs: {:?}", selected_runs);
 
+            // NOTE: when rerunning we should only update the limits of the new runs,
+            // and not of the whole experiment.
             query_changing_resource_limits(
                 &mut experiment,
                 cmd.script,
@@ -457,7 +455,6 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     new_id,
                     &experiment.get_program(old_run)?,
                     old_run.input.clone(),
-                    experiment.seq,
                     None,               // todo: dependencies for reruns
                     Default::default(), // todo: resource limits for reruns
                     &experiment,
@@ -479,42 +476,6 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     experiment.seq
                 );
             }
-        }
-
-        GourdCommand::SetLimits(SetLimitsStruct {
-            experiment_id,
-            program,
-            all,
-            mem,
-            cpu,
-            time,
-        }) => {
-            let mut experiment = read_experiment(experiment_id, cmd, &file_system)?;
-
-            if *all {
-                debug!("Selected all programs to change limits");
-
-                let old_rss = experiment.resource_limits.unwrap_or_default();
-                let new_rss =
-                    query_update_resource_limits(&old_rss, cmd.script, *mem, *cpu, *time)?;
-
-                setlim::query_changing_limits_for_all_programs(&mut experiment, new_rss, &old_rss)?;
-            } else if let Some(name) = program {
-                debug!("Selected program: {:?}", name);
-
-                setlim::query_changing_limits_for_program(
-                    name,
-                    cmd.script,
-                    &mut experiment,
-                    *mem,
-                    *cpu,
-                    *time,
-                )?;
-            } else {
-                bailc!("No program specified to change the limits for.")
-            }
-
-            experiment.save(&file_system)?;
         }
     }
 

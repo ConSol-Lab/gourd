@@ -2,7 +2,6 @@ use core::fmt;
 use std::time::Duration;
 
 use serde::de::Visitor;
-use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serializer;
 
@@ -34,6 +33,7 @@ where
     deserializer.deserialize_str(DurationVisitor {})
 }
 
+/// Serialize duration into a human-readable format
 pub fn serialize_duration<S: Serializer>(duration: &Duration, ser: S) -> Result<S::Ok, S::Error> {
     S::serialize_str(ser, &humantime::format_duration(*duration).to_string())
 }

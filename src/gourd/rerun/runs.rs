@@ -3,7 +3,6 @@ use anyhow::Context;
 use anyhow::Result;
 use gourd_lib::bailc;
 use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
 use inquire::Select;

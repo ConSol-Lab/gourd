@@ -12,9 +12,7 @@ use gourd_lib::bailc;
 use gourd_lib::config::SlurmConfig;
 use gourd_lib::constants::SLURM_VERSIONS;
 use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::experiment::scheduling::Chunk;
-use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Experiment;
 use log::debug;
 use log::trace;
@@ -140,7 +138,12 @@ impl SlurmInteractor for SlurmCli {
 {} {} $SLURM_ARRAY_TASK_ID
 ",
             slurm_config.experiment_name,
-            chunk.runs.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","),
+            chunk
+                .runs
+                .iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(","),
             slurm_config.partition,
             format_slurm_duration(resource_limits.time_limit),
             resource_limits.cpus,

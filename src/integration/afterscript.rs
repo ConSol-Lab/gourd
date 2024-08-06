@@ -45,17 +45,17 @@ fn test_status_afterscript_labels() {
     let mut conf = config!(&env; "fibonacci";
         ("input_one".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["1".to_string()],
         }),
         ("input_two".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["2".to_string()],
         }),
         ("input_five".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["5".to_string()],
         })
     );

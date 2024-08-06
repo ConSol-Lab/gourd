@@ -23,7 +23,7 @@ fn test_dry_one_run() {
     let conf = config!(&env; "fibonacci"; (
         "input_ten".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["10".to_string()],
         },
     ));

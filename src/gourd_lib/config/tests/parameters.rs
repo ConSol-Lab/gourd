@@ -7,7 +7,7 @@ fn test_expand_parameters_ok_no_expandable() {
     inputs.insert(
         "first".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["nice".to_string()],
         },
     );
@@ -23,7 +23,7 @@ fn test_expand_parameters_ok_parameter() {
     inputs.insert(
         "first".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["-e".to_string(), "param|x".to_string()],
         },
     );
@@ -40,21 +40,21 @@ fn test_expand_parameters_ok_parameter() {
     expected.insert(
         format!("first_x_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["-e".to_string(), "a".to_string()],
         },
     );
     expected.insert(
         format!("first_x_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["-e".to_string(), "b".to_string()],
         },
     );
     expected.insert(
         format!("first_x_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["-e".to_string(), "c".to_string()],
         },
     );
@@ -68,7 +68,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
     inputs.insert(
         "first".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec![
                 "-e".to_string(),
                 "param|x".to_string(),
@@ -90,7 +90,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
     expected.insert(
         format!("first_x_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -102,7 +102,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
     expected.insert(
         format!("first_x_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -114,7 +114,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
     expected.insert(
         format!("first_x_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -132,7 +132,7 @@ fn test_expand_parameters_ok_subparameter() {
     inputs.insert(
         "first".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec![
                 "-e".to_string(),
                 "subparam|x.1".to_string(),
@@ -167,7 +167,7 @@ fn test_expand_parameters_ok_subparameter() {
     expected.insert(
         format!("first_x_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -179,7 +179,7 @@ fn test_expand_parameters_ok_subparameter() {
     expected.insert(
         format!("first_x_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -191,7 +191,7 @@ fn test_expand_parameters_ok_subparameter() {
     expected.insert(
         format!("first_x_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -209,7 +209,7 @@ fn test_expand_parameters_ok_both() {
     inputs.insert(
         "first".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec![
                 "-e".to_string(),
                 "subparam|x.1".to_string(),
@@ -254,12 +254,14 @@ fn test_expand_parameters_ok_both() {
         },
     );
 
-    let expanded = expand_parameters(InputMap(inputs), &parameters).unwrap();
+    let expanded = expand_parameters(inputs, &parameters).unwrap();
     let mut expected = BTreeMap::new();
     expected.insert(
         format!("first_x_0_y_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -273,7 +275,9 @@ fn test_expand_parameters_ok_both() {
     expected.insert(
         format!("first_x_1_y_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -287,7 +291,9 @@ fn test_expand_parameters_ok_both() {
     expected.insert(
         format!("first_x_2_y_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -301,7 +307,9 @@ fn test_expand_parameters_ok_both() {
     expected.insert(
         format!("first_x_0_y_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -315,7 +323,9 @@ fn test_expand_parameters_ok_both() {
     expected.insert(
         format!("first_x_1_y_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -329,7 +339,9 @@ fn test_expand_parameters_ok_both() {
     expected.insert(
         format!("first_x_2_y_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -343,7 +355,9 @@ fn test_expand_parameters_ok_both() {
     expected.insert(
         format!("first_x_0_y_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -357,7 +371,7 @@ fn test_expand_parameters_ok_both() {
     expected.insert(
         format!("first_x_1_y_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -371,7 +385,9 @@ fn test_expand_parameters_ok_both() {
     expected.insert(
         format!("first_x_2_y_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -382,7 +398,7 @@ fn test_expand_parameters_ok_both() {
             ],
         },
     );
-    assert_eq!(expanded, InputMap(expected));
+    assert_eq!(expanded, expected);
 }
 
 #[test]
@@ -391,12 +407,14 @@ fn test_expand_parameters_fail_subparameter_not_declared() {
     inputs.insert(
         "first".to_string(),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["-e".to_string(), "param|x".to_string()],
         },
     );
     let parameters = BTreeMap::new();
-    assert!(expand_parameters(InputMap(inputs), &parameters).is_err());
+    assert!(expand_parameters(inputs, &parameters).is_err());
 }
 
 #[test]
@@ -405,7 +423,9 @@ fn test_expand_parameters_fail_subparameter_size_not_match() {
     inputs.insert(
         "first".to_string(),
         UserInput {
-            input: None,
+            file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "param|x_1".to_string(),
@@ -435,5 +455,5 @@ fn test_expand_parameters_fail_subparameter_size_not_match() {
             values: None,
         },
     );
-    assert!(expand_parameters(InputMap(inputs), &parameters).is_err());
+    assert!(expand_parameters(inputs, &parameters).is_err());
 }

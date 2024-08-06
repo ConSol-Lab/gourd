@@ -9,8 +9,7 @@ use crate::status::slurm_based::SacctOutput;
 
 /// Some checks when running on slurm to improve error handling
 pub mod checks;
-/// An implementation for allocating queued jobs to chunks
-pub mod chunk;
+
 /// The core slurm functionality
 pub mod handler;
 /// Currently used implementation of interacting with SLURM through the CLI

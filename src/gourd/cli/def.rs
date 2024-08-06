@@ -239,10 +239,6 @@ pub enum GourdCommand {
     #[command()]
     Analyse(AnalyseStruct),
 
-    /// Sets resource limits.
-    #[command(name = "set-limits")]
-    SetLimits(SetLimitsStruct),
-
     /// Print information about the version.
     #[command()]
     Version,

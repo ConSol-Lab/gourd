@@ -1,19 +1,12 @@
 use std::path::PathBuf;
 
-use anyhow::anyhow;
-use anyhow::Context;
 use anyhow::Result;
-use gourd_lib::config::Config;
-use gourd_lib::config::ResourceLimits;
 use gourd_lib::config::SlurmConfig;
 use gourd_lib::constants::MAIL_TYPE_VALID_OPTIONS;
-use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::experiment::Experiment;
-use gourd_lib::experiment::FieldRef;
-use gourd_lib::experiment::Run;
 use gourd_lib::file_system::FileOperations;
-use log::{debug, error};
+use log::debug;
+use log::error;
 
 use crate::slurm::checks::slurm_options_from_experiment;
 use crate::slurm::SlurmInteractor;

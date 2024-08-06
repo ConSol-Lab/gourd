@@ -15,7 +15,6 @@ use crate::constants::INTERNAL_PREFIX;
 use crate::constants::PARAMETER_ESCAPE;
 use crate::constants::SUBPARAMETER_ESCAPE;
 use crate::ctx;
-use crate::error::Ctx;
 
 /// Takes the set of all inputs and all Parameters and expands parameterd
 /// arguments in the inputs with valeus of provided parameters.
@@ -60,7 +59,7 @@ pub fn expand_parameters(
 ) -> Result<UserInputMap> {
     let mut result: BTreeMap<String, UserInput> = BTreeMap::new();
 
-    check_subparameter_size_is_equal(parameters)?;
+    check_sub_parameter_size_is_equal(parameters)?;
 
     for (input_name, input) in inputs.iter() {
         let mut map = BTreeMap::new();
@@ -114,7 +113,7 @@ pub fn expand_parameters(
 
 /// Checks if all subparameters of each paramterers specified in `parameters`
 /// are equal (Helper function).
-fn check_subparameter_size_is_equal(parameters: &BTreeMap<String, Parameter>) -> Result<()> {
+fn check_sub_parameter_size_is_equal(parameters: &BTreeMap<String, Parameter>) -> Result<()> {
     for (parameter_name, parameter) in parameters {
         if let Some(sub_parameters) = &parameter.sub {
             let sub_parameter_size = sub_parameters

@@ -51,8 +51,7 @@ pub fn wrap(
 
         let mut cmd = Command::new(&experiment.wrapper);
 
-        cmd.arg(experiment_path)
-            .arg(format!("{}", run_id));
+        cmd.arg(experiment_path).arg(format!("{}", run_id));
 
         result.push(cmd);
 

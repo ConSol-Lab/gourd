@@ -4,7 +4,6 @@ use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use git2::Repository;
@@ -17,7 +16,6 @@ use tar::Archive;
 
 use crate::bailc;
 use crate::error::ctx;
-use crate::error::Ctx;
 
 /// Interactor with the actual physical file system.
 #[derive(Clone, Copy, Debug)]

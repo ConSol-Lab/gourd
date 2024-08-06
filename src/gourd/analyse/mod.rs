@@ -9,8 +9,6 @@ use anyhow::Result;
 use csv::Writer;
 use gourd_lib::bailc;
 use gourd_lib::constants::PLOT_SIZE;
-use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
 use gourd_lib::measurement::RUsage;

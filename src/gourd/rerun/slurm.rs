@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use gourd_lib::bailc;
@@ -8,8 +7,6 @@ use gourd_lib::constants::CMD_STYLE;
 use gourd_lib::constants::HELP_STYLE;
 use gourd_lib::constants::NAME_STYLE;
 use gourd_lib::constants::RERUN_LIST_PROMPT_CUTOFF;
-use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
@@ -208,7 +205,7 @@ pub fn query_changing_limits_for_programs(
                         trace!("Old resource limits: {:?}", program.limits);
                         trace!("New resource limits: {:?}", new_rss);
 
-                        update_program_resource_limits(*run_id, experiment, new_rss);
+                        update_program_resource_limits(*run_id, experiment, new_rss)?;
                         changed.push(program);
                     }
                 }

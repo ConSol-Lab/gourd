@@ -1,15 +1,11 @@
 use std::collections::BTreeMap;
-use std::collections::HashSet;
 use std::fmt::Display;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
-use chrono::DateTime;
-use chrono::Local;
 use parameters::expand_parameters;
 use serde::Deserialize;
 use serde::Serialize;
@@ -21,13 +17,10 @@ use crate::constants::EMPTY_ARGS;
 use crate::constants::INTERNAL_PREFIX;
 use crate::constants::INTERNAL_SCHEMA_INPUTS;
 use crate::constants::LABEL_OVERLAP_DEFAULT;
-use crate::constants::POSTPROCESS_JOBS_DEFAULT;
-use crate::constants::POSTPROCESS_JOB_DEFAULT;
 use crate::constants::PROGRAM_RESOURCES_DEFAULT;
 use crate::constants::RERUN_LABEL_BY_DEFAULT;
 use crate::constants::WRAPPER_DEFAULT;
 use crate::error::ctx;
-use crate::error::Ctx;
 use crate::file_system::FileOperations;
 use crate::file_system::FileSystemInteractor;
 
@@ -41,27 +34,27 @@ pub mod maps;
 mod regex;
 
 /// Deserializer for the paramters (grid search).
-mod parameters;
+pub mod parameters;
 
 /// Fetching for resources.
-mod fetching;
+pub mod fetching;
 
-pub use fetching::FetchedPath;
 pub use maps::UserInputMap;
 pub use maps::UserProgramMap;
 pub use regex::Regex;
-
-use crate::experiment::Environment;
-use crate::experiment::Experiment;
 
 /// A pair of a path to a binary and cli arguments.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct UserProgram {
-    /// The path to the executable.
+    /// A path to the executable.
     pub binary: Option<PathBuf>,
 
-    pub url: Option<String>,
+    /// Fetch the program binary remotely
+    /// ### Permissions
+    /// If this file is fetched on unix, the permissions
+    /// for it are: `rwxr-xr--`.
+    pub fetch: Option<FetchedResource<0o754>>,
 
     /// The cli arguments for the executable.
     #[serde(default = "EMPTY_ARGS")]
@@ -77,6 +70,15 @@ pub struct UserProgram {
 
     /// The program to postprocess
     pub runs_after: Option<Vec<String>>,
+}
+
+/// Fetch a remote resource
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
+pub struct FetchedResource<const PERMISSIONS: u32> {
+    /// The url from which to fetch this resource
+    pub url: String,
+    /// The file in which to store this resource
+    pub store: PathBuf,
 }
 
 /// A pair of a path to an input and additional cli arguments.
@@ -96,19 +98,21 @@ pub struct UserProgram {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct UserInput {
-    /// The path to the input.
-    ///
-    /// If not specified, nothing is provided on the program's input.
-    ///
-    /// # Permissions
-    ///
-    /// If this file is fetched on unix the permissions
+    /// Direct path to the input.
+    pub file: Option<PathBuf>,
+
+    /// A glob of input files
+    pub glob: Option<String>,
+
+    /// Fetch the input file remotely
+    /// ### Permissions
+    /// If this file is fetched on unix, the permissions
     /// for it are: `rw-r--r--`.
-    pub input: Option<PathBuf>,
+    pub fetch: Option<FetchedResource<0o644>>,
 
     /// The additional cli arguments for the executable.
     ///
-    /// # Default
+    /// ### Default
     /// By default these will be empty.
     #[serde(default = "EMPTY_ARGS")]
     pub arguments: Vec<String>,
@@ -352,7 +356,7 @@ pub struct SBatchArg {
 
 /// The resource limits, a Slurm configuration parameter that can be changed
 /// during an experiment. Contains the CPU, time, and memory bounds per run.
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, Serialize, Deserialize, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceLimits {
     /// Maximum time allowed _for each_ job.

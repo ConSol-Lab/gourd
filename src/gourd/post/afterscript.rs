@@ -8,7 +8,6 @@ use anyhow::Context;
 use anyhow::Result;
 use gourd_lib::bailc;
 use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::experiment::Experiment;
 use log::debug;
 use log::trace;
@@ -43,7 +42,7 @@ pub fn run_afterscript(run_id: usize, experiment: &Experiment) -> Result<()> {
 
     debug!("Running afterscript for {run_id}");
     let exit_status =
-        run_afterscript_for_run(&afterscript, &res_path, &after_output, &run.work_dir)?;
+        run_afterscript_for_run(afterscript, &res_path, &after_output, &run.work_dir)?;
 
     if !exit_status.success() {
         bailc!("Afterscript failed with exit code {}",

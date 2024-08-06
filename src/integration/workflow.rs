@@ -20,12 +20,12 @@ fn gourd_run_test() {
     let conf = config!(env; "slow_fib", "fast_fib", "hello"; (
         "input_ten".to_string(),
         UserInput {
-            input: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
+            file: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
             arguments: vec![],
         }),
         ("input_hello".to_string(),
         UserInput {
-            input: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
+            file: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
             arguments: vec![],
         });
         "fast_fast_fib";
@@ -67,12 +67,12 @@ fn gourd_status_test() {
     let conf1 = config!(env; "slow_fib", "fast_fib", "hello"; (
         "input_ten".to_string(),
         UserInput {
-            input: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
+            file: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
             arguments: vec![],
         }),
         ("input_hello".to_string(),
         UserInput {
-            input: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
+            file: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
             arguments: vec![],
         });
         "fast_fast_fib";
@@ -89,7 +89,7 @@ fn gourd_status_test() {
     let conf2 = config!(env; "slow_fib"; (
         "input_ten".to_string(),
         UserInput {
-            input: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
+            file: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
             arguments: vec![],
         })
     );
@@ -152,12 +152,12 @@ fn gourd_rerun_test() {
     let conf = config!(env; "slow_fib", "fast_fib", "hello"; (
         "input_ten".to_string(),
         UserInput {
-            input: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
+            file: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
             arguments: vec![],
         }),
         ("input_hello".to_string(),
         UserInput {
-            input: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
+            file: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
             arguments: vec![],
         });
         "fast_fast_fib";

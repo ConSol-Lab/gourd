@@ -1,10 +1,12 @@
+/// Dealing with [`UserInput`]s and [`InternalInput`]s
 pub mod inputs;
+/// Everything related to [`Label`]s
 pub mod labels;
+/// Dealing with [`UserProgram`]s and [`InternalProgram`]s
 pub mod programs;
+/// Implementations for scheduling [`Run`]s
 pub mod scheduling;
 
-use std::collections::BTreeMap;
-use std::fmt::Display;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -17,36 +19,60 @@ use serde::Serialize;
 
 use crate::config::maps::InternalInputMap;
 use crate::config::maps::InternalProgramMap;
-use crate::config::Config;
 use crate::config::Label;
 use crate::config::ResourceLimits;
 use crate::config::SlurmConfig;
-use crate::config::UserInput;
-use crate::config::UserProgram;
 use crate::experiment::inputs::RunInput;
 use crate::experiment::labels::Labels;
 use crate::experiment::scheduling::RunStatus;
 use crate::file_system::FileOperations;
 
+/// A path (specifically) to an executable
 pub type Executable = PathBuf;
+
+/// A string referencing a [`UserProgram`], [`InternalProgram`], [`UserInput`]
+/// or [`InternalInput`].
 pub type FieldRef = String;
 
+/// The internal representation of a [`UserInput`]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct InternalInput {
-    pub name: String,
+    /// The user provided name for this input
+    pub name: FieldRef,
+    /// A file to pass the contents into `stdin`
     pub input: Option<PathBuf>,
+    /// Command line arguments to be passed to the executable
     pub arguments: Vec<String>,
-    pub is_glob: bool,
+    #[allow(dead_code)]
+    /// Additional data for this input
+    pub metadata: Metadata,
 }
 
+/// Internally used metadata for inputs/programs
+#[allow(dead_code)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
+pub struct Metadata {
+    /// if this item was generated from a glob
+    pub is_glob: bool,
+    // ..
+}
+
+/// The internal representation of a [`UserProgram`]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct InternalProgram {
+    /// The input name as specified by the user
     pub name: FieldRef,
+    /// The [`Executable`] of this program (absolute path to it)
     pub binary: Executable,
-    pub is_glob: bool,
+    /// An executable afterscript to run on the output of this program
     pub afterscript: Option<Executable>,
+    /// The limits to be applied on executions of this program
     pub limits: ResourceLimits,
+    /// The command line arguments to be passed to all executions of this
+    /// program
     pub arguments: Vec<String>,
+    /// If this program runs on the output of another program,
+    /// a reference to the other program's name.
     pub runs_after: Option<FieldRef>,
 }
 
@@ -124,11 +150,14 @@ pub struct Experiment {
     /// The programs for the experiment.
     pub programs: InternalProgramMap,
 
-    // /// Chunks created for this experiment.
-    // pub chunks: Vec<Chunk>,
-    pub output_path: PathBuf,
-    pub metrics_path: PathBuf,
-    pub afterscript_output_path: PathBuf,
+    /// The path to a folder where the experiment output will be stored.
+    pub output_folder: PathBuf,
+
+    /// The path to a folder where the metrics output will be stored.
+    pub metrics_folder: PathBuf,
+
+    /// The path to a folder where the afterscript output will be stored.
+    pub afterscript_output_folder: PathBuf,
 
     /// Global resource limits that will apply to _newly created chunks_.
     pub resource_limits: Option<ResourceLimits>,
@@ -175,6 +204,7 @@ impl Experiment {
             .ok_or(anyhow!("Label not found"))
     }
 
+    /// Get (a clone of) the [`InternalProgram`] used for a given [`Run`].
     pub fn get_program(&self, run: &Run) -> Result<InternalProgram> {
         self.programs
             .get(&run.program)

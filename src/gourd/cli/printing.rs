@@ -1,5 +1,4 @@
 use anstyle::AnsiColor;
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use clap::crate_authors;
@@ -14,7 +13,6 @@ use gourd_lib::constants::LOGO;
 use gourd_lib::constants::NAME_STYLE;
 use gourd_lib::constants::PRIMARY_STYLE;
 use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
 use inquire::validator::Validation;

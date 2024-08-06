@@ -13,7 +13,6 @@ use gourd_lib::constants::SHORTEN_STATUS_CUTOFF;
 use gourd_lib::constants::TERTIARY_STYLE;
 use gourd_lib::constants::WARNING_STYLE;
 use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
@@ -355,7 +354,11 @@ pub fn display_job(
             writeln!(f, "  {NAME_STYLE}file{NAME_STYLE:#}:   {:?}", input_file)?;
         }
 
-        writeln!(f, "{NAME_STYLE}arguments{NAME_STYLE:#}: {:?}\n", run.input.args)?;
+        writeln!(
+            f,
+            "{NAME_STYLE}arguments{NAME_STYLE:#}: {:?}\n",
+            run.input.args
+        )?;
 
         writeln!(
             f,
@@ -373,8 +376,12 @@ pub fn display_job(
             run.metrics_path
         )?;
 
-        if let Some(slurm_id) = &run.slurm_id { // todo
-            writeln!(f, "scheduled on slurm as {} with limits {}", slurm_id, run.limits)?;
+        if let Some(slurm_id) = &run.slurm_id {
+            writeln!(
+                f,
+                "scheduled on slurm as {} with limits {}",
+                slurm_id, run.limits
+            )?;
         }
 
         let status = &statuses[&id];

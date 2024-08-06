@@ -17,7 +17,7 @@ fn test_dry_one_run() {
     let conf = config!(&env; "fibonacci"; (
         "input_ten".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["10".to_string()],
         },
     ));
@@ -41,7 +41,7 @@ fn test_two_one_run() {
     let conf = config!(&env; "fibonacci"; (
         "input_ten".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["10".to_string()],
         },
     ));
@@ -65,17 +65,17 @@ fn test_setting_resource_limits() {
     let conf = config!(&env; "fibonacci", "fast_fib";
         ("input_one".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["1".to_string()],
         }),
         ("input_two".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["2".to_string()],
         }),
         ("input_five".to_string(),
         UserInput {
-            input: None,
+            file: None,
             arguments: vec!["5".to_string()],
         })
     );
