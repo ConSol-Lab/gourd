@@ -26,7 +26,7 @@ where
     T: FileOperations,
 {
     fn get_statuses(
-        fs: &mut T,
+        fs: &T,
         experiment: &Experiment,
     ) -> Result<BTreeMap<usize, FileSystemBasedStatus>> {
         let mut statuses = BTreeMap::new();

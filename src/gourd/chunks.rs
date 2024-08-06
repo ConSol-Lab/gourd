@@ -6,7 +6,6 @@ use gourd_lib::bailc;
 use gourd_lib::config::ResourceLimits;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::Run;
-use libc::stat;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -59,11 +58,7 @@ pub trait Chunkable {
 
 impl Chunkable for Experiment {
     /// Next available [`Chunk`]s for scheduling,
-    fn next_chunks(
-        &mut self,
-        chunk_length: usize,
-        status: ExperimentStatus,
-    ) -> Result<Vec<Chunk>> {
+    fn next_chunks(&mut self, chunk_length: usize, status: ExperimentStatus) -> Result<Vec<Chunk>> {
         let mut chunks = vec![];
 
         let runs = self

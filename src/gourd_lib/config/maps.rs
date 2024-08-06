@@ -58,7 +58,10 @@ pub fn canon_path(path: &Path, fs: &impl FileOperations) -> Result<PathBuf> {
 /// [inputs.test_input_glob_2]
 /// arguments = [ "/test/b/b.jpg" ]
 /// ```
-pub fn expand_argument_globs(inputs: &BTreeMap<String, UserInput>, fs: &impl FileOperations) -> Result<BTreeMap<String, UserInput>> {
+pub fn expand_argument_globs(
+    inputs: &BTreeMap<String, UserInput>,
+    fs: &impl FileOperations,
+) -> Result<BTreeMap<String, UserInput>> {
     let mut result = BTreeMap::new();
 
     for (original, input) in inputs {

@@ -220,27 +220,32 @@ pub type ExperimentStatus = BTreeMap<usize, Status>;
 /// A struct that can attest the statuses or some or all running jobs.
 pub trait StatusProvider<T, ST> {
     /// Try to get the statuses of jobs.
-    fn get_statuses(connection: &mut T, experiment: &Experiment) -> Result<BTreeMap<usize, ST>>;
+    // the connection will remain immutable until there's a sufficient reason to
+    // allow for stateful status provider connections.
+    fn get_statuses(connection: &T, experiment: &Experiment) -> Result<BTreeMap<usize, ST>>;
 }
 
-/// Get the status of the provided experiment.
-pub fn get_statuses(
-    experiment: &Experiment,
-    fs: &mut impl FileOperations,
-) -> Result<ExperimentStatus> {
-    let fs_status = FileBasedProvider::get_statuses(fs, experiment)?;
+pub trait DynamicStatus {
+    fn status(&self, fs: &impl FileOperations) -> Result<ExperimentStatus>;
+}
 
-    let mut slurm = SlurmCli {
-        versions: SLURM_VERSIONS.to_vec(),
-    };
+impl DynamicStatus for Experiment {
+    /// Get the status of the provided experiment.
+    fn status(&self, fs: &impl FileOperations) -> Result<ExperimentStatus> {
+        let fs_status = FileBasedProvider::get_statuses(fs, self)?;
 
-    let slurm_status = if experiment.env == Environment::Slurm {
-        Some(SlurmBasedProvider::get_statuses(&mut slurm, experiment)?)
-    } else {
-        None
-    };
+        let slurm = SlurmCli {
+            versions: SLURM_VERSIONS.to_vec(),
+        };
 
-    merge_statuses(fs_status, slurm_status, 0..experiment.runs.len())
+        let slurm_status = if self.env == Environment::Slurm {
+            Some(SlurmBasedProvider::get_statuses(&slurm, self)?)
+        } else {
+            None
+        };
+
+        merge_statuses(fs_status, slurm_status, 0..self.runs.len())
+    }
 }
 
 /// A function that merges status providers outputs.
@@ -289,7 +294,7 @@ pub fn blocking_status(
     while complete < experiment.runs.len() {
         let mut buf = BufWriter::new(Vec::new());
 
-        let statuses = get_statuses(experiment, fs)?;
+        let statuses = experiment.status(fs)?;
 
         complete = display_statuses(&mut buf, experiment, &statuses, full)?;
         message = format!("{}\n", String::from_utf8(buf.into_inner()?)?);

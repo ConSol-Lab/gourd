@@ -78,7 +78,7 @@ pub fn expand_inputs(
 
                     if let Some(f) = path.file_stem() {
                         out.insert(
-                            format!("{}_i_{f:?}", name.clone()),
+                            format!("{}_i_{f:?}", &name),
                             InternalInput {
                                 input: Some(canon_path(&path, fs)?),
                                 arguments: user.arguments.clone(),
@@ -94,8 +94,9 @@ pub fn expand_inputs(
 
             (None, None, Some(fetched)) => {
                 let name = format!("{name}_fetched");
+
                 out.insert(
-                    name.clone(),
+                    name,
                     InternalInput {
                         input: Some(canon_path(&fetched.fetch(fs)?, fs)?),
                         arguments: user.arguments.clone(),

@@ -9,7 +9,7 @@ use inquire::Select;
 
 use crate::init::interactive::ask;
 use crate::rerun::slurm::check_multiple_runs_failed;
-use crate::status::get_statuses;
+use crate::status::DynamicStatus;
 use crate::status::ExperimentStatus;
 
 /// Get the list of runs to rerun from the rerun options.
@@ -19,7 +19,7 @@ pub fn get_runs_from_rerun_options(
     file_system: &mut impl FileOperations,
     script: bool,
 ) -> Result<Vec<usize>> {
-    let statuses = get_statuses(experiment, file_system)?;
+    let statuses = experiment.status(file_system)?;
     if let Some(runs) = run_ids {
         for id in runs {
             if experiment

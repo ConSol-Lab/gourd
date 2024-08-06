@@ -21,7 +21,7 @@ use crate::rerun::runs::re_runnable;
 use crate::rerun::status::status_of_single_run;
 use crate::rerun::update_program_resource_limits;
 use crate::rerun::RerunStatus;
-use crate::status::get_statuses;
+use crate::status::DynamicStatus;
 use crate::status::ExperimentStatus;
 use crate::status::SlurmState;
 
@@ -34,7 +34,7 @@ pub fn query_changing_resource_limits(
     file_system: &mut impl FileOperations,
 ) -> Result<()> {
     if experiment.env == Environment::Slurm && !script_mode {
-        let statuses = get_statuses(experiment, file_system)?;
+        let statuses = experiment.status(file_system)?;
         let (out_of_memory, out_of_time) =
             selected_runs
                 .iter()

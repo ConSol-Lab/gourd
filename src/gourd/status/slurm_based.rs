@@ -43,7 +43,7 @@ where
 {
     #[cfg(not(tarpaulin_include))]
     fn get_statuses(
-        connection: &mut T,
+        connection: &T,
         experiment: &Experiment,
     ) -> Result<BTreeMap<usize, SlurmBasedStatus>> {
         let mut run_id_to_status: BTreeMap<usize, SlurmBasedStatus> = BTreeMap::new();

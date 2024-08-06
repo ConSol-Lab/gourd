@@ -2,9 +2,9 @@ use std::path::Path;
 
 use anyhow::Result;
 use gourd_lib::config::SlurmConfig;
-use gourd_lib::experiment::scheduling::Chunk;
 use gourd_lib::experiment::Experiment;
 
+use crate::chunks::Chunk;
 use crate::status::slurm_based::SacctOutput;
 
 /// Some checks when running on slurm to improve error handling
