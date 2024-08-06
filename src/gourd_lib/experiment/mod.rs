@@ -1,12 +1,3 @@
-/// Dealing with [`UserInput`]s and [`InternalInput`]s
-pub mod inputs;
-/// Everything related to [`Label`]s
-pub mod labels;
-/// Dealing with [`UserProgram`]s and [`InternalProgram`]s
-pub mod programs;
-/// Implementations for scheduling [`Run`]s
-pub mod scheduling;
-
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -22,13 +13,18 @@ use crate::config::maps::InternalProgramMap;
 use crate::config::Label;
 use crate::config::ResourceLimits;
 use crate::config::SlurmConfig;
-use crate::experiment::inputs::RunInput;
 use crate::experiment::labels::Labels;
-use crate::experiment::scheduling::RunStatus;
 use crate::file_system::FileOperations;
 
-/// A path (specifically) to an executable
-pub type Executable = PathBuf;
+
+/// Dealing with [`UserInput`]s and [`InternalInput`]s
+pub mod inputs;
+
+/// Everything related to [`Label`]s
+pub mod labels;
+
+/// Dealing with [`UserProgram`]s and [`InternalProgram`]s
+pub mod programs;
 
 /// A string referencing a [`UserProgram`], [`InternalProgram`], [`UserInput`]
 /// or [`InternalInput`].
@@ -37,12 +33,12 @@ pub type FieldRef = String;
 /// The internal representation of a [`UserInput`]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct InternalInput {
-    /// The user provided name for this input
-    pub name: FieldRef,
     /// A file to pass the contents into `stdin`
     pub input: Option<PathBuf>,
+
     /// Command line arguments to be passed to the executable
     pub arguments: Vec<String>,
+
     #[allow(dead_code)]
     /// Additional data for this input
     pub metadata: Metadata,
@@ -50,30 +46,31 @@ pub struct InternalInput {
 
 /// Internally used metadata for inputs/programs
 #[allow(dead_code)]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Metadata {
-    /// if this item was generated from a glob
-    pub is_glob: bool,
-    // ..
+    /// Which input this was generated from.
+    pub glob_from: Option<String>,
+
+    /// Whether it was fetched.
+    pub is_fetched: bool,
 }
 
 /// The internal representation of a [`UserProgram`]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct InternalProgram {
-    /// The input name as specified by the user
-    pub name: FieldRef,
     /// The [`Executable`] of this program (absolute path to it)
-    pub binary: Executable,
+    pub binary: PathBuf,
     /// An executable afterscript to run on the output of this program
-    pub afterscript: Option<Executable>,
+    pub afterscript: Option<PathBuf>,
     /// The limits to be applied on executions of this program
     pub limits: ResourceLimits,
     /// The command line arguments to be passed to all executions of this
     /// program
     pub arguments: Vec<String>,
-    /// If this program runs on the output of another program,
+
+    /// This program runs on the output of our program,
     /// a reference to the other program's name.
-    pub runs_after: Option<FieldRef>,
+    pub next: Vec<FieldRef>,
 }
 
 /// Describes a matching between an algorithm and an input.
@@ -84,10 +81,7 @@ pub struct Run {
     pub program: FieldRef,
 
     /// The path to the file to pass into stdin
-    pub input: RunInput,
-
-    /// The execution status of this run.
-    pub status: RunStatus,
+    pub input: Option<FieldRef>,
 
     /// The path to the stderr output.
     pub err_path: PathBuf,
@@ -113,8 +107,11 @@ pub struct Run {
     /// If this job has been rerun, a reference to the new one.
     pub rerun: Option<usize>,
 
-    /// If there's a dependency, which (other) run to wait on
-    pub depends: Option<usize>,
+    /// This runs after this one.
+    pub children: Vec<usize>,
+
+    /// This runs before this one.
+    pub parent: Option<usize>,
 }
 
 /// An enum to distinguish the run context.

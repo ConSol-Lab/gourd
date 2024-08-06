@@ -6,11 +6,9 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use parameters::expand_parameters;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::bailc;
 use crate::constants::AFTERSCRIPT_DEFAULT;
 use crate::constants::CMD_STYLE;
 use crate::constants::EMPTY_ARGS;
@@ -39,8 +37,6 @@ pub mod parameters;
 /// Fetching for resources.
 pub mod fetching;
 
-pub use maps::UserInputMap;
-pub use maps::UserProgramMap;
 pub use regex::Regex;
 
 /// A pair of a path to a binary and cli arguments.
@@ -68,8 +64,8 @@ pub struct UserProgram {
     #[serde(default = "PROGRAM_RESOURCES_DEFAULT")]
     pub resource_limits: Option<ResourceLimits>,
 
-    /// The program to postprocess
-    pub runs_after: Option<Vec<String>>,
+    /// The programs to postprocess this one.
+    pub next: Vec<String>,
 }
 
 /// Fetch a remote resource
@@ -248,13 +244,13 @@ pub struct Config {
 
     /// The list of tested algorithms.
     #[serde(rename = "program")]
-    pub programs: UserProgramMap,
+    pub programs: BTreeMap<String, UserProgram>,
 
     /// The list of inputs for each of them.
     ///
     /// The name of an input cannot contain '_i_'.
     #[serde(rename = "input")]
-    pub inputs: UserInputMap,
+    pub inputs: BTreeMap<String, UserInput>,
 
     /// A path to a TOML file that contains input combinations.
     pub input_schema: Option<PathBuf>,
@@ -404,8 +400,8 @@ impl Default for Config {
             metrics_path: PathBuf::from("run-metrics"),
             experiments_folder: PathBuf::from("experiments"),
             wrapper: WRAPPER_DEFAULT(),
-            programs: UserProgramMap::default(),
-            inputs: UserInputMap::default(),
+            programs: BTreeMap::default(),
+            inputs: BTreeMap::default(),
             input_schema: None,
             parameters: None,
             slurm: None,
@@ -428,46 +424,28 @@ impl Config {
         ))?;
 
         if let Some(schema) = &initial.input_schema {
-            initial.inputs = Self::parse_schema_inputs(schema.as_path(), initial.inputs, fs)?;
+            initial.inputs = Config::parse_schema_inputs(schema.as_path(), initial.inputs, fs)?;
             initial.input_schema = None;
-        }
-
-        if let Some(parameters) = &initial.parameters {
-            for (p_name, p) in parameters {
-                if p.sub.is_some() && p.values.is_some() {
-                    bailc!(
-                      "Parameter specified incorrectly", ;
-                      "Parameter can have either values or subparameters, not both", ;
-                      "Parameter name {}", p_name
-                    );
-                } else if p.sub.is_none() && p.values.is_none() {
-                    bailc!(
-                      "Parameter specified incorrectly", ;
-                      "Parameter must have either values or subparameters, currently has none", ;
-                      "Parameter name {}", p_name
-                    );
-                }
-            }
-
-            initial.inputs = expand_parameters(initial.inputs, parameters)?;
         }
 
         Ok(initial)
     }
 
     /// Parse the additional inputs toml file and add them to the inputs map.
-    fn parse_schema_inputs(
+    pub fn parse_schema_inputs(
         path_buf: &Path,
-        mut inputs: UserInputMap,
+        mut inputs: BTreeMap<String, UserInput>,
         fso: &impl FileOperations,
-    ) -> Result<UserInputMap> {
+    ) -> Result<BTreeMap<String, UserInput>> {
         let hi = fso.try_read_toml::<InputSchema>(path_buf)?;
+
         for (idx, input) in hi.inputs.iter().enumerate() {
             inputs.insert(
                 format!("{}{}{}", idx, INTERNAL_PREFIX, INTERNAL_SCHEMA_INPUTS),
                 input.clone(),
             );
         }
+
         Ok(inputs)
     }
 }

@@ -143,7 +143,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
 
                         info!("Experiment started");
 
-                        // Run will never unshorten status, hence the false.
+                        // Local will never unshorten status, hence the false.
                         blocking_status(&progress, &experiment, &mut file_system, false)?;
 
                         info!("Experiment finished");
@@ -376,13 +376,8 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             let mut experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             let statuses = get_statuses(&experiment, &mut file_system)?;
-            for (run, status) in statuses {
-                if status.is_completed() {
-                    experiment.runs[run].status = RunStatus::Finished;
-                }
-            }
 
-            if experiment.unscheduled().is_empty() {
+            if experiment.unscheduled(statuses).is_empty() {
                 info!("Nothing more to continue :D");
                 return Ok(());
             }

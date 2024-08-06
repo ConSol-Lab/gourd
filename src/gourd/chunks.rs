@@ -2,14 +2,15 @@ use std::cmp::Ordering;
 
 use anyhow::Context;
 use anyhow::Result;
+use gourd_lib::bailc;
+use gourd_lib::config::ResourceLimits;
+use gourd_lib::experiment::Experiment;
+use gourd_lib::experiment::Run;
+use libc::stat;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::bailc;
-use crate::config::ResourceLimits;
-use crate::experiment::scheduling::RunStatus::Scheduled;
-use crate::experiment::Experiment;
-use crate::experiment::Run;
+use crate::status::ExperimentStatus;
 
 /// Describes one chunk: a Slurm array of scheduled runs with common resource
 /// limits. Chunks are created at runtime; a run is in one chunk iff it has
@@ -23,22 +24,6 @@ pub struct Chunk {
     ///
     /// This field is immutable.
     resource_limits: ResourceLimits,
-}
-
-/// A run status.
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub enum RunStatus {
-    /// The job hasn't started yet
-    Pending,
-
-    /// The job has started running locally.
-    RanLocally,
-
-    /// The run is scheduled on Slurm with a slurm id
-    Scheduled(String),
-
-    /// The run has finished (dependent runs can start)
-    Finished,
 }
 
 impl Chunk {
@@ -66,23 +51,27 @@ impl Ord for Chunk {
     }
 }
 
-impl Experiment {
-    // todo: better documentation
+pub trait Chunkable {
+    fn next_chunks(&mut self, chunk_length: usize, status: ExperimentStatus) -> Result<Vec<Chunk>>;
+    fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String);
+    fn unscheduled(&self) -> Vec<&Run>;
+}
+
+impl Chunkable for Experiment {
     /// Next available [`Chunk`]s for scheduling,
-    pub fn next_chunks(&mut self, chunk_length: usize) -> Result<Vec<Chunk>> {
+    fn next_chunks(
+        &mut self,
+        chunk_length: usize,
+        status: ExperimentStatus,
+    ) -> Result<Vec<Chunk>> {
         let mut chunks = vec![];
 
         let runs = self
             .runs
             .iter()
             .enumerate()
-            .filter(|(_, r)| r.status == RunStatus::Pending)
-            // * when stable, replace with .is_none_or
-            // * if you want to implement multiple dependencies (not 1-1) for runs, change here
-            .filter(|(_, r)| {
-                !r.depends
-                    .is_some_and(|d| self.runs[d].status != RunStatus::Finished)
-            })
+            .filter(|(ridx, _)| !status[ridx].is_scheduled())
+            .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
             .collect::<Vec<(usize, &Run)>>();
 
         if runs.is_empty() {
@@ -116,7 +105,8 @@ impl Experiment {
 
     /// Once a chunk has been scheduled, mark all of its runs as scheduled with
     /// their slurm ids
-    pub fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String) {
+    /// TODO: FIXME
+    fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String) {
         for run_id in chunk.runs.iter() {
             // TEST:
             // because we schedule an array by specifying the run_id(s) in a list,
@@ -124,15 +114,16 @@ impl Experiment {
             // I have not confirmed this though, needs testing
             let job_id = format!("{}_{}", batch_id, run_id);
             self.runs[*run_id].slurm_id = Some(job_id.clone());
-            self.runs[*run_id].status = Scheduled(job_id);
+            //self.runs[*run_id].status = Scheduled(job_id);
         }
     }
 
     /// Get the still pending runs of this experiment.
-    pub fn unscheduled(&self) -> Vec<&Run> {
+    /// TODO: FIXME
+    fn unscheduled(&self) -> Vec<&Run> {
         self.runs
             .iter()
-            .filter(|r| matches!(r.status, RunStatus::Pending))
+            //.filter(|r| matches!(r.status, RunStatus::Pending))
             .collect()
     }
 }

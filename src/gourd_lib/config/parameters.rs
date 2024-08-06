@@ -8,13 +8,33 @@ use log::trace;
 
 use super::Parameter;
 use super::UserInput;
-use super::UserInputMap;
 use crate::bailc;
 use crate::constants::INTERNAL_PARAMETER;
 use crate::constants::INTERNAL_PREFIX;
 use crate::constants::PARAMETER_ESCAPE;
 use crate::constants::SUBPARAMETER_ESCAPE;
 use crate::ctx;
+
+/// Check if the parameters are well-formed.
+pub fn validate_parameters(parameters: &BTreeMap<String, Parameter>) -> Result<()> {
+    for (p_name, p) in parameters {
+        if p.sub.is_some() && p.values.is_some() {
+            bailc!(
+              "Parameter specified incorrectly", ;
+              "Parameter can have either values or subparameters, not both", ;
+              "Parameter name {}", p_name
+            );
+        } else if p.sub.is_none() && p.values.is_none() {
+            bailc!(
+              "Parameter specified incorrectly", ;
+              "Parameter must have either values or subparameters, currently has none", ;
+              "Parameter name {}", p_name
+            );
+        }
+    }
+
+    Ok(())
+}
 
 /// Takes the set of all inputs and all Parameters and expands parameterd
 /// arguments in the inputs with valeus of provided parameters.
@@ -54,9 +74,9 @@ use crate::ctx;
 /// arguments = [ "const", "2", "b", "60" ]
 /// ```
 pub fn expand_parameters(
-    inputs: UserInputMap,
+    inputs: BTreeMap<String, UserInput>,
     parameters: &BTreeMap<String, Parameter>,
-) -> Result<UserInputMap> {
+) -> Result<BTreeMap<String, UserInput>> {
     let mut result: BTreeMap<String, UserInput> = BTreeMap::new();
 
     check_sub_parameter_size_is_equal(parameters)?;

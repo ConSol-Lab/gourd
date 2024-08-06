@@ -10,22 +10,17 @@ use anyhow::Result;
 use glob::glob;
 
 use super::UserInput;
-use super::UserProgram;
 use crate::constants::GLOB_ESCAPE;
 use crate::constants::INTERNAL_GLOB;
 use crate::constants::INTERNAL_PREFIX;
 use crate::experiment::InternalInput;
 use crate::experiment::InternalProgram;
 use crate::file_system::FileOperations;
-/// Storing [`UserInput`]s in a [`BTreeMap`] with their user-given names as keys
-pub type UserInputMap = BTreeMap<String, UserInput>;
+
 /// Storing [`InternalInput`]s in a [`BTreeMap`] with their user-given names as
 /// keys
 pub type InternalInputMap = BTreeMap<String, InternalInput>;
 
-/// Storing [`UserProgram`]s in a [`BTreeMap`] with their user-given names as
-/// keys
-pub type UserProgramMap = BTreeMap<String, UserProgram>;
 /// Storing [`InternalProgram`]s in a [`BTreeMap`] with their user-given names
 /// as keys
 pub type InternalProgramMap = BTreeMap<String, InternalProgram>;
@@ -61,7 +56,7 @@ pub fn canon_path(path: &Path, fs: &impl FileOperations) -> Result<PathBuf> {
 /// [inputs.test_input_glob_2]
 /// arguments = [ "/test/b/b.jpg" ]
 /// ```
-pub fn expand_argument_globs(inputs: &UserInputMap) -> Result<UserInputMap> {
+pub fn expand_argument_globs(inputs: &BTreeMap<String, UserInput>) -> Result<BTreeMap<String, UserInput>> {
     let mut result = BTreeMap::new();
 
     for (original, input) in inputs {

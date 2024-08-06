@@ -17,6 +17,7 @@ use gourd_lib::experiment::programs::topological_ordering;
 use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
+use gourd_lib::experiment::InternalInput;
 use gourd_lib::experiment::InternalProgram;
 use gourd_lib::experiment::Run;
 use gourd_lib::file_system::FileOperations;
@@ -64,73 +65,76 @@ impl ExperimentExt for Experiment {
             .unwrap_or(0)
             + 1;
 
+        // First we will explode all programs from the initial set to their final set.
         let expanded_programs = expand_programs(&conf.programs, conf, fs)?;
+
+        // Now we will expand all inputs in a similar manner.
         let expanded_inputs = expand_inputs(&conf.inputs, &conf.parameters, fs)?;
 
-        let sorted_programs: Vec<String> = topological_ordering(&expanded_programs)?
-            .into_iter()
-            .map(|(x, _)| x)
-            .collect();
-
-        let mut e = Self {
-            runs: Vec::new(),
+        let mut experiment = Self {
+            seq,
             creation_time: time,
             home: conf.experiments_folder.clone(),
             wrapper: conf.wrapper.clone(),
+
             inputs: expanded_inputs.clone(),
-            seq,
-            resource_limits: conf.resource_limits,
+            programs: expanded_programs,
+
+            output_folder: conf.output_path.clone(),
+            metrics_folder: conf.metrics_path.clone(),
+            afterscript_output_folder: Default::default(), //todo
+
             env,
+            resource_limits: conf.resource_limits,
             labels: Labels {
                 map: conf.labels.clone().unwrap_or_default(),
                 warn_on_label_overlap: conf.warn_on_label_overlap,
             },
-            programs: expanded_programs,
-            output_folder: conf.output_path.clone(),
-            metrics_folder: conf.metrics_path.clone(),
+
             slurm: conf.slurm.clone(),
-            afterscript_output_folder: Default::default(), //todo
+
+            runs: Vec::new(),
         };
 
-        for prog_name in &sorted_programs {
-            for input_name in expanded_inputs.keys() {
-                if let Some(parent) = &e.programs[prog_name].runs_after {
-                    for (i, prev) in e.runs.clone().iter().enumerate() {
-                        if prev.program.eq(parent) {
-                            e.runs.push(generate_new_run(
-                                e.runs.len(),
-                                &e.programs[prog_name],
-                                RunInput {
-                                    name: format!("output_of_run_{}", i),
-                                    file: Some(prev.output_path.clone()),
-                                    args: e.programs[prog_name].arguments.clone(),
-                                },
-                                Some(i),
-                                e.programs[prog_name].limits,
-                                &e,
-                                fs,
-                            )?);
-                        }
-                    }
-                } else {
-                    e.runs.push(generate_new_run(
-                        e.runs.len(),
-                        &e.programs[prog_name],
-                        RunInput {
-                            name: input_name.clone(),
-                            file: e.inputs[input_name].input.clone(),
-                            args: [
-                                e.programs[prog_name].arguments.clone(),
-                                e.inputs[input_name].arguments.clone(),
-                            ]
-                            .concat(),
-                        },
+        // TODO: Here is the place for the backfilling DFS.
+        // Don't do this Andreas, I've got to got for now but I'll do it today evening.
+        // Lave this be for now.
+
+        for (prog_name, prog) in &experiment.programs {
+            for (input_name, input) in &experiment.inputs {
+                let mut next_ids = Vec::new();
+
+                for next_step in prog.next {
+                    next_ids.push(experiment.runs.len());
+
+                    experiment.runs.push(generate_new_run(
+                        experiment.runs.len(),
+                        next_step,
+                        // TODO: The new input from dfs
+                        input,
                         None,
-                        e.programs[prog_name].limits,
-                        &e,
+                        None,
+                        limits,
+                        &experiment,
                         fs,
-                    )?);
+                    ));
                 }
+
+                let parent_id = experiment.runs.len();
+                for next_id in next_ids {
+                    experiment.runs[next_id].parent = Some(parent_id);
+                }
+
+                experiment.runs.push(generate_new_run(
+                    experiment.runs.len(),
+                    prog_name,
+                    input,
+                    None,
+                    None,
+                    limits,
+                    &experiment,
+                    fs,
+                ));
             }
         }
 
@@ -205,29 +209,36 @@ impl ExperimentExt for Experiment {
 /// This should be used by all code paths adding runs to the experiment.
 pub fn generate_new_run(
     run_id: usize,
-    program: &InternalProgram,
-    input: RunInput,
-    depends: Option<usize>,
+    program: FieldRef,
+    input: FieldRef,
+    child: Option<usize>,
+    parent: Option<usize>,
     limits: ResourceLimits,
     experiment: &Experiment,
     fs: &impl FileOperations,
 ) -> Result<Run> {
+    let internal_prog = experiment.programs[program];
+    let internal_input = experiment.inputs[input];
+
     Ok(Run {
-        program: program.name.clone(),
-        input,
+        program: program.clone(),
+        input: input.clone(),
         status: RunStatus::Pending,
-        err_path: fs.truncate_and_canonicalize(&experiment.output_folder.join(format!(
-            "{}/{}/{}/stderr",
-            experiment.seq, program.name, run_id
-        )))?,
-        metrics_path: fs.truncate_and_canonicalize(&experiment.metrics_folder.join(format!(
-            "{}/{}/{}/metrics",
-            experiment.seq, program.name, run_id
-        )))?,
-        output_path: fs.truncate_and_canonicalize(&experiment.output_folder.join(format!(
-            "{}/{}/{}/stdout",
-            experiment.seq, program.name, run_id
-        )))?,
+        err_path: fs.truncate_and_canonicalize(
+            &experiment
+                .output_folder
+                .join(format!("{}/{}/{}/stderr", experiment.seq, program, run_id)),
+        )?,
+        metrics_path: fs.truncate_and_canonicalize(
+            &experiment
+                .metrics_folder
+                .join(format!("{}/{}/{}/metrics", experiment.seq, program, run_id)),
+        )?,
+        output_path: fs.truncate_and_canonicalize(
+            &experiment
+                .output_folder
+                .join(format!("{}/{}/{}/stdout", experiment.seq, program, run_id)),
+        )?,
         work_dir: fs.truncate_and_canonicalize_folder(
             &experiment
                 .output_folder
@@ -244,7 +255,8 @@ pub fn generate_new_run(
             ),
         },
         limits,
-        depends,
+        child,
+        parent,
         slurm_id: None,
         rerun: None,
     })
