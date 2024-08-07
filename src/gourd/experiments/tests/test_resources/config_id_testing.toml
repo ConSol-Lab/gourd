@@ -4,16 +4,16 @@ experiments_folder = "target/tests/id"
 
 [program.b]
 arguments = []
-binary = "test binary"
+binary = "./Cargo.toml"
 
 [program.c]
 arguments = []
-binary = "test binary 2"
+binary = "./Cargo.toml"
 
 [input.d]
-input = "test input"
+file = "./Cargo.toml"
 arguments = []
 
 [input.e]
-input = "test input 2"
+file = "./Cargo.toml"
 arguments = []

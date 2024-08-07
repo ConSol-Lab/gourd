@@ -30,13 +30,13 @@ arguments = ["-f"]
 
 # These three input files contain the numbers '2', '8', and '35'.
 [input.test_2]
-input = "./inputs/input_2"
+file = "./inputs/input_2"
 [input.test_8]
-input = "./inputs/input_8"
+file = "./inputs/input_8"
 [input.test_35]
-input = "./inputs/input_35"
+file = "./inputs/input_35"
 
 # This input file contains 'some text', which will give
 # our Fibonacci program a hard time.
 [input.bad_test]
-input = "./inputs/input_bad"
+file = "./inputs/input_bad"

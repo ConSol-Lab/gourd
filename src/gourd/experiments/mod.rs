@@ -97,7 +97,9 @@ impl ExperimentExt for Experiment {
         // Lave this be for now.
 
         for (prog_name, prog) in &experiment.programs {
-            for (input_name, input) in &experiment.inputs {
+            for input_name in experiment.inputs.keys() {
+                // just here to pass clippy
+                // for (input_name, _input) in &experiment.inputs {
                 let mut next_ids = Vec::new();
 
                 for next_step in prog.next.iter() {
@@ -203,18 +205,19 @@ impl ExperimentExt for Experiment {
 /// This function will generate a new run.
 ///
 /// This should be used by all code paths adding runs to the experiment.
+#[allow(clippy::too_many_arguments)]
 pub fn generate_new_run(
     run_id: usize,
     program: FieldRef,
     input: FieldRef,
-    child: Option<usize>,
+    _child: Option<usize>,
     parent: Option<usize>,
     limits: ResourceLimits,
     experiment: &Experiment,
     fs: &impl FileOperations,
 ) -> Result<Run> {
-    let internal_prog = &experiment.programs[&program];
-    let internal_input = &experiment.inputs[&input];
+    let _internal_prog = &experiment.programs[&program];
+    let _internal_input = &experiment.inputs[&input];
 
     Ok(Run {
         program: program.clone(),
@@ -257,6 +260,6 @@ pub fn generate_new_run(
     })
 }
 
-// #[cfg(test)]
-// #[path = "tests/mod.rs"]
-// mod tests;
+#[cfg(test)]
+#[path = "tests/mod.rs"]
+mod tests;

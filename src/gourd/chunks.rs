@@ -50,14 +50,19 @@ impl Ord for Chunk {
     }
 }
 
+/// Split an [`Experiment`]'s [`Run`]s into [`Chunk`]s of common
+/// [`ResourceLimits`].
 pub trait Chunkable {
+    /// Next available [`Chunk`]s for scheduling,
     fn next_chunks(&mut self, chunk_length: usize, status: ExperimentStatus) -> Result<Vec<Chunk>>;
+    /// Once a chunk has been scheduled, mark all of its runs as scheduled with
+    /// their slurm ids
     fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String);
-    fn unscheduled(&self) -> Vec<&Run>;
+    /// Get the still pending runs of this experiment.
+    fn unscheduled(&self, status: &ExperimentStatus) -> Vec<&Run>;
 }
 
 impl Chunkable for Experiment {
-    /// Next available [`Chunk`]s for scheduling,
     fn next_chunks(&mut self, chunk_length: usize, status: ExperimentStatus) -> Result<Vec<Chunk>> {
         let mut chunks = vec![];
 
@@ -98,8 +103,6 @@ impl Chunkable for Experiment {
         Ok(chunks)
     }
 
-    /// Once a chunk has been scheduled, mark all of its runs as scheduled with
-    /// their slurm ids
     /// TODO: FIXME
     fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String) {
         for run_id in chunk.runs.iter() {
@@ -113,12 +116,13 @@ impl Chunkable for Experiment {
         }
     }
 
-    /// Get the still pending runs of this experiment.
     /// TODO: FIXME
-    fn unscheduled(&self) -> Vec<&Run> {
+    fn unscheduled(&self, status: &ExperimentStatus) -> Vec<&Run> {
         self.runs
             .iter()
-            //.filter(|r| matches!(r.status, RunStatus::Pending))
+            .enumerate()
+            .filter(|(i, _)| status[i].is_pending())
+            .map(|(_, r)| r)
             .collect()
     }
 }

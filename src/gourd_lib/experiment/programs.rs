@@ -27,8 +27,7 @@ pub fn expand_programs(
                 _ => {
                     bailc!(
                         "Wrong number of file sources specified.",;
-                        "Program {name} does not have one binary/fetch
-                        specified",;
+                        "Program {name} does not have 1 binary/fetch specified",;
                         "Specify exactly one binary source per program.",
                     );
                 }
@@ -42,11 +41,10 @@ pub fn expand_programs(
         for child in &user.next {
             if !prog.contains_key(child) {
                 bailc!(
-                        "Incorrect program dependency: {}", child;
-                        "Program {child} runs on {name}, but there's no program
-                        called {child}!",;
-                        "Please make sure all programs exist and spelling
-                        is correct",);
+                    "Incorrect program dependency: {}", child;
+                    "Program {child} runs on {name}, but there's no program called {child}!",;
+                    "Please make sure all programs exist and spelling is correct",
+                );
             }
         }
 

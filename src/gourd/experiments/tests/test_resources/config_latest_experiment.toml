@@ -11,9 +11,9 @@ arguments = []
 binary = "test binary 2"
 
 [input.d]
-input = "test input"
+file = "test input"
 arguments = []
 
 [input.e]
-input = "test input 2"
+fetch = { url = "test input 2", store = "test input 2" }
 arguments = []

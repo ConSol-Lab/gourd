@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
+use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use serde::Deserialize;
@@ -105,11 +106,28 @@ pub fn expand_inputs(
                     },
                 );
             }
+            (None, None, None) => {
+                ensure!(
+                    !user.arguments.is_empty(),
+                    "Empty inputs are not allowed! \
+                ({name:?} has no file, glob, fetch or arguments specified)"
+                );
+                out.insert(
+                    name.clone(),
+                    InternalInput {
+                        input: None,
+                        arguments: user.arguments.clone(),
+                        metadata: Metadata {
+                            glob_from: None,
+                            is_fetched: false,
+                        },
+                    },
+                );
+            }
             _ => {
                 bailc!(
-                    "More than one file source specified or none.",;
-                    "Input {name} has more than one file/glob/fetch specified
-                    or none",;
+                    "Wrong number of file sources specified.",;
+                    "Input {name:?} has more than one file/glob/fetch specified",;
                     "Split this input into one for each file/glob/fetch",
                 );
             }

@@ -15,6 +15,8 @@ fn test_one_run() {
         "input_ten".to_string(),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["10".to_string()],
         },
     ));

@@ -65,6 +65,7 @@ pub struct UserProgram {
     pub resource_limits: Option<ResourceLimits>,
 
     /// The programs to postprocess this one.
+    #[serde(default)]
     pub next: Vec<String>,
 }
 

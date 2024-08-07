@@ -5,8 +5,6 @@ use std::time::Duration;
 
 use csv::Reader;
 use csv::StringRecord;
-use gourd_lib::experiment::inputs::RunInput;
-use gourd_lib::experiment::scheduling::RunStatus;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Run;
 use gourd_lib::measurement::Measurement;
@@ -152,12 +150,7 @@ fn test_analysis_png_plot_success() {
     statuses.insert(3, status_with_rusage);
     let run = Run {
         program: String::from("Program A"),
-        input: RunInput {
-            name: String::from("Input A"),
-            file: None,
-            args: vec![],
-        },
-        status: RunStatus::Pending,
+        input: String::from("Input A"),
         err_path: Default::default(),
         output_path: Default::default(),
         metrics_path: Default::default(),
@@ -165,8 +158,9 @@ fn test_analysis_png_plot_success() {
         slurm_id: None,
         afterscript_output_path: None,
         rerun: None,
+        children: vec![],
         limits: Default::default(),
-        depends: None,
+        parent: None,
     };
     let experiment = Experiment {
         runs: vec![run.clone(), run.clone(), run.clone(), run],
@@ -282,16 +276,6 @@ fn test_get_afterscript_output_info() {
         vec![String::from("no afterscript")]
     );
 }
-
-// #[test]
-// fn test_analysis_plot() {
-
-// }
-
-// #[test]
-// fn test_get_completions() {
-
-// }
 
 #[test]
 fn test_get_completion_time() {

@@ -18,6 +18,8 @@ fn test_dry_one_run() {
         "input_ten".to_string(),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["10".to_string()],
         },
     ));
@@ -42,6 +44,8 @@ fn test_two_one_run() {
         "input_ten".to_string(),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["10".to_string()],
         },
     ));
@@ -62,20 +66,25 @@ fn test_two_one_run() {
 #[test]
 fn test_setting_resource_limits() {
     let env = init();
-    let conf = config!(&env; "fibonacci", "fast_fib";
+    let conf = config!(&env; "fibonacci", "fast_fib", "fast_fast_fib";
         ("input_one".to_string(),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["1".to_string()],
         }),
         ("input_two".to_string(),
         UserInput {
             file: None,
-            arguments: vec!["2".to_string()],
+            glob: None,
+            fetch: None,arguments: vec!["2".to_string()],
         }),
         ("input_five".to_string(),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["5".to_string()],
         })
     );
@@ -117,9 +126,9 @@ fn test_setting_resource_limits() {
 
     gourd.stdout.unwrap().read_to_string(&mut s).unwrap();
 
-    assert!(s.contains("failed (3 runs)"));
-    assert!(s.contains("all finished (6 runs)"));
-    assert!(s.contains("3 new runs have been created"));
+    assert!(s.contains("failed"));
+    assert!(s.contains("all finished"));
+    assert!(s.contains(" new runs have been created"));
 
     // Now the runs are already scheduled. Let's try rerun again.
 

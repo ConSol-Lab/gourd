@@ -7,5 +7,5 @@ arguments = []
 binary = "test binary"
 
 [input.b]
-input = "test input"
+glob = "test input"
 arguments = []

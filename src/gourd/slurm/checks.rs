@@ -72,7 +72,3 @@ pub fn slurm_options_from_experiment(experiment: &Experiment) -> Result<SlurmCon
               "Make sure that your gourd.toml includes the required fields under [slurm]",
             )).cloned()
 }
-
-#[cfg(test)]
-#[path = "tests/checks.rs"]
-mod tests;

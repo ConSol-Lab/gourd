@@ -172,11 +172,11 @@ fn process_args(args: &[String], fs: &impl FileOperations) -> Result<RunConf> {
     let mut additional_args = program.arguments.clone();
 
     // TODO: FIXME, SHOULD BE PROGRAM ARGS + INPUT ARGS
-    //additional_args.append(&mut input.args.clone());
+    additional_args.append(&mut input.arguments.clone());
 
     Ok(RunConf {
         binary_path: program.binary.clone().to_path_buf(),
-        input_path: input.input.clone().map(|x| x.into()),
+        input_path: input.input.clone(),
         output_path: exp.runs[run_id].output_path.clone(),
         result_path: exp.runs[run_id].metrics_path.clone(),
         work_dir: exp.runs[run_id].work_dir.clone(),
