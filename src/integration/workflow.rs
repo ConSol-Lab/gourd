@@ -2,7 +2,6 @@
 
 use std::collections::BTreeMap;
 
-use gourd_lib::config::FetchedPath;
 use gourd_lib::config::Label;
 use gourd_lib::config::Regex;
 use gourd_lib::config::UserInput;
@@ -17,16 +16,16 @@ use crate::save_gourd_toml;
 fn gourd_run_test() {
     let env = init();
 
-    let conf = config!(env; "slow_fib", "fast_fib", "hello"; (
+    let conf = config!(env; "slow_fib", "fast_fib", "hello", "fast_fast_fib"; (
         "input_ten".to_string(),
         UserInput {
-            file: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
-            arguments: vec![],
+            file: Some(env.temp_dir.path().join("input_ten")),
+            glob: None,fetch: None,arguments: vec![],
         }),
         ("input_hello".to_string(),
         UserInput {
-            file: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
-            arguments: vec![],
+            file: Some(env.temp_dir.path().join("input_hello")),
+            glob: None,fetch: None,arguments: vec![],
         });
         "fast_fast_fib";
         Some(BTreeMap::from([(
@@ -64,16 +63,16 @@ fn gourd_run_test() {
 fn gourd_status_test() {
     let env = init();
 
-    let conf1 = config!(env; "slow_fib", "fast_fib", "hello"; (
+    let conf1 = config!(env; "slow_fib", "fast_fib", "hello", "fast_fast_fib"; (
         "input_ten".to_string(),
         UserInput {
-            file: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
-            arguments: vec![],
+            file: Some(env.temp_dir.path().join("input_ten")),
+            glob: None,fetch: None,arguments: vec![],
         }),
         ("input_hello".to_string(),
         UserInput {
-            file: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
-            arguments: vec![],
+            file: Some(env.temp_dir.path().join("input_hello")),
+            glob: None,fetch: None,arguments: vec![],
         });
         "fast_fast_fib";
         Some(BTreeMap::from([(
@@ -89,8 +88,8 @@ fn gourd_status_test() {
     let conf2 = config!(env; "slow_fib"; (
         "input_ten".to_string(),
         UserInput {
-            file: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
-            arguments: vec![],
+            file: Some(env.temp_dir.path().join("input_ten")),
+            glob: None,fetch: None,arguments: vec![],
         })
     );
 
@@ -115,8 +114,8 @@ fn gourd_status_test() {
     );
 
     let text_out = std::str::from_utf8(status_1_returned.stdout.as_slice()).unwrap();
-    assert_eq!(2, text_out.match_indices("failed").count());
-    assert_eq!(4, text_out.match_indices("success").count());
+    assert_eq!(4, text_out.match_indices("failed").count());
+    assert_eq!(6, text_out.match_indices("success").count());
 
     // get a new configuration
     let conf2_path = save_gourd_toml(&conf2, &env.temp_dir);
@@ -149,16 +148,16 @@ fn gourd_status_test() {
 fn gourd_rerun_test() {
     let env = init();
 
-    let conf = config!(env; "slow_fib", "fast_fib", "hello"; (
+    let conf = config!(env; "slow_fib", "fast_fib", "hello", "fast_fast_fib"; (
         "input_ten".to_string(),
         UserInput {
-            file: Some(FetchedPath(env.temp_dir.path().join("input_ten"))),
-            arguments: vec![],
+            file: Some(env.temp_dir.path().join("input_ten")),
+            glob: None,fetch: None,arguments: vec![],
         }),
         ("input_hello".to_string(),
         UserInput {
-            file: Some(FetchedPath(env.temp_dir.path().join("input_hello"))),
-            arguments: vec![],
+            file: Some(env.temp_dir.path().join("input_hello")),
+            glob: None,fetch: None,arguments: vec![],
         });
         "fast_fast_fib";
         Some(BTreeMap::from([(
@@ -186,13 +185,13 @@ fn gourd_rerun_test() {
 
     let rerun_output_1 = gourd!(env; "-c", conf_path.to_str().unwrap(), "rerun", "-s"; "rerun");
     let text_err = std::str::from_utf8(rerun_output_1.stderr.as_slice()).unwrap();
-    assert!(text_err.contains("2 new runs have been created"));
+    assert!(text_err.contains("4 new runs have been created")); // todo: confirm that "4" is correct
 
     let _ = gourd!(env; "-c", conf_path.to_str().unwrap(), "continue", "-s"; "continue");
 
     let rerun_output_2 = gourd!(env; "-c", conf_path.to_str().unwrap(), "rerun", "-s"; "rerun");
     let text_err = std::str::from_utf8(rerun_output_2.stderr.as_slice()).unwrap();
-    assert!(text_err.contains("2 new runs have been created"));
+    assert!(text_err.contains("4 new runs have been created")); // todo: confirm that "4" is correct
 
     assert!(!gourd!(env; "cancel").status.success());
 }

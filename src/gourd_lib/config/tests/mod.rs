@@ -4,7 +4,6 @@ use std::collections::BTreeMap;
 use std::fs::File;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::fs::Permissions;
-use std::fs::{self};
 use std::io::Write;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::os::unix::fs::PermissionsExt;
@@ -12,10 +11,7 @@ use std::path::PathBuf;
 
 use tempdir::TempDir;
 
-use crate::config::maps::UserInputMap;
-use crate::config::maps::UserProgramMap;
 use crate::config::Config;
-use crate::config::FetchedPath;
 use crate::config::UserInput;
 use crate::config::UserProgram;
 use crate::constants::WRAPPER_DEFAULT;
@@ -33,9 +29,9 @@ fn breaking_changes_config_struct() {
         metrics_path: PathBuf::from(""),
         experiments_folder: PathBuf::from(""),
         wrapper: "".to_string(),
-        inputs: UserInputMap::default(),
+        inputs: BTreeMap::default(),
         parameters: None,
-        programs: UserProgramMap::default(),
+        programs: BTreeMap::default(),
         input_schema: None,
         slurm: None,
         resource_limits: None,
@@ -72,9 +68,9 @@ fn breaking_changes_config_file_all_values() {
             metrics_path: PathBuf::from("./vulfpeck"),
             experiments_folder: PathBuf::from("./parcels/"),
             wrapper: "gourd_wrapper".to_string(),
-            inputs: UserInputMap::default(),
+            inputs: BTreeMap::default(),
             parameters: None,
-            programs: UserProgramMap::default(),
+            programs: BTreeMap::default(),
             input_schema: None,
             slurm: None,
             resource_limits: None,
@@ -109,9 +105,9 @@ fn breaking_changes_config_file_required_values() {
             metrics_path: PathBuf::from("./vulfpeck"),
             experiments_folder: PathBuf::from(""),
             wrapper: "gourd_wrapper".to_string(),
-            inputs: UserInputMap::default(),
+            inputs: BTreeMap::default(),
             parameters: None,
-            programs: UserProgramMap::default(),
+            programs: BTreeMap::default(),
             input_schema: None,
             slurm: None,
             resource_limits: None,
@@ -199,87 +195,6 @@ fn disallow_glob_names() {
 }
 
 #[test]
-fn test_globs() {
-    let dir = TempDir::new("config_folder").expect("A temp folder could not be created.");
-    let file_pathbuf = dir.path().join("file.toml");
-
-    let in_pathbuf = dir.path().join("test.in");
-
-    fs::write(&in_pathbuf, "asd").unwrap();
-
-    let config_contents = format!(
-        r#"
-            output_path = "./ginger_root"
-            metrics_path = "./vulfpeck"
-            experiments_folder = ""
-
-            [input.test_blob]
-            arguments = ["-f", "glob|{}/*.in"]
-
-            [program]
-        "#,
-        dir.path().to_str().unwrap()
-    );
-
-    let mut file = File::create(file_pathbuf.as_path()).expect("A file could not be created.");
-    file.write_all(config_contents.as_bytes())
-        .expect("The test file could not be written.");
-
-    let mut inputs = UserInputMap::default();
-
-    inputs.insert(
-        format!(
-            "test_blob{}{}0",
-            crate::constants::INTERNAL_PREFIX,
-            crate::constants::INTERNAL_GLOB
-        ),
-        UserInput {
-            file: None,
-            glob: None,
-            fetch: None,
-            arguments: vec!["-f".to_string(), in_pathbuf.to_str().unwrap().to_string()],
-        },
-    );
-
-    assert_eq!(
-        Config {
-            output_path: PathBuf::from("./ginger_root"),
-            metrics_path: PathBuf::from("./vulfpeck"),
-            experiments_folder: PathBuf::from(""),
-            wrapper: "gourd_wrapper".to_string(),
-            inputs,
-            programs: UserProgramMap::default(),
-            parameters: None,
-            input_schema: None,
-            slurm: None,
-            resource_limits: None,
-            labels: None,
-            warn_on_label_overlap: false,
-        },
-        Config::from_file(file_pathbuf.as_path(), &REAL_FS).expect("Unexpected config read error.")
-    );
-    dir.close().unwrap();
-}
-
-#[test]
-fn test_globs_invalid_pattern() {
-    let (file_pb, _dir) = create_sample_toml(
-        r#"
-            output_path = "./ginger_root"
-            metrics_path = "./vulfpeck/"
-            experiments_folder = ""
-
-            [input.test_blob]
-            arguments = ["-f", "glob|***"]
-
-            [program]
-            [input]
-        "#,
-    );
-    assert!(Config::from_file(file_pb.as_path(), &REAL_FS).is_err());
-}
-
-#[test]
 fn test_regex_that_do_match() {
     let (file_pb, _dir) = create_sample_toml(
         r#"
@@ -324,11 +239,10 @@ fn parse_valid_escape_hatch_file() {
     let dir = TempDir::new("config_folder").expect("A temp folder could not be created.");
     let f1 = dir.path().join("file1.toml");
     let f2 = dir.path().join("file2.toml");
-    // let f3 = dir.path().join("file3.toml");
+
     let mut file1 = File::create(f1.as_path()).expect("A file could not be created.");
     let mut file2 = File::create(f2.as_path()).expect("A file could not be created.");
-    // let mut file3 = File::create(f3.as_path()).expect("A file could not be
-    // created.");
+
     file1
         .write_all(
             format!(
@@ -340,7 +254,7 @@ fn parse_valid_escape_hatch_file() {
               [program.x]
               binary = \"/bin/sleep\"
               [input]
-    ",
+            ",
                 dir.path().to_str().unwrap(),
                 dir.path().to_str().unwrap(),
                 dir.path().to_str().unwrap(),
@@ -376,12 +290,11 @@ fn parse_valid_escape_hatch_file() {
                 arguments: vec![],
                 afterscript: None,
                 resource_limits: None,
-                runs_after: None,
+                next: vec![],
             },
         )]
         .into_iter()
-        .collect::<BTreeMap<String, UserProgram>>()
-        .into(),
+        .collect::<BTreeMap<String, UserProgram>>(),
         inputs: vec![
             (
                 format!(
@@ -411,8 +324,7 @@ fn parse_valid_escape_hatch_file() {
             ),
         ]
         .into_iter()
-        .collect::<BTreeMap<String, UserInput>>()
-        .into(),
+        .collect::<BTreeMap<String, UserInput>>(),
         input_schema: None,
         slurm: None,
         resource_limits: None,

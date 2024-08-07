@@ -6,7 +6,6 @@ use std::process::ExitStatus;
 use anyhow::Context;
 use anyhow::Result;
 use gourd_lib::ctx;
-use gourd_lib::error::Ctx;
 use log::trace;
 
 /// Runs a shell script.

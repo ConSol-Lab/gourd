@@ -11,7 +11,7 @@ experiments_folder = "experiments"
 
 # This is our first program, named '3dspace'.
 # The binary takes three numbers which are the dimensions of a 3d lattice,
-# then it outputs all of the vectors in that lattice.
+# then it outputs all the vectors in that lattice.
 [program.3dspace]
 binary = "./3dspace"
 
@@ -22,12 +22,12 @@ arguments = ["subparam|side_length.x", "param|depth", "subparam|side_length.y"]
 
 # Specified below are the parameters for the '3dspace' program.
 
-# This parameters specifies the possible depths of the lattice.
+# These parameters specify the possible depths of the lattice.
 [parameter.depth]
 values = ["5", "10", "20"]
 
 # These sub parameters control the plane size of the lattice.
-# These are conjoined, ie. 10 will only be ever used with 30, etc.
+# These are conjoined, i.e. 10 will only be ever used with 30, etc.
 [parameter.side_length.sub.x]
 values = ["10", "15", "20"]
 

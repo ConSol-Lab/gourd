@@ -20,7 +20,7 @@ const PREPROGRAMMED_SH_SCRIPT: &str = r#"#!/bin/sh
 tr '[a-z]' '[A-Z]' <$1 >$2
 "#;
 
-const PREPROGRAMMED_RESULTS: &str = r#"[package]
+const PRE_PROGRAMMED_RESULTS: &str = r#"[package]
 name = "gourd"
 edition = "2021"
 
@@ -33,10 +33,11 @@ fn test_run_afterscript_for_run_good_weather() {
 
     let results_path = tmp_dir.path().join("results.toml");
     let results_file = fs::File::create(&results_path).unwrap();
-    fs::write(&results_path, PREPROGRAMMED_RESULTS).unwrap();
+    fs::write(&results_path, PRE_PROGRAMMED_RESULTS).unwrap();
 
     let afterscript_path = tmp_dir.path().join("afterscript.sh");
     let afterscript_file = fs::File::create(&afterscript_path).unwrap();
+
     fs::write(&afterscript_path, PREPROGRAMMED_SH_SCRIPT).unwrap();
     afterscript_file
         .set_permissions(Permissions::from_mode(0o755))
@@ -59,7 +60,7 @@ fn test_run_afterscript_for_run_good_weather() {
         .unwrap()
         .read_to_string(&mut contents)
         .is_ok());
-    assert_eq!(contents, PREPROGRAMMED_RESULTS.to_ascii_uppercase());
+    assert_eq!(contents, PRE_PROGRAMMED_RESULTS.to_ascii_uppercase());
 
     drop(results_file);
 
@@ -72,7 +73,7 @@ fn test_run_afterscript_for_run_bad_weather() {
 
     let results_path = tmp_dir.path().join("results.toml");
     let results_file = File::create(&results_path).unwrap();
-    fs::write(&results_path, PREPROGRAMMED_RESULTS).unwrap();
+    fs::write(&results_path, PRE_PROGRAMMED_RESULTS).unwrap();
 
     let output_path = tmp_dir.path().join("afterscript_output.toml");
 
@@ -122,7 +123,7 @@ fn test_add_label_to_run() {
         .write_all("hello".as_bytes())
         .expect("The test file could not be written.");
 
-    let conf = Config::from_file(file_pb.as_path(), true, &fs).unwrap();
+    let conf = Config::from_file(file_pb.as_path(), &fs).unwrap();
     let exp =
         Experiment::from_config(&conf, chrono::Local::now(), Environment::Local, &fs).unwrap();
     assert!(conf.labels.is_some());

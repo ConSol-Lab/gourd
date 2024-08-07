@@ -41,10 +41,9 @@ use std::string::String;
 use anyhow::anyhow;
 use anyhow::Result;
 use gourd_lib::config::Config;
-use gourd_lib::config::FetchedPath;
 use gourd_lib::config::UserProgram;
-use gourd_lib::config::UserProgramMap;
 use gourd_lib::experiment::Experiment;
+use gourd_lib::experiment::FieldRef;
 use gourd_lib::file_system::FileSystemInteractor;
 use tempdir::TempDir;
 
@@ -54,7 +53,7 @@ struct TestEnv {
     gourd_path: PathBuf,
     wrapper_path: PathBuf,
     temp_dir: TempDir,
-    programs: UserProgramMap,
+    programs: BTreeMap<FieldRef, UserProgram>,
     input_files: BTreeMap<String, PathBuf>,
     fs: FileSystemInteractor,
 }
@@ -131,7 +130,7 @@ fn compile_example(dir: &PathBuf, contents: &str, extra_args: Option<Vec<&str>>)
 }
 
 fn new_program(
-    prog: &mut UserProgramMap,
+    prog: &mut BTreeMap<FieldRef, UserProgram>,
     name: &str,
     dir: &PathBuf,
     contents: &str,
@@ -141,10 +140,11 @@ fn new_program(
     prog.insert(
         name.to_string(),
         UserProgram {
-            binary: FetchedPath(compile_example(dir, contents, None)),
+            binary: Some(compile_example(dir, contents, None)),
+            fetch: None,
             arguments: extra_args.iter().map(|s| s.to_string()).collect(),
             afterscript: None,
-            postprocess_job: post.map(|p| p.to_string()),
+            next: post.map(|p| vec![p.to_string()]).unwrap_or_default(),
             resource_limits: None,
         },
     );
@@ -183,7 +183,7 @@ fn init() -> TestEnv {
     let temp_dir = TempDir::new_in(env!("CARGO_TARGET_TMPDIR"), "resources").unwrap();
     let p = temp_dir.path().to_path_buf();
     // initialise the programs and input files available in the testing environment.
-    let mut programs = UserProgramMap::default();
+    let mut programs = BTreeMap::default();
     let mut input_files = BTreeMap::new();
 
     // compiled examples
@@ -269,8 +269,6 @@ macro_rules! config {
                 input_schema: None,
                 slurm: None,
                 resource_limits: None,
-                postprocess_resource_limits: None,
-                postprocess_programs: None,
                 labels: None,
                 warn_on_label_overlap: false,
             }
@@ -290,8 +288,6 @@ macro_rules! config {
                 input_schema: None,
                 slurm: None,
                 resource_limits: None,
-                postprocess_resource_limits: None,
-                postprocess_programs: Some($crate::keep(&$env.programs.clone(), &[$($post.to_string()),*])),
                 labels: $label,
                 warn_on_label_overlap: false,
             }

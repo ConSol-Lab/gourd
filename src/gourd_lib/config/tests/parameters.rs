@@ -8,13 +8,15 @@ fn test_expand_parameters_ok_no_expandable() {
         "first".to_string(),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["nice".to_string()],
         },
     );
 
     let parameters = BTreeMap::new();
-    let expanded = expand_parameters(InputMap(inputs.clone()), &parameters).unwrap();
-    assert_eq!(expanded, InputMap(inputs));
+    let expanded = expand_parameters(inputs.clone(), &parameters).unwrap();
+    assert_eq!(expanded, inputs);
 }
 
 #[test]
@@ -24,6 +26,8 @@ fn test_expand_parameters_ok_parameter() {
         "first".to_string(),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["-e".to_string(), "param|x".to_string()],
         },
     );
@@ -35,12 +39,14 @@ fn test_expand_parameters_ok_parameter() {
             values: Some(vec!["a".to_string(), "b".to_string(), "c".to_string()]),
         },
     );
-    let expanded = expand_parameters(InputMap(inputs.clone()), &parameters).unwrap();
+    let expanded = expand_parameters(inputs.clone(), &parameters).unwrap();
     let mut expected = BTreeMap::new();
     expected.insert(
         format!("first_x_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["-e".to_string(), "a".to_string()],
         },
     );
@@ -48,6 +54,8 @@ fn test_expand_parameters_ok_parameter() {
         format!("first_x_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["-e".to_string(), "b".to_string()],
         },
     );
@@ -55,11 +63,13 @@ fn test_expand_parameters_ok_parameter() {
         format!("first_x_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec!["-e".to_string(), "c".to_string()],
         },
     );
 
-    assert_eq!(expanded, InputMap(expected));
+    assert_eq!(expanded, expected);
 }
 
 #[test]
@@ -69,6 +79,8 @@ fn test_expand_parameters_ok_parameter_doubled() {
         "first".to_string(),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "param|x".to_string(),
@@ -85,12 +97,14 @@ fn test_expand_parameters_ok_parameter_doubled() {
             values: Some(vec!["a".to_string(), "b".to_string(), "c".to_string()]),
         },
     );
-    let expanded = expand_parameters(InputMap(inputs.clone()), &parameters).unwrap();
+    let expanded = expand_parameters(inputs.clone(), &parameters).unwrap();
     let mut expected = BTreeMap::new();
     expected.insert(
         format!("first_x_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -103,6 +117,8 @@ fn test_expand_parameters_ok_parameter_doubled() {
         format!("first_x_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -115,6 +131,8 @@ fn test_expand_parameters_ok_parameter_doubled() {
         format!("first_x_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -123,7 +141,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
             ],
         },
     );
-    assert_eq!(expanded, InputMap(expected));
+    assert_eq!(expanded, expected);
 }
 
 #[test]
@@ -133,6 +151,8 @@ fn test_expand_parameters_ok_subparameter() {
         "first".to_string(),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "subparam|x.1".to_string(),
@@ -162,12 +182,14 @@ fn test_expand_parameters_ok_subparameter() {
             values: None,
         },
     );
-    let expanded = expand_parameters(InputMap(inputs), &parameters).unwrap();
+    let expanded = expand_parameters(inputs, &parameters).unwrap();
     let mut expected = BTreeMap::new();
     expected.insert(
         format!("first_x_0{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -180,6 +202,8 @@ fn test_expand_parameters_ok_subparameter() {
         format!("first_x_1{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -192,6 +216,8 @@ fn test_expand_parameters_ok_subparameter() {
         format!("first_x_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -200,7 +226,7 @@ fn test_expand_parameters_ok_subparameter() {
             ],
         },
     );
-    assert_eq!(expanded, InputMap(expected));
+    assert_eq!(expanded, expected);
 }
 
 #[test]
@@ -210,6 +236,8 @@ fn test_expand_parameters_ok_both() {
         "first".to_string(),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "subparam|x.1".to_string(),
@@ -372,6 +400,8 @@ fn test_expand_parameters_ok_both() {
         format!("first_x_1_y_2{INTERNAL_PREFIX}{INTERNAL_PARAMETER}"),
         UserInput {
             file: None,
+            glob: None,
+            fetch: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),

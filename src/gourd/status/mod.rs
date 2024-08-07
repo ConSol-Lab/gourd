@@ -212,6 +212,11 @@ impl Status {
     pub fn is_scheduled(&self) -> bool {
         self.slurm_status.is_some()
     }
+
+    /// Check if this job is still pending
+    pub fn is_pending(&self) -> bool {
+        self.slurm_status.is_none() && matches!(self.fs_status.completion, FsState::Pending)
+    }
 }
 
 /// This type maps between `run_id` and the [Status] of the run.
@@ -225,7 +230,10 @@ pub trait StatusProvider<T, ST> {
     fn get_statuses(connection: &T, experiment: &Experiment) -> Result<BTreeMap<usize, ST>>;
 }
 
+/// Instead of storing a possibly outdated status somewhere, every time it is
+/// needed it's fetched by the status module directly.
 pub trait DynamicStatus {
+    /// Get an up-to-date [`ExperimentStatus`].
     fn status(&self, fs: &impl FileOperations) -> Result<ExperimentStatus>;
 }
 

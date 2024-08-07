@@ -14,5 +14,5 @@ arguments = []
 binary = "test binary"
 
 [input.b]
-input = "test input"
+file = "test input"
 arguments = []
