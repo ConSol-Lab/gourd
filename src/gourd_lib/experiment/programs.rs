@@ -16,8 +16,9 @@ pub fn expand_programs(
     prog: &BTreeMap<String, UserProgram>,
     conf: &Config,
     fs: &impl FileOperations,
-) -> Result<BTreeMap<String, InternalProgram>> {
-    let mut out = BTreeMap::new();
+) -> Result<Vec<InternalProgram>> {
+    let mut out = Vec::new();
+    let mut mapper = BTreeMap::new();
 
     for (name, user) in prog {
         let file = canon_path(
@@ -48,16 +49,21 @@ pub fn expand_programs(
             }
         }
 
-        out.insert(
-            name.clone(),
-            InternalProgram {
-                binary: file,
-                afterscript: user.afterscript.clone(),
-                limits,
-                arguments: user.arguments.clone(),
-                next: user.next.clone(),
-            },
-        );
+        mapper.insert(name, out.len());
+        out.push(InternalProgram {
+            name: name.to_string(),
+            binary: file,
+            afterscript: user.afterscript.clone(),
+            limits,
+            arguments: user.arguments.clone(),
+            next: Vec::new(),
+        });
+    }
+
+    for out_prog in out.iter_mut() {
+        for next_norm in &prog[&out_prog.name].next {
+            out_prog.next.push(mapper[next_norm]);
+        }
     }
 
     Ok(out)

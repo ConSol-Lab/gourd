@@ -2,6 +2,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::anyhow;
+use anyhow::Context;
 use anyhow::Result;
 use chrono::DateTime;
 use chrono::Local;
@@ -9,10 +10,10 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::config::maps::InternalInputMap;
-use crate::config::maps::InternalProgramMap;
 use crate::config::Label;
 use crate::config::ResourceLimits;
 use crate::config::SlurmConfig;
+use crate::ctx;
 use crate::experiment::labels::Labels;
 use crate::file_system::FileOperations;
 
@@ -57,6 +58,9 @@ pub struct Metadata {
 /// The internal representation of a [`UserProgram`]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct InternalProgram {
+    /// The name given to this program by the user.
+    pub name: String,
+
     /// The [`Executable`] of this program (absolute path to it)
     pub binary: PathBuf,
     /// An executable afterscript to run on the output of this program
@@ -69,7 +73,17 @@ pub struct InternalProgram {
 
     /// This program runs on the output of our program,
     /// a reference to the other program's name.
-    pub next: Vec<FieldRef>,
+    pub next: Vec<usize>,
+}
+
+/// The actual arguments to pass to the program.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct RunConf {
+    /// The file to pass to stdin.
+    pub file: Option<PathBuf>,
+
+    /// The arguments for the program.
+    pub arguments: Vec<String>,
 }
 
 /// Describes a matching between an algorithm and an input.
@@ -77,10 +91,10 @@ pub struct InternalProgram {
 #[serde(deny_unknown_fields)]
 pub struct Run {
     /// The unique name of the program to run.
-    pub program: FieldRef,
+    pub program: usize,
 
     /// The path to the file to pass into stdin
-    pub input: FieldRef,
+    pub input: RunConf,
 
     /// The path to the stderr output.
     pub err_path: PathBuf,
@@ -106,10 +120,10 @@ pub struct Run {
     /// If this job has been rerun, a reference to the new one.
     pub rerun: Option<usize>,
 
-    /// This runs after this one.
-    pub children: Vec<usize>,
+    /// The input this has been generated from.
+    pub generated_from_input: Option<FieldRef>,
 
-    /// This runs before this one.
+    /// Edge to the parent run.
     pub parent: Option<usize>,
 }
 
@@ -144,7 +158,7 @@ pub struct Experiment {
     pub inputs: InternalInputMap,
 
     /// The programs for the experiment.
-    pub programs: InternalProgramMap,
+    pub programs: Vec<InternalProgram>,
 
     /// The path to a folder where the experiment output will be stored.
     pub output_folder: PathBuf,
@@ -203,16 +217,24 @@ impl Experiment {
     /// Get (a clone of) the [`InternalProgram`] used for a given [`Run`].
     pub fn get_program(&self, run: &Run) -> Result<InternalProgram> {
         self.programs
-            .get(&run.program)
+            .get(run.program)
             .cloned()
             .ok_or_else(|| anyhow!("Could not find program for run {:?}", &run))
+            .with_context(ctx!("",;"",))
     }
 
-    /// Get (a clone of) the [`InternalInput`] used for a given [`Run`].
-    pub fn get_input(&self, run: &Run) -> Result<InternalInput> {
-        self.inputs
-            .get(&run.input)
+    /// Get (a clone of) the [`InternalProgram`] used for a given [`Run`].
+    pub fn get_program_from_runid(&self, runid: usize) -> Result<InternalProgram> {
+        let run = self
+            .runs
+            .get(runid)
+            .ok_or_else(|| anyhow!("Could not find run {}", runid))
+            .with_context(ctx!("",;"",))?;
+
+        self.programs
+            .get(run.program)
             .cloned()
             .ok_or_else(|| anyhow!("Could not find program for run {:?}", &run))
+            .with_context(ctx!("",;"",))
     }
 }

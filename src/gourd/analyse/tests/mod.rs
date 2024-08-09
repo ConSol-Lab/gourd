@@ -7,6 +7,7 @@ use csv::Reader;
 use csv::StringRecord;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Run;
+use gourd_lib::experiment::RunConf;
 use gourd_lib::measurement::Measurement;
 use tempdir::TempDir;
 
@@ -149,8 +150,11 @@ fn test_analysis_png_plot_success() {
     statuses.insert(2, status_with_rusage.clone());
     statuses.insert(3, status_with_rusage);
     let run = Run {
-        program: String::from("Program A"),
-        input: String::from("Input A"),
+        program: 0,
+        input: RunConf {
+            file: None,
+            arguments: Vec::new(),
+        },
         err_path: Default::default(),
         output_path: Default::default(),
         metrics_path: Default::default(),
@@ -158,7 +162,7 @@ fn test_analysis_png_plot_success() {
         slurm_id: None,
         afterscript_output_path: None,
         rerun: None,
-        children: vec![],
+        parent: None,
         limits: Default::default(),
         parent: None,
     };

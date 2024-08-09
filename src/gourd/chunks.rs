@@ -60,25 +60,21 @@ pub trait Chunkable {
     fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String);
     /// Get the still pending runs of this experiment.
     fn unscheduled(&self, status: &ExperimentStatus) -> Vec<&Run>;
+    /// Get the still pending runs of this experiment but mutable.
+    fn unscheduled_mut(&mut self, status: &ExperimentStatus) -> Vec<&mut Run>;
 }
 
 impl Chunkable for Experiment {
     fn next_chunks(&mut self, chunk_length: usize, status: ExperimentStatus) -> Result<Vec<Chunk>> {
         let mut chunks = vec![];
 
-        let runs = self
-            .runs
-            .iter()
-            .enumerate()
-            .filter(|(ridx, _)| !status[ridx].is_scheduled())
-            .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
-            .collect::<Vec<(usize, &Run)>>();
+        let runs: Vec<(usize, &Run)> = self.unscheduled(&status).into_iter().enumerate().collect();
 
         if runs.is_empty() {
             bailc!(
                 "No runs left to schedule!",;
                 "All available runs have already been scheduled.",;
-                "You can rerun some runs, wait for dependent runs to \
+                "You can rerun some runs, wait for dependent runs to
                 complete, or start a new experiment.",
             );
         }
@@ -103,26 +99,33 @@ impl Chunkable for Experiment {
         Ok(chunks)
     }
 
-    /// TODO: FIXME
     fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String) {
         for run_id in chunk.runs.iter() {
-            // TEST:
+            // POSSIBLE REGRESSION:
             // because we schedule an array by specifying the run_id(s) in a list,
-            // the sub id should be == run_id.
-            // I have not confirmed this though, needs testing
-            let job_id = format!("{}_{}", batch_id, run_id);
-            self.runs[*run_id].slurm_id = Some(job_id.clone());
-            //self.runs[*run_id].status = Scheduled(job_id);
+            // the sub id should be == run_id. Unconfirmed.
+
+            self.runs[*run_id].slurm_id = Some(format!("{}_{}", batch_id, run_id));
         }
     }
 
-    /// TODO: FIXME
     fn unscheduled(&self, status: &ExperimentStatus) -> Vec<&Run> {
         self.runs
             .iter()
             .enumerate()
-            .filter(|(i, _)| status[i].is_pending())
-            .map(|(_, r)| r)
+            .filter(|(ridx, r)| !status[ridx].is_scheduled() && r.slurm_id.is_none())
+            .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
+            .map(|(_, b)| b)
+            .collect()
+    }
+
+    fn unscheduled_mut(&mut self, status: &ExperimentStatus) -> Vec<&mut Run> {
+        self.runs
+            .iter_mut()
+            .enumerate()
+            .filter(|(ridx, r)| !status[ridx].is_scheduled() && r.slurm_id.is_none())
+            .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
+            .map(|(_, b)| b)
             .collect()
     }
 }

@@ -293,13 +293,16 @@ pub fn blocking_status(
     experiment: &Experiment,
     fs: &mut impl FileOperations,
     full: bool,
+  to_complete: usize
 ) -> Result<()> {
-    let mut complete = 0;
     let mut message = "".to_string();
+    let mut complete = 0;
 
     let bar = progress.add(generate_progress_bar(experiment.runs.len() as u64)?);
 
-    while complete < experiment.runs.len() {
+    println!("{complete} vs {to_complete}");
+
+    while complete < to_complete {
         let mut buf = BufWriter::new(Vec::new());
 
         let statuses = experiment.status(fs)?;

@@ -12,8 +12,10 @@ use std::process::Command;
 
 use anyhow::Result;
 use gourd_lib::experiment::Experiment;
+use gourd_lib::experiment::Run;
 use gourd_lib::file_system::FileOperations;
 
+use crate::chunks::Chunkable;
 use crate::status::DynamicStatus;
 #[cfg(target_os = "linux")]
 use crate::wrapper::check_binary_linux::verify_arch;
@@ -38,29 +40,24 @@ pub fn wrap(
 ) -> Result<Vec<Command>> {
     let mut result = Vec::new();
 
-    let mut runs_to_iterate = experiment.runs.clone();
-
     let status = experiment.status(fs)?;
 
-    for (run_id, run) in runs_to_iterate.iter_mut().enumerate() {
-        if status[&run_id].is_scheduled() || status[&run_id].is_completed() {
-            continue; // i assume we ignore the scenario where a run is locally
-                      // still running? (for example
-                      // multiple terminals in the same gourd experiment)
-        }
+    let exp = experiment.clone();
+    let runs_to_iterate: Vec<&mut Run> = experiment.unscheduled_mut(&status);
 
-        let program = &experiment.get_program(run)?;
+    for (run_id, run) in runs_to_iterate.into_iter().enumerate() {
+        let program = &exp.get_program(run)?;
 
         verify_arch(&program.binary, arch, fs)?;
 
-        let mut cmd = Command::new(&experiment.wrapper);
+        let mut cmd = Command::new(&exp.wrapper);
 
         cmd.arg(experiment_path).arg(format!("{}", run_id));
 
         result.push(cmd);
-    }
 
-    experiment.runs = runs_to_iterate;
+        run.slurm_id = Some(String::default());
+    }
 
     Ok(result)
 }

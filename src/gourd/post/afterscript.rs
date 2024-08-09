@@ -31,7 +31,7 @@ pub fn run_afterscript(run_id: usize, experiment: &Experiment) -> Result<()> {
             "",
         ))?;
 
-    let afterscript = &experiment.programs[&run.program]
+    let afterscript = &experiment.programs[run.program]
         .afterscript
         .clone()
         .ok_or(anyhow!("Could not get the afterscript information"))
