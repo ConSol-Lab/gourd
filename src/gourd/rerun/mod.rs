@@ -2,7 +2,6 @@
 /// User interactions for SLURM reruns.
 /// This is interactive and SLURM-bound so cannot be checked locally.
 pub mod slurm;
-use anyhow::anyhow;
 use anyhow::Result;
 /// Retrieve runs to rerun
 pub mod runs;
@@ -53,10 +52,7 @@ fn update_program_resource_limits(
     experiment: &mut Experiment,
     new_rss: ResourceLimits,
 ) -> Result<()> {
-    experiment
-        .programs
-        .get_mut(&experiment.runs[run_id].program)
-        .ok_or_else(|| anyhow!("Program {} doesn't exist", &experiment.runs[run_id].program))?
-        .limits = new_rss;
+    experiment.programs[experiment.runs[run_id].program].limits = new_rss;
+
     Ok(())
 }

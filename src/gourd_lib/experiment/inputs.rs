@@ -79,7 +79,7 @@ pub fn expand_inputs(
 
                     if let Some(f) = path.file_stem() {
                         out.insert(
-                            format!("{}_i_{f:?}", &name),
+                            format!("{}_i_{}", &name, f.to_str().unwrap_or("")),
                             InternalInput {
                                 input: Some(canon_path(&path, fs)?),
                                 arguments: user.arguments.clone(),

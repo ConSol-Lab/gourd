@@ -1,5 +1,7 @@
+use std::collections::VecDeque;
 use std::fs;
 use std::path::Path;
+use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -16,6 +18,7 @@ use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
 use gourd_lib::experiment::Run;
+use gourd_lib::experiment::RunConf;
 use gourd_lib::file_system::FileOperations;
 
 /// Extension trait for the shared `Experiment` struct.
@@ -92,49 +95,36 @@ impl ExperimentExt for Experiment {
             runs: Vec::new(),
         };
 
-        // TODO: Here is the place for the backfilling DFS.
-        // Don't do this Andreas, I've got to got for now but I'll do it today evening.
-        // Lave this be for now.
+        // Collapse the programs into an ordered structure for faster processing.
+        let mut in_degree = vec![0usize; experiment.programs.len()];
 
-        for (prog_name, prog) in &experiment.programs {
-            for input_name in experiment.inputs.keys() {
-                // just here to pass clippy
-                // for (input_name, _input) in &experiment.inputs {
-                let mut next_ids = Vec::new();
-
-                for next_step in prog.next.iter() {
-                    next_ids.push(experiment.runs.len());
-
-                    experiment.runs.push(generate_new_run(
-                        experiment.runs.len(),
-                        next_step.clone(),
-                        // TODO: The new input from dfs
-                        input_name.clone(),
-                        None,
-                        None,
-                        ResourceLimits::default(), //todo
-                        &experiment,
-                        fs,
-                    )?);
-                }
-
-                let parent_id = experiment.runs.len();
-                for next_id in next_ids {
-                    experiment.runs[next_id].parent = Some(parent_id);
-                }
-
-                experiment.runs.push(generate_new_run(
-                    experiment.runs.len(),
-                    prog_name.clone(),
-                    input_name.clone(), // TODO: input for runs
-                    None,
-                    None,
-                    ResourceLimits::default(), //todo
-                    &experiment,
-                    fs,
-                )?);
+        for prog in &experiment.programs {
+            for next_prog in &prog.next {
+                in_degree[*next_prog] += 1;
             }
         }
+
+        let mut visitation = vec![0usize; experiment.programs.len()];
+        let mut runs = Vec::new();
+
+        for prog in 0..experiment.programs.len() {
+            if in_degree[prog] == 0 {
+                dfs(&mut visitation, prog, &mut runs, &experiment, fs)?;
+            }
+        }
+
+        for prog in 0..experiment.programs.len() {
+            if visitation[prog] != 1 {
+                bailc!(
+                    "A circural cycle has been detected in the programs",;
+                    "The `next` fields in the programs create a circular/
+                     dependency this is not allowed",;
+                    "",
+                );
+            }
+        }
+
+        experiment.runs = runs;
 
         Ok(experiment)
     }
@@ -202,26 +192,119 @@ impl ExperimentExt for Experiment {
     }
 }
 
+/// A helper enum for dfs.
+enum Step {
+    Entry(usize, Option<Vec<(usize, PathBuf)>>),
+    Exit(usize),
+}
+
+/// A depth first search for creating the prog tree.
+fn dfs(
+    visitation: &mut Vec<usize>,
+    start: usize,
+    runs: &mut Vec<Run>,
+    exp: &Experiment,
+    fs: &impl FileOperations,
+) -> Result<()> {
+    // Since the run amount can be in the millions I don't want to rely on tail
+    // recursion and we will just use unrolled dfs.
+    let mut next: VecDeque<Step> = VecDeque::new();
+    next.push_back(Step::Entry(start, None));
+
+    while let Some(step) = next.pop_front() {
+        if let Step::Entry(node, parent) = step {
+            // We jumped backward in the search tree.
+            if visitation[node] == 2 {
+                bailc!(
+                    "A circural cycle has been detected in the programs",;
+                    "The `next` fields in the programs create a circular\
+                     dependency this is not allowed",;
+                    "",
+                );
+            }
+
+            // We've seen this node in a different part of the search tree.
+            if visitation[node] == 1 {
+                continue;
+            }
+
+            // We've never seen this node before.
+
+            visitation[node] = 2;
+
+            let mut children = Vec::new();
+
+            if parent.is_none() {
+                for (input_name, input) in &exp.inputs {
+                    let child = generate_new_run(
+                        runs.len(),
+                        node,
+                        input.input.clone(),
+                        input.arguments.clone(),
+                        Some(input_name.clone()),
+                        ResourceLimits::default(), // TODO: FIXME
+                        None,
+                        exp,
+                        fs,
+                    )?;
+
+                    children.push((runs.len(), child.output_path.clone()));
+                    runs.push(child);
+                }
+            } else if let Some(pchildren) = parent {
+                for pchild in pchildren {
+                    let child = generate_new_run(
+                        runs.len(),
+                        node,
+                        Some(pchild.1),
+                        Vec::new(),
+                        None,
+                        ResourceLimits::default(), // TODO: FIXME
+                        Some(pchild.0),
+                        exp,
+                        fs,
+                    )?;
+
+                    children.push((runs.len(), child.output_path.clone()));
+                    runs.push(child);
+                }
+            }
+
+            for child in &exp.programs[node].next {
+                next.push_back(Step::Entry(child.clone(), Some(children.clone())));
+            }
+
+            next.push_back(Step::Exit(node));
+        } else if let Step::Exit(node) = step {
+            visitation[node] = 1;
+        }
+    }
+
+    Ok(())
+}
+
 /// This function will generate a new run.
 ///
 /// This should be used by all code paths adding runs to the experiment.
+/// This does *not* set the parent and child.
 #[allow(clippy::too_many_arguments)]
 pub fn generate_new_run(
     run_id: usize,
-    program: FieldRef,
-    input: FieldRef,
-    _child: Option<usize>,
-    parent: Option<usize>,
+    program: usize,
+    file: Option<PathBuf>,
+    args: Vec<String>,
+    input: Option<FieldRef>,
     limits: ResourceLimits,
+    parent: Option<usize>,
     experiment: &Experiment,
     fs: &impl FileOperations,
 ) -> Result<Run> {
-    let _internal_prog = &experiment.programs[&program];
-    let _internal_input = &experiment.inputs[&input];
-
     Ok(Run {
-        program: program.clone(),
-        input: input.clone(),
+        program,
+        input: RunConf {
+            file,
+            arguments: args,
+        },
         err_path: fs.truncate_and_canonicalize(
             &experiment
                 .output_folder
@@ -242,7 +325,7 @@ pub fn generate_new_run(
                 .output_folder
                 .join(format!("{}/{}/{}/", experiment.seq, program, run_id)),
         )?,
-        afterscript_output_path: match experiment.programs[&program].afterscript.as_ref() {
+        afterscript_output_path: match experiment.programs[program].afterscript.as_ref() {
             None => None,
             Some(_) => Some(
                 fs.truncate_and_canonicalize_folder(
@@ -253,10 +336,10 @@ pub fn generate_new_run(
             ),
         },
         limits,
-        parent,
         slurm_id: None,
         rerun: None,
-        children: vec![],
+        generated_from_input: input,
+        parent,
     })
 }
 

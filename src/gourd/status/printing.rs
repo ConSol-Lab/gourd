@@ -16,6 +16,7 @@ use gourd_lib::ctx;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
+use gourd_lib::experiment::Run;
 use log::info;
 
 use super::ExperimentStatus;
@@ -224,6 +225,16 @@ fn short_status(
     Ok(())
 }
 
+fn format_input_name(run: &Run) -> String {
+    if let Some(input_name) = &run.generated_from_input {
+        input_name.clone()
+    } else if let Some(parent_id) = run.parent {
+        format!("postprocessing of {}", parent_id)
+    } else {
+        "unk?".to_string()
+    }
+}
+
 /// Display a shortened status for a small amount of runs.
 #[cfg(not(tarpaulin_include))] // We can't test stdout
 fn long_status(
@@ -239,13 +250,15 @@ fn long_status(
     let mut longest_index: usize = 0;
 
     for (run_id, run_data) in runs.iter().enumerate() {
-        longest_input = max(longest_input, run_data.input.chars().count());
+        longest_input = max(longest_input, format_input_name(run_data).chars().count());
         longest_index = max(longest_index, run_id.to_string().len());
 
-        if let Some(for_this_prog) = by_program.get_mut(&run_data.program) {
+        let prog_name = experiment.get_program(run_data)?.name;
+
+        if let Some(for_this_prog) = by_program.get_mut(&prog_name) {
             for_this_prog.push(run_id);
         } else {
-            by_program.insert(run_data.program.clone(), vec![run_id]);
+            by_program.insert(prog_name, vec![run_id]);
         }
     }
 
@@ -256,17 +269,13 @@ fn long_status(
 
         for run_id in prog_runs {
             let run = &experiment.runs[run_id];
-            let status = if let Some(rerun_id) = run.rerun {
-                statuses[&rerun_id].clone()
-            } else {
-                statuses[&run_id].clone()
-            };
+            let status = statuses[&run_id].clone();
 
             write!(
                 f,
                 "  {: >numw$}. {NAME_STYLE}{:.<width$}{NAME_STYLE:#}.... {}",
                 run_id,
-                run.input,
+                format_input_name(run),
                 if let Some(r) = run.rerun {
                     format!("reran as {NAME_STYLE}{r}{NAME_STYLE:#}")
                 } else {
@@ -348,9 +357,9 @@ pub fn display_job(
             program.binary
         )?;
 
-        writeln!(f, "{NAME_STYLE}input{NAME_STYLE:#}: {}", run.input)?;
+        writeln!(f, "{NAME_STYLE}input{NAME_STYLE:#}: {:?}", run.input.file)?;
 
-        if let Some(input_file) = exp.get_input(run)?.input {
+        if let Some(input_file) = &run.input.file {
             writeln!(f, "  {NAME_STYLE}file{NAME_STYLE:#}:   {:?}", input_file)?;
         }
 

@@ -19,13 +19,14 @@ pub async fn run_local(
     fs: &impl FileOperations,
     force: bool,
     sequential: bool,
-) -> Result<()> {
+) -> Result<usize> {
     let cmds = wrap(experiment, exp_path, env::consts::ARCH, fs)?;
     trace!("Running cmds {:#?}", cmds);
 
     experiment.save(fs)?;
 
+    let len = cmds.len();
     run_locally(cmds, force, sequential).await?;
 
-    Ok(())
+    Ok(len)
 }

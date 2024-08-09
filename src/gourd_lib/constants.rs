@@ -28,10 +28,7 @@ pub const LABEL_OVERLAP_DEFAULT: fn() -> bool = || false;
 pub const EMPTY_ARGS: fn() -> Vec<String> = Vec::new;
 
 /// The prefix which will cause an argument to be interpreted as a glob.
-pub const GLOB_ESCAPE: &str = "glob|";
-
-/// The prefix which will cause a path to be interpreted as a fetch.
-pub const URL_ESCAPE: &str = "fetch|";
+pub const GLOB_ESCAPE: &str = "path|";
 
 /// The prefix which will cause an argument to be interpreted as a parameter.
 pub const PARAMETER_ESCAPE: &str = "param|";

@@ -165,7 +165,7 @@ pub fn query_changing_limits_for_programs(
         for run in runs {
             run_programs.insert(
                 *run,
-                experiment.programs[&experiment.runs[*run].program].clone(),
+                experiment.programs[experiment.runs[*run].program].clone(),
             );
         }
 
