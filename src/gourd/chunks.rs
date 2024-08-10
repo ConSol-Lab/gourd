@@ -74,8 +74,7 @@ impl Chunkable for Experiment {
             bailc!(
                 "No runs left to schedule!",;
                 "All available runs have already been scheduled.",;
-                "You can rerun some runs, wait for dependent runs to
-                complete, or start a new experiment.",
+                "You can rerun, wait for dependent runs to complete, or start a new experiment.",
             );
         }
 
@@ -101,10 +100,8 @@ impl Chunkable for Experiment {
 
     fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String) {
         for run_id in chunk.runs.iter() {
-            // POSSIBLE REGRESSION:
             // because we schedule an array by specifying the run_id(s) in a list,
-            // the sub id should be == run_id. Unconfirmed.
-
+            // the sub id should be == run_id.
             self.runs[*run_id].slurm_id = Some(format!("{}_{}", batch_id, run_id));
         }
     }
@@ -113,7 +110,7 @@ impl Chunkable for Experiment {
         self.runs
             .iter()
             .enumerate()
-            .filter(|(ridx, r)| !status[ridx].is_scheduled() && r.slurm_id.is_none())
+            .filter(|(r_idx, r)| !status[r_idx].is_scheduled() && r.slurm_id.is_none())
             .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
             .map(|(_, b)| b)
             .collect()
@@ -123,7 +120,7 @@ impl Chunkable for Experiment {
         self.runs
             .iter_mut()
             .enumerate()
-            .filter(|(ridx, r)| !status[ridx].is_scheduled() && r.slurm_id.is_none())
+            .filter(|(r_idx, r)| !status[r_idx].is_scheduled() && r.slurm_id.is_none())
             .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
             .map(|(_, b)| b)
             .collect()

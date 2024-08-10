@@ -138,13 +138,20 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     if cmd.dry {
                         info!("Would have ran the experiment (dry)");
                     } else {
-                        let to_complete = run_local(&mut experiment, &exp_path, &file_system, force, sequential)
-                            .await?;
+                        let to_complete =
+                            run_local(&mut experiment, &exp_path, &file_system, force, sequential)
+                                .await?;
 
                         info!("Experiment started");
 
                         // Local will never unshorten status, hence the false.
-                        blocking_status(&progress, &experiment, &mut file_system, false, to_complete)?;
+                        blocking_status(
+                            &progress,
+                            &experiment,
+                            &mut file_system,
+                            false,
+                            to_complete,
+                        )?;
 
                         info!("Experiment finished");
                         println!();
@@ -207,7 +214,13 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     );
 
                     if *blocking {
-                        blocking_status(&progress, &experiment, &mut file_system, *full, experiment.runs.len())?;
+                        blocking_status(
+                            &progress,
+                            &experiment,
+                            &mut file_system,
+                            *full,
+                            experiment.runs.len(),
+                        )?;
                     } else {
                         display_statuses(&mut stdout(), &experiment, &statuses, *full)?;
                     }
@@ -389,7 +402,8 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 if cmd.dry {
                     info!("Would have continued the experiment (dry)");
                 } else {
-                    let to_complete = run_local(&mut experiment, &exp_path, &file_system, true, false).await?;
+                    let to_complete =
+                        run_local(&mut experiment, &exp_path, &file_system, true, false).await?;
 
                     info!("Experiment started");
 
@@ -448,11 +462,14 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
 
                 experiment.runs.push(generate_new_run(
                     new_id,
-                    old_run.program.clone(),
-                    old_run.input.file.clone(),
-                    old_run.input.arguments.clone(),
+                    old_run.program,
+                    old_run.input.clone(),
                     old_run.generated_from_input.clone(),
-                    Default::default(), // todo: resource limits for reruns
+                    // since we still update & save the limits for every program,
+                    // new resource limits are fetched from the old run's program.
+                    // in a future stateless gourd, we will only update the limits for new runs,
+                    // instead of the limits of the entire program.
+                    experiment.programs[experiment.runs[*run_id].program].limits,
                     old_run.parent,
                     &experiment,
                     &file_system,

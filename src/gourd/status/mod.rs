@@ -293,7 +293,7 @@ pub fn blocking_status(
     experiment: &Experiment,
     fs: &mut impl FileOperations,
     full: bool,
-  to_complete: usize
+    to_complete: usize,
 ) -> Result<()> {
     let mut message = "".to_string();
     let mut complete = 0;

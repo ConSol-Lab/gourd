@@ -6,14 +6,14 @@ use super::*;
 
 #[test]
 fn query_update_resource_limits_script() {
-    let lims = ResourceLimits {
+    let limits = ResourceLimits {
         time_limit: Duration::from_secs(50326),
         mem_per_cpu: 13,
         cpus: 32,
     };
 
     let result = query_update_resource_limits(
-        &lims, true, None, // mem
+        &limits, true, None, // mem
         None, // cpu
         None, // time
     );
@@ -22,7 +22,7 @@ fn query_update_resource_limits_script() {
     assert!(result.is_err_and(|e| e.root_cause().to_string().contains("No time specified")));
 
     let result = query_update_resource_limits(
-        &lims,
+        &limits,
         true,
         None,                            // mem
         None,                            // cpu
@@ -33,7 +33,7 @@ fn query_update_resource_limits_script() {
     assert!(result.is_err_and(|e| e.root_cause().to_string().contains("No memory specified")));
 
     let result = query_update_resource_limits(
-        &lims,
+        &limits,
         true,
         Some(283),                       // mem
         None,                            // cpu
@@ -44,7 +44,7 @@ fn query_update_resource_limits_script() {
     assert!(result.is_err_and(|e| e.root_cause().to_string().contains("No CPUs specified")));
 
     let result = query_update_resource_limits(
-        &lims,
+        &limits,
         true,
         Some(283),                       // mem
         Some(38),                        // cpu

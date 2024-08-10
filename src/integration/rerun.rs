@@ -126,9 +126,9 @@ fn test_setting_resource_limits() {
 
     gourd.stdout.unwrap().read_to_string(&mut s).unwrap();
 
-    assert!(s.contains("failed"));
-    assert!(s.contains("all finished"));
-    assert!(s.contains(" new runs have been created"));
+    assert!(s.contains("failed (3 runs)"));
+    assert!(s.contains("all finished (6 runs)"));
+    assert!(s.contains("3 new runs have been created"));
 
     // Now the runs are already scheduled. Let's try rerun again.
 

@@ -76,13 +76,17 @@ pub struct InternalProgram {
     pub next: Vec<usize>,
 }
 
-/// The actual arguments to pass to the program.
+/// The input for a [`Run`], exactly as will be passed to the wrapper for
+/// execution.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct RunConf {
-    /// The file to pass to stdin.
+pub struct RunInput {
+    /// A file whose contents to be passed into the program's `stdin`
     pub file: Option<PathBuf>,
 
-    /// The arguments for the program.
+    /// Command line arguments for this binary execution.
+    ///
+    /// Holds the concatenation of [`UserProgram`] specified arguments and
+    /// [`UserInput`] arguments.
     pub arguments: Vec<String>,
 }
 
@@ -94,7 +98,7 @@ pub struct Run {
     pub program: usize,
 
     /// The path to the file to pass into stdin
-    pub input: RunConf,
+    pub input: RunInput,
 
     /// The path to the stderr output.
     pub err_path: PathBuf,

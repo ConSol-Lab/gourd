@@ -18,7 +18,7 @@ use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
 use gourd_lib::experiment::Run;
-use gourd_lib::experiment::RunConf;
+use gourd_lib::experiment::RunInput;
 use gourd_lib::file_system::FileOperations;
 
 /// Extension trait for the shared `Experiment` struct.
@@ -96,30 +96,29 @@ impl ExperimentExt for Experiment {
         };
 
         // Collapse the programs into an ordered structure for faster processing.
-        let mut in_degree = vec![0usize; experiment.programs.len()];
+        let mut in_degrees = vec![0usize; experiment.programs.len()];
 
         for prog in &experiment.programs {
             for next_prog in &prog.next {
-                in_degree[*next_prog] += 1;
+                in_degrees[*next_prog] += 1;
             }
         }
 
         let mut visitation = vec![0usize; experiment.programs.len()];
         let mut runs = Vec::new();
 
-        for prog in 0..experiment.programs.len() {
-            if in_degree[prog] == 0 {
-                dfs(&mut visitation, prog, &mut runs, &experiment, fs)?;
+        for degree in in_degrees {
+            if degree == 0 {
+                dfs(&mut visitation, degree, &mut runs, &experiment, fs)?;
             }
         }
 
-        for prog in 0..experiment.programs.len() {
-            if visitation[prog] != 1 {
+        for (prog, visit) in visitation.iter().enumerate() {
+            if *visit != 1 {
                 bailc!(
-                    "A circural cycle has been detected in the programs",;
-                    "The `next` fields in the programs create a circular/
-                     dependency this is not allowed",;
-                    "",
+                    "A cycle was found in the program dependencies.",;
+                    "The `next` field in the program definitions created a circular dependency",;
+                    "Fix the dependencies for {:?}",experiment.programs[prog].name
                 );
             }
         }
@@ -200,14 +199,14 @@ enum Step {
 
 /// A depth first search for creating the prog tree.
 fn dfs(
-    visitation: &mut Vec<usize>,
+    visitation: &mut [usize],
     start: usize,
     runs: &mut Vec<Run>,
     exp: &Experiment,
     fs: &impl FileOperations,
 ) -> Result<()> {
     // Since the run amount can be in the millions I don't want to rely on tail
-    // recursion and we will just use unrolled dfs.
+    // recursion, and we will just use unrolled dfs.
     let mut next: VecDeque<Step> = VecDeque::new();
     next.push_back(Step::Entry(start, None));
 
@@ -216,10 +215,9 @@ fn dfs(
             // We jumped backward in the search tree.
             if visitation[node] == 2 {
                 bailc!(
-                    "A circural cycle has been detected in the programs",;
-                    "The `next` fields in the programs create a circular\
-                     dependency this is not allowed",;
-                    "",
+                    "A cycle was found in the program dependencies!",;
+                    "The `next` field in some program definition created a circular dependency",;
+                    "This incident will be reported",
                 );
             }
 
@@ -239,10 +237,12 @@ fn dfs(
                     let child = generate_new_run(
                         runs.len(),
                         node,
-                        input.input.clone(),
-                        input.arguments.clone(),
+                        RunInput {
+                            file: input.input.clone(),
+                            arguments: input.arguments.clone(),
+                        },
                         Some(input_name.clone()),
-                        ResourceLimits::default(), // TODO: FIXME
+                        exp.programs[node].limits, // todo: check what node is
                         None,
                         exp,
                         fs,
@@ -256,10 +256,12 @@ fn dfs(
                     let child = generate_new_run(
                         runs.len(),
                         node,
-                        Some(pchild.1),
-                        Vec::new(),
+                        RunInput {
+                            file: Some(pchild.1),
+                            arguments: exp.programs[pchild.0].arguments.clone(),
+                        },
                         None,
-                        ResourceLimits::default(), // TODO: FIXME
+                        exp.programs[pchild.0].limits,
                         Some(pchild.0),
                         exp,
                         fs,
@@ -271,7 +273,7 @@ fn dfs(
             }
 
             for child in &exp.programs[node].next {
-                next.push_back(Step::Entry(child.clone(), Some(children.clone())));
+                next.push_back(Step::Entry(*child, Some(children.clone())));
             }
 
             next.push_back(Step::Exit(node));
@@ -291,8 +293,7 @@ fn dfs(
 pub fn generate_new_run(
     run_id: usize,
     program: usize,
-    file: Option<PathBuf>,
-    args: Vec<String>,
+    run_input: RunInput,
     input: Option<FieldRef>,
     limits: ResourceLimits,
     parent: Option<usize>,
@@ -301,10 +302,7 @@ pub fn generate_new_run(
 ) -> Result<Run> {
     Ok(Run {
         program,
-        input: RunConf {
-            file,
-            arguments: args,
-        },
+        input: run_input,
         err_path: fs.truncate_and_canonicalize(
             &experiment
                 .output_folder
