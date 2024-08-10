@@ -275,7 +275,7 @@ macro_rules! config {
         }
     };
 
-    ($env:expr; $($prog:expr),*; $($inp:expr),*; $($post:expr),*; $label:expr) => {
+    ($env:expr; $($prog:expr),*; $($inp:expr),*; $label:expr) => {
         {
             gourd_lib::config::Config {
                 output_path: $env.temp_dir.path().join("out"),

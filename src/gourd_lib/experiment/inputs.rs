@@ -1,11 +1,8 @@
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
-use serde::Deserialize;
-use serde::Serialize;
 
 use crate::bailc;
 use crate::config::maps::canon_path;
@@ -15,27 +12,9 @@ use crate::config::parameters::expand_parameters;
 use crate::config::parameters::validate_parameters;
 use crate::config::Parameter;
 use crate::config::UserInput;
-use crate::experiment::FieldRef;
 use crate::experiment::InternalInput;
 use crate::experiment::Metadata;
 use crate::file_system::FileOperations;
-
-/// The input for a [`Run`], exactly as will be passed to the wrapper for
-/// execution.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct RunInput {
-    /// The name of this input, as specified by the user.
-    pub name: FieldRef,
-
-    /// A file whose contents to be passed into the program's `stdin`
-    pub file: Option<PathBuf>,
-
-    /// Command line arguments for this binary execution.
-    ///
-    /// Holds the concatenation of [`UserProgram`] specified arguments and
-    /// [`UserInput`] arguments.
-    pub args: Vec<String>,
-}
 
 /// Convert a [`UserInput`] to a list of [`InternalInput`]s, expanding globs and
 /// fetching remote resources.

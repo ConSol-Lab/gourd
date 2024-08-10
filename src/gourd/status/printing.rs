@@ -231,7 +231,7 @@ fn format_input_name(run: &Run) -> String {
     } else if let Some(parent_id) = run.parent {
         format!("postprocessing of {}", parent_id)
     } else {
-        "unk?".to_string()
+        unreachable!("A run cannot spawn out of thin air!");
     }
 }
 

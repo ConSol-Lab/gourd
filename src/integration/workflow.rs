@@ -27,7 +27,6 @@ fn gourd_run_test() {
             file: Some(env.temp_dir.path().join("input_hello")),
             glob: None,fetch: None,arguments: vec![],
         });
-        "fast_fast_fib";
         Some(BTreeMap::from([(
             "correct".to_string(),
             Label {
@@ -74,7 +73,6 @@ fn gourd_status_test() {
             file: Some(env.temp_dir.path().join("input_hello")),
             glob: None,fetch: None,arguments: vec![],
         });
-        "fast_fast_fib";
         Some(BTreeMap::from([(
             "correct".to_string(),
             Label {
@@ -114,8 +112,10 @@ fn gourd_status_test() {
     );
 
     let text_out = std::str::from_utf8(status_1_returned.stdout.as_slice()).unwrap();
+    // 3 programs on input "hello" will fail, 1 post on a failed will fail
     assert_eq!(4, text_out.match_indices("failed").count());
-    assert_eq!(6, text_out.match_indices("success").count());
+    // 3 programs on input 10 will pass, 1 post on a good output will pass
+    assert_eq!(4, text_out.match_indices("success").count());
 
     // get a new configuration
     let conf2_path = save_gourd_toml(&conf2, &env.temp_dir);
@@ -159,7 +159,6 @@ fn gourd_rerun_test() {
             file: Some(env.temp_dir.path().join("input_hello")),
             glob: None,fetch: None,arguments: vec![],
         });
-        "fast_fast_fib";
         Some(BTreeMap::from([(
             "correct".to_string(),
             Label {
