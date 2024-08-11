@@ -49,6 +49,7 @@ use tempdir::TempDir;
 
 /// The testing environment passed to individual #[test](s)
 #[allow(dead_code)]
+#[derive(Debug)]
 struct TestEnv {
     gourd_path: PathBuf,
     wrapper_path: PathBuf,

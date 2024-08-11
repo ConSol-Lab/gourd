@@ -69,7 +69,7 @@ pub enum RunSubcommand {
 pub struct RerunOptions {
     /// The id of the experiment to rerun jobs for
     /// [default: newest experiment]
-    #[arg(short = 'i', long)]
+    #[arg(value_name = "EXPERIMENT")]
     pub experiment_id: Option<usize>,
 
     /// The ids of the runs to rerun [default: all failed runs]

@@ -12,11 +12,11 @@ use std::process::Command;
 
 use anyhow::Result;
 use gourd_lib::experiment::Experiment;
-use gourd_lib::experiment::Run;
 use gourd_lib::file_system::FileOperations;
+use log::trace;
 
 use crate::chunks::Chunkable;
-use crate::status::DynamicStatus;
+use crate::status::ExperimentStatus;
 #[cfg(target_os = "linux")]
 use crate::wrapper::check_binary_linux::verify_arch;
 #[cfg(target_os = "macos")]
@@ -35,17 +35,18 @@ fn verify_arch(_: &PathBuf, _: &str, _: &impl FileOperations) -> Result<()> {
 pub fn wrap(
     experiment: &mut Experiment,
     experiment_path: &Path,
+    status: &ExperimentStatus,
     arch: &str,
     fs: &impl FileOperations,
 ) -> Result<Vec<Command>> {
     let mut result = Vec::new();
 
-    let status = experiment.status(fs)?;
-
     let exp = experiment.clone();
-    let runs_to_iterate: Vec<&mut Run> = experiment.unscheduled_mut(&status);
+    let runs_to_iterate = experiment.unscheduled_mut(status);
 
-    for (run_id, run) in runs_to_iterate.into_iter().enumerate() {
+    trace!("There are {} unsched runs", runs_to_iterate.len());
+
+    for (run_id, run) in runs_to_iterate.into_iter() {
         let program = &exp.get_program(run)?;
 
         verify_arch(&program.binary, arch, fs)?;
@@ -55,8 +56,6 @@ pub fn wrap(
         cmd.arg(experiment_path).arg(format!("{}", run_id));
 
         result.push(cmd);
-
-        run.slurm_id = Some(String::default());
     }
 
     Ok(result)

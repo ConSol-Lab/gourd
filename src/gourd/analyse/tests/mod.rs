@@ -6,6 +6,7 @@ use std::time::Duration;
 use csv::Reader;
 use csv::StringRecord;
 use gourd_lib::experiment::Environment;
+use gourd_lib::experiment::InternalProgram;
 use gourd_lib::experiment::Run;
 use gourd_lib::experiment::RunInput;
 use gourd_lib::measurement::Measurement;
@@ -173,7 +174,7 @@ fn test_analysis_png_plot_success() {
         home: Default::default(),
         wrapper: "".to_string(),
         inputs: Default::default(),
-        programs: Default::default(),
+        programs: vec![InternalProgram::default()],
         output_folder: Default::default(),
         metrics_folder: Default::default(),
         seq: 0,

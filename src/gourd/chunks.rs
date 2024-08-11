@@ -59,16 +59,16 @@ pub trait Chunkable {
     /// their slurm ids
     fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String);
     /// Get the still pending runs of this experiment.
-    fn unscheduled(&self, status: &ExperimentStatus) -> Vec<&Run>;
+    fn unscheduled(&self, status: &ExperimentStatus) -> Vec<(usize, &Run)>;
     /// Get the still pending runs of this experiment but mutable.
-    fn unscheduled_mut(&mut self, status: &ExperimentStatus) -> Vec<&mut Run>;
+    fn unscheduled_mut(&mut self, status: &ExperimentStatus) -> Vec<(usize, &mut Run)>;
 }
 
 impl Chunkable for Experiment {
     fn next_chunks(&mut self, chunk_length: usize, status: ExperimentStatus) -> Result<Vec<Chunk>> {
         let mut chunks = vec![];
 
-        let runs: Vec<(usize, &Run)> = self.unscheduled(&status).into_iter().enumerate().collect();
+        let runs: Vec<(usize, &Run)> = self.unscheduled(&status);
 
         if runs.is_empty() {
             bailc!(
@@ -106,23 +106,29 @@ impl Chunkable for Experiment {
         }
     }
 
-    fn unscheduled(&self, status: &ExperimentStatus) -> Vec<&Run> {
+    fn unscheduled(&self, status: &ExperimentStatus) -> Vec<(usize, &Run)> {
         self.runs
             .iter()
             .enumerate()
-            .filter(|(r_idx, r)| !status[r_idx].is_scheduled() && r.slurm_id.is_none())
+            .filter(|(r_idx, r)| {
+                !status[r_idx].is_scheduled()
+                    && !status[r_idx].is_completed()
+                    && r.slurm_id.is_none()
+            })
             .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
-            .map(|(_, b)| b)
             .collect()
     }
 
-    fn unscheduled_mut(&mut self, status: &ExperimentStatus) -> Vec<&mut Run> {
+    fn unscheduled_mut(&mut self, status: &ExperimentStatus) -> Vec<(usize, &mut Run)> {
         self.runs
             .iter_mut()
             .enumerate()
-            .filter(|(r_idx, r)| !status[r_idx].is_scheduled() && r.slurm_id.is_none())
+            .filter(|(r_idx, r)| {
+                !status[r_idx].is_scheduled()
+                    && !status[r_idx].is_completed()
+                    && r.slurm_id.is_none()
+            })
             .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
-            .map(|(_, b)| b)
             .collect()
     }
 }

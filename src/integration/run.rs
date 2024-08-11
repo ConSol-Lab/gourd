@@ -11,6 +11,7 @@ fn test_no_config() {
     let env = init();
 
     let output = gourd!(env; "run", "local", "--dry");
+
     // there's no gourd.toml, so this should fail
     assert!(!output.status.success());
 }

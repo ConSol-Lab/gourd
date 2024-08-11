@@ -10,6 +10,7 @@ use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
 use gourd_lib::measurement::Measurement;
 use indicatif::MultiProgress;
+use log::debug;
 
 use self::fs_based::FileBasedProvider;
 use self::printing::display_statuses;
@@ -300,7 +301,7 @@ pub fn blocking_status(
 
     let bar = progress.add(generate_progress_bar(experiment.runs.len() as u64)?);
 
-    println!("{complete} vs {to_complete}");
+    debug!("{complete} < {to_complete}");
 
     while complete < to_complete {
         let mut buf = BufWriter::new(Vec::new());
@@ -321,9 +322,9 @@ pub fn blocking_status(
     progress.clear()?;
 
     let leftover = generate_progress_bar(experiment.runs.len() as u64)?;
-    leftover.set_position(complete as u64);
     leftover.set_prefix(message);
     leftover.finish();
+    leftover.set_position(complete as u64);
 
     Ok(())
 }

@@ -107,9 +107,9 @@ impl ExperimentExt for Experiment {
         let mut visitation = vec![0usize; experiment.programs.len()];
         let mut runs = Vec::new();
 
-        for degree in in_degrees {
-            if degree == 0 {
-                dfs(&mut visitation, degree, &mut runs, &experiment, fs)?;
+        for (prog, degree) in in_degrees.iter().enumerate() {
+            if *degree == 0 {
+                dfs(&mut visitation, prog, &mut runs, &experiment, fs)?;
             }
         }
 
@@ -193,7 +193,10 @@ impl ExperimentExt for Experiment {
 
 /// A helper enum for dfs.
 enum Step {
+    /// We have just entered node `.0` with parents of `.1`.
     Entry(usize, Option<Vec<(usize, PathBuf)>>),
+
+    /// We have just left node `.0`.
     Exit(usize),
 }
 
@@ -258,10 +261,10 @@ fn dfs(
                         node,
                         RunInput {
                             file: Some(pchild.1),
-                            arguments: exp.programs[pchild.0].arguments.clone(),
+                            arguments: runs[pchild.0].input.arguments.clone(),
                         },
                         None,
-                        exp.programs[pchild.0].limits,
+                        runs[pchild.0].limits,
                         Some(pchild.0),
                         exp,
                         fs,

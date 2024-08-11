@@ -7,6 +7,7 @@ use gourd_lib::file_system::FileOperations;
 use log::trace;
 
 use self::runner::run_locally;
+use crate::status::DynamicStatus;
 use crate::wrapper::wrap;
 
 /// The (first iteration) thread pool implementation.
@@ -20,7 +21,10 @@ pub async fn run_local(
     force: bool,
     sequential: bool,
 ) -> Result<usize> {
-    let cmds = wrap(experiment, exp_path, env::consts::ARCH, fs)?;
+    let status = experiment.status(fs)?;
+    let pre_fin = status.iter().filter(|r| r.1.is_completed()).count();
+
+    let cmds = wrap(experiment, exp_path, &status, env::consts::ARCH, fs)?;
     trace!("Running cmds {:#?}", cmds);
 
     experiment.save(fs)?;
@@ -28,5 +32,5 @@ pub async fn run_local(
     let len = cmds.len();
     run_locally(cmds, force, sequential).await?;
 
-    Ok(len)
+    Ok(len + pre_fin)
 }
