@@ -56,7 +56,7 @@ pub struct Metadata {
 }
 
 /// The internal representation of a [`UserProgram`]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct InternalProgram {
     /// The name given to this program by the user.
     pub name: String,

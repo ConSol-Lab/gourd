@@ -225,6 +225,7 @@ fn short_status(
     Ok(())
 }
 
+/// For an input, decide how its shown to a user.
 fn format_input_name(run: &Run) -> String {
     if let Some(input_name) = &run.generated_from_input {
         input_name.clone()
@@ -288,8 +289,10 @@ fn long_status(
             if status.fs_status.completion == FsState::Pending {
                 if let Some(ss) = &status.slurm_status {
                     write!(f, " on slurm: {}", ss.completion)?;
-                } else if run.slurm_id.is_some() {
+                } else if run.slurm_id.is_some() && experiment.env == Environment::Slurm {
                     write!(f, " {WARNING_STYLE}not found on slurm{WARNING_STYLE:#}")?;
+                } else if run.slurm_id.is_some() && experiment.env == Environment::Local {
+                    write!(f, " {WARNING_STYLE}queued!{WARNING_STYLE:#}")?;
                 }
             }
 

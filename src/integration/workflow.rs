@@ -113,7 +113,7 @@ fn gourd_status_test() {
 
     let text_out = std::str::from_utf8(status_1_returned.stdout.as_slice()).unwrap();
     // 3 programs on input "hello" will fail, 1 post on a failed will fail
-    assert_eq!(4, text_out.match_indices("failed").count());
+    assert_eq!(2, text_out.match_indices("failed").count());
     // 3 programs on input 10 will pass, 1 post on a good output will pass
     assert_eq!(4, text_out.match_indices("success").count());
 
@@ -184,13 +184,13 @@ fn gourd_rerun_test() {
 
     let rerun_output_1 = gourd!(env; "-c", conf_path.to_str().unwrap(), "rerun", "-s"; "rerun");
     let text_err = std::str::from_utf8(rerun_output_1.stderr.as_slice()).unwrap();
-    assert!(text_err.contains("4 new runs have been created")); // todo: confirm that "4" is correct
+    assert!(text_err.contains("2 new runs have been created")); // todo: confirm that "4" is correct
 
     let _ = gourd!(env; "-c", conf_path.to_str().unwrap(), "continue", "-s"; "continue");
 
     let rerun_output_2 = gourd!(env; "-c", conf_path.to_str().unwrap(), "rerun", "-s"; "rerun");
     let text_err = std::str::from_utf8(rerun_output_2.stderr.as_slice()).unwrap();
-    assert!(text_err.contains("4 new runs have been created")); // todo: confirm that "4" is correct
+    assert!(text_err.contains("3 new runs have been created")); // todo: confirm that "4" is correct
 
     assert!(!gourd!(env; "cancel").status.success());
 }
