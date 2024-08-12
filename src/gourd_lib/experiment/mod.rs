@@ -63,10 +63,13 @@ pub struct InternalProgram {
 
     /// The [`Executable`] of this program (absolute path to it)
     pub binary: PathBuf,
+
     /// An executable afterscript to run on the output of this program
     pub afterscript: Option<PathBuf>,
+
     /// The limits to be applied on executions of this program
     pub limits: ResourceLimits,
+
     /// The command line arguments to be passed to all executions of this
     /// program
     pub arguments: Vec<String>,
@@ -185,12 +188,20 @@ pub struct Experiment {
     /// If running on a SLURM cluster, the job configurations.
     pub slurm: Option<SlurmConfig>,
 
+    /// A mapping of job array task id indices to run ids.
+    pub chunks: Vec<Vec<usize>>,
+
     // last in the struct so that the lockfile has these at the bottom
     /// The pairings of program-input for this experiment.
     pub runs: Vec<Run>,
 }
 
 impl Experiment {
+    /// Path to the experiment lockfile.
+    pub fn file(&self) -> PathBuf {
+        self.home.join(format!("{}.lock", self.seq))
+    }
+
     /// Save the experiment to a file with its timestamp.
     pub fn save_to(&self, folder: &Path, fs: &impl FileOperations) -> Result<PathBuf> {
         let saving_path = folder.join(format!("{}.lock", self.seq));
@@ -202,7 +213,7 @@ impl Experiment {
 
     /// Save the experiment
     pub fn save(&self, fs: &impl FileOperations) -> Result<PathBuf> {
-        let saving_path = self.home.join(format!("{}.lock", self.seq));
+        let saving_path = self.file();
 
         fs.try_write_toml(&saving_path, &self)?;
 
@@ -228,11 +239,11 @@ impl Experiment {
     }
 
     /// Get (a clone of) the [`InternalProgram`] used for a given [`Run`].
-    pub fn get_program_from_runid(&self, runid: usize) -> Result<InternalProgram> {
+    pub fn program_from_run_id(&self, run_id: usize) -> Result<InternalProgram> {
         let run = self
             .runs
-            .get(runid)
-            .ok_or_else(|| anyhow!("Could not find run {}", runid))
+            .get(run_id)
+            .ok_or_else(|| anyhow!("Could not find run {}", run_id))
             .with_context(ctx!("",;"",))?;
 
         self.programs
@@ -240,5 +251,19 @@ impl Experiment {
             .cloned()
             .ok_or_else(|| anyhow!("Could not find program for run {:?}", &run))
             .with_context(ctx!("",;"",))
+    }
+
+    /// Get the slurm stdout file path for a given run.
+    pub fn slurm_out(&self, slurm_id: &str) -> Option<PathBuf> {
+        self.slurm
+            .as_ref()
+            .map(|opt| opt.output_folder.join(format!("gourd_{}.out", slurm_id)))
+    }
+
+    /// Get the slurm stderr file path for a given run.
+    pub fn slurm_err(&self, slurm_id: &str) -> Option<PathBuf> {
+        self.slurm
+            .as_ref()
+            .map(|opt| opt.output_folder.join(format!("gourd_{}.err", slurm_id)))
     }
 }

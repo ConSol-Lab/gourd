@@ -3,7 +3,6 @@ mod check_binary_linux;
 /// Binary verification for macos.
 mod check_binary_macos;
 
-use std::path::Path;
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use std::path::PathBuf;
 /// Verify if the architecture of a `binary` matched the `expected`
@@ -34,26 +33,29 @@ fn verify_arch(_: &PathBuf, _: &str, _: &impl FileOperations) -> Result<()> {
 /// The results and outputs will be located in `config.output_dir`.
 pub fn wrap(
     experiment: &mut Experiment,
-    experiment_path: &Path,
     status: &ExperimentStatus,
     arch: &str,
     fs: &impl FileOperations,
 ) -> Result<Vec<Command>> {
     let mut result = Vec::new();
 
-    let exp = experiment.clone();
-    let runs_to_iterate = experiment.unscheduled_mut(status);
+    let binding = experiment.clone();
+    let runs_to_iterate = binding.unscheduled(status);
+    let chunk_index =
+        experiment.register_runs(&runs_to_iterate.iter().map(|(v, _)| *v).collect::<Vec<_>>());
 
-    trace!("There are {} unsched runs", runs_to_iterate.len());
+    trace!("There are {} unscheduled runs", runs_to_iterate.len());
 
-    for (run_id, run) in runs_to_iterate.into_iter() {
-        let program = &exp.get_program(run)?;
+    for (task_id, run) in runs_to_iterate.into_iter().map(|(_, r)| r).enumerate() {
+        let program = &experiment.get_program(run)?;
 
         verify_arch(&program.binary, arch, fs)?;
 
-        let mut cmd = Command::new(&exp.wrapper);
+        let mut cmd = Command::new(&experiment.wrapper);
 
-        cmd.arg(experiment_path).arg(format!("{}", run_id));
+        cmd.arg(experiment.file())
+            .arg(format!("{}", chunk_index))
+            .arg(format!("{}", task_id));
 
         result.push(cmd);
     }
@@ -61,6 +63,6 @@ pub fn wrap(
     Ok(result)
 }
 
-// #[cfg(test)]
-// #[path = "tests/mod.rs"]
-// mod tests;
+#[cfg(test)]
+#[path = "tests/mod.rs"]
+mod tests;

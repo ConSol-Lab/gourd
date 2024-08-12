@@ -53,6 +53,8 @@ where
             slurm_map.insert(run.slurm_id.clone(), run_id);
         }
 
+        trace!("Slurm map: {:?}", slurm_map);
+
         let statuses: Vec<SacctOutput> = flatten_job_id(
             connection.get_accounting_data(
                 experiment
@@ -64,7 +66,8 @@ where
         )?;
 
         for job in statuses {
-            // Mapping of all possible job state codes https://slurm.schedmd.com/sacct.html#SECTION_JOB-STATE-CODES
+            // Mapping of all possible job state codes
+            // https://slurm.schedmd.com/sacct.html#SECTION_JOB-STATE-CODES
             let completion = match job
                 .state
                 .split(' ')
@@ -105,14 +108,23 @@ where
                 _ => bailc!("Sacct returned unexpected output", ; "", ; "",),
             };
 
-            run_id_to_status.insert(
-                slurm_map[&Some(job.job_id)],
-                SlurmBasedStatus {
-                    completion,
-                    exit_code_program: job.program_exit_code,
-                    exit_code_slurm: job.slurm_exit_code,
-                },
-            );
+            if let Some(existing_run) = slurm_map.get(&Some(job.job_id.clone())) {
+                trace!("run {existing_run} is {completion:?}");
+                run_id_to_status.insert(
+                    *existing_run,
+                    SlurmBasedStatus {
+                        completion,
+                        exit_code_program: job.program_exit_code,
+                        exit_code_slurm: job.slurm_exit_code,
+                    },
+                );
+            } else {
+                trace!("Sacct gave output {completion:?} for slurm job {job:?}");
+                trace!(
+                    "but it isn't a part of (this) experiment #{}",
+                    experiment.seq
+                );
+            }
         }
 
         Ok(run_id_to_status)

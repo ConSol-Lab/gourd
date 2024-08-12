@@ -6,6 +6,8 @@ use gourd_lib::bailc;
 use gourd_lib::config::ResourceLimits;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::Run;
+use log::debug;
+use log::trace;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -55,13 +57,22 @@ impl Ord for Chunk {
 pub trait Chunkable {
     /// Next available [`Chunk`]s for scheduling,
     fn next_chunks(&mut self, chunk_length: usize, status: ExperimentStatus) -> Result<Vec<Chunk>>;
+
+    /// Add the runs to the experiment so the wrapper can find them,
+    ///
+    /// returns the chunk index that was just created.
+    fn register_runs(&mut self, runs: &[usize]) -> usize;
+
     /// Once a chunk has been scheduled, mark all of its runs as scheduled with
     /// their slurm ids
     fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String);
     /// Get the still pending runs of this experiment.
     fn unscheduled(&self, status: &ExperimentStatus) -> Vec<(usize, &Run)>;
-    /// Get the still pending runs of this experiment but mutable.
-    fn unscheduled_mut(&mut self, status: &ExperimentStatus) -> Vec<(usize, &mut Run)>;
+    // /// Get the still pending runs of this experiment but mutable.
+    // ///
+    // /// returns `Vec<(run id: usize, run object: &mut Run)>`
+    // fn unscheduled_mut(&mut self, status: &ExperimentStatus) -> Vec<(usize, &mut
+    // Run)>;
 }
 
 impl Chunkable for Experiment {
@@ -98,16 +109,27 @@ impl Chunkable for Experiment {
         Ok(chunks)
     }
 
+    fn register_runs(&mut self, runs: &[usize]) -> usize {
+        self.chunks.push(runs.to_vec());
+        debug!(
+            "creating chunks: {:?}, latest = {:?}",
+            self.chunks,
+            &self.chunks[self.chunks.len() - 1]
+        );
+        self.chunks.len() - 1
+    }
+
     fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String) {
-        for run_id in chunk.runs.iter() {
+        for task_id in 0..chunk.runs.len() {
             // because we schedule an array by specifying the run_id(s) in a list,
             // the sub id should be == run_id.
-            self.runs[*run_id].slurm_id = Some(format!("{}_{}", batch_id, run_id));
+            self.runs[task_id].slurm_id = Some(format!("{}_{}", batch_id, task_id));
         }
     }
 
     fn unscheduled(&self, status: &ExperimentStatus) -> Vec<(usize, &Run)> {
-        self.runs
+        let u: Vec<_> = self
+            .runs
             .iter()
             .enumerate()
             .filter(|(r_idx, r)| {
@@ -116,19 +138,23 @@ impl Chunkable for Experiment {
                     && r.slurm_id.is_none()
             })
             .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
-            .collect()
-    }
-
-    fn unscheduled_mut(&mut self, status: &ExperimentStatus) -> Vec<(usize, &mut Run)> {
-        self.runs
-            .iter_mut()
-            .enumerate()
-            .filter(|(r_idx, r)| {
-                !status[r_idx].is_scheduled()
-                    && !status[r_idx].is_completed()
-                    && r.slurm_id.is_none()
-            })
-            .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
-            .collect()
+            .collect();
+        trace!(
+            "unscheduled: \n{}",
+            u.iter()
+                .map(|x| format!(
+                    "{}: prog {} with {:?}",
+                    x.0,
+                    x.1.program,
+                    x.1.input
+                        .file
+                        .as_ref()
+                        .map(|x| x.display().to_string())
+                        .unwrap_or(x.1.input.arguments.join(", "))
+                ))
+                .collect::<Vec<_>>()
+                .join("\n")
+        );
+        u
     }
 }

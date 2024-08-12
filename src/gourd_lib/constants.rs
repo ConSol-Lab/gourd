@@ -34,7 +34,7 @@ pub const GLOB_ESCAPE: &str = "path|";
 pub const PARAMETER_ESCAPE: &str = "param|";
 
 /// The prefix which will cause an argument to be interpreted as a subparameter.
-pub const SUBPARAMETER_ESCAPE: &str = "subparam|";
+pub const SUB_PARAMETER_ESCAPE: &str = "subparam|";
 
 /// The internal representation of inputs generated from a schema
 pub const INTERNAL_SCHEMA_INPUTS: &str = "schema";
@@ -88,6 +88,14 @@ pub const CMD_STYLE: Style = Style::new()
     .bold()
     .bg_color(Some(Ansi(AnsiColor::Green)))
     .fg_color(Some(Ansi(AnsiColor::Black)));
+
+/// Style of [`Path`]s and [`PathBuf`]s
+pub const PATH_STYLE: Style = Style::new()
+    .italic()
+    .fg_color(Some(Ansi(AnsiColor::BrightBlue)));
+
+/// Grayed paragraphs of not very important text
+pub const PARAGRAPH_STYLE: Style = Style::new().fg_color(Some(Ansi(AnsiColor::BrightBlack)));
 
 /// Supported SLURM versions.
 pub const SLURM_VERSIONS: [[u64; 2]; 1] = [[21, 8]];

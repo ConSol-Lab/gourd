@@ -140,10 +140,6 @@ impl FileOperations for FileSystemInteractor {
         }
     }
 
-    fn write_utf8_truncate(&self, path: &Path, data: &str) -> Result<()> {
-        self.write_bytes_truncate(path, data.as_bytes())
-    }
-
     fn write_bytes_truncate(&self, path: &Path, bytes: &[u8]) -> Result<()> {
         if self.dry_run {
             debug!("Would have written to {path:?} (dry)");
@@ -156,6 +152,10 @@ impl FileOperations for FileSystemInteractor {
         ))?;
 
         Ok(())
+    }
+
+    fn write_utf8_truncate(&self, path: &Path, data: &str) -> Result<()> {
+        self.write_bytes_truncate(path, data.as_bytes())
     }
 
     fn truncate_and_canonicalize(&self, path: &Path) -> Result<PathBuf> {
@@ -188,13 +188,6 @@ impl FileOperations for FileSystemInteractor {
         self.canonicalize(path)
     }
 
-    fn canonicalize(&self, path: &Path) -> Result<PathBuf> {
-        path.canonicalize().with_context(ctx!(
-          "Could not canonicalize {path:?}", ;
-          "Ensure that your path is valid",
-        ))
-    }
-
     fn truncate_and_canonicalize_folder(&self, path: &Path) -> Result<PathBuf> {
         if self.dry_run {
             debug!("Would have created {path:?} (dry)");
@@ -211,17 +204,6 @@ impl FileOperations for FileSystemInteractor {
           "Could not canonicalize {path:?}", ;
           "Ensure that your path is valid",
         ))
-    }
-
-    fn init_git_repository(&self, path: &Path) -> Result<()> {
-        if self.dry_run {
-            info!("Would have initialized a git repo (dry)");
-            return Ok(());
-        }
-
-        Repository::init(path)?;
-        info!("Successfully created a Git repository");
-        Ok(())
     }
 
     fn set_permissions(&self, path: &Path, perms: u32) -> Result<()> {
@@ -243,6 +225,24 @@ impl FileOperations for FileSystemInteractor {
         {
             Ok(())
         }
+    }
+
+    fn canonicalize(&self, path: &Path) -> Result<PathBuf> {
+        path.canonicalize().with_context(ctx!(
+          "Could not canonicalize {path:?}", ;
+          "Ensure that your path is valid",
+        ))
+    }
+
+    fn init_git_repository(&self, path: &Path) -> Result<()> {
+        if self.dry_run {
+            info!("Would have initialized a git repo (dry)");
+            return Ok(());
+        }
+
+        Repository::init(path)?;
+        info!("Successfully created a Git repository");
+        Ok(())
     }
 }
 

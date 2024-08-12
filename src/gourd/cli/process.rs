@@ -42,7 +42,7 @@ use crate::cli::def::GourdCommand;
 use crate::cli::def::RunSubcommand;
 use crate::cli::def::StatusStruct;
 use crate::cli::printing::print_version;
-use crate::experiments::generate_new_run;
+use crate::experiments::run::generate_new_run;
 use crate::experiments::ExperimentExt;
 use crate::init::init_experiment_setup;
 use crate::init::list_init_examples;
@@ -139,8 +139,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                         info!("Would have ran the experiment (dry)");
                     } else {
                         let to_complete =
-                            run_local(&mut experiment, &exp_path, &file_system, force, sequential)
-                                .await?;
+                            run_local(&mut experiment, &file_system, force, sequential).await?;
 
                         info!("Experiment started");
 
@@ -402,8 +401,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 if cmd.dry {
                     info!("Would have continued the experiment (dry)");
                 } else {
-                    let to_complete =
-                        run_local(&mut experiment, &exp_path, &file_system, true, false).await?;
+                    let to_complete = run_local(&mut experiment, &file_system, true, false).await?;
 
                     info!("Experiment started");
 
@@ -422,7 +420,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 } else {
                     let sched = s.run_experiment(&mut experiment, exp_path, &file_system)?;
                     print_scheduling(&experiment, false, &file_system)?;
-                    info!("Experiment continued you just scheduled {sched} chunks");
+                    info!("Experiment continued, you just scheduled {sched} chunks");
                 }
             }
 

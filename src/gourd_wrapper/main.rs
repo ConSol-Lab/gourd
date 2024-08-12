@@ -83,8 +83,8 @@ fn process() -> Result<()> {
     let fs = FileSystemInteractor { dry_run: false };
 
     let rc = match args.len() {
-        3 => process_args(&args, &fs)?,
-        _ => bail!("gourd_wrapper needs an experiment file path and a run id"),
+        4 => process_args(&args, &fs)?,
+        _ => bail!("gourd_wrapper needs an experiment file path, a chunk index and a task index"),
     };
 
     fs::write(
@@ -160,12 +160,21 @@ fn process_args(args: &[String], fs: &impl FileOperations) -> Result<RunConf> {
 
     let exp = fs.try_read_toml::<Experiment>(exp_path.as_path())?;
 
-    let run_id: usize = args[2].parse().with_context(ctx!(
+    if exp.chunks.is_empty() {
+        bail!("The experiment has no chunks");
+    }
+
+    let chunk_id: usize = args[2].parse().with_context(ctx!(
         "Could not parse the run id from the arguments {:?}", args;
         "Ensure that Slurm is configured correctly",
     ))?;
 
-    let run = exp.runs[run_id].clone();
+    let task_id: usize = args[3].parse().with_context(ctx!(
+        "Could not parse the run id from the arguments {:?}", args;
+        "Ensure that Slurm is configured correctly",
+    ))?;
+
+    let run = exp.runs[exp.chunks[chunk_id][task_id]].clone();
 
     let program = &exp.get_program(&run)?;
 

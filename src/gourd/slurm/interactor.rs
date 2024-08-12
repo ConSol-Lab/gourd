@@ -113,6 +113,25 @@ impl SlurmInteractor for SlurmCli {
         Ok(partitions)
     }
 
+    fn max_array_size(&self) -> Result<usize> {
+        let s_control_out = Command::new("scontrol")
+            .arg("show")
+            .arg("config")
+            .output()?
+            .stdout;
+        let s_control_str = String::from_utf8_lossy(&s_control_out);
+        let max_array_size = s_control_str
+            .split('\n')
+            .filter(|x| x.contains("MaxArraySize"))
+            .collect::<Vec<&str>>()[0]
+            .split('=')
+            .collect::<Vec<&str>>()[1]
+            .trim()
+            .parse::<usize>()
+            .context("Could not parse max array size")?;
+        Ok(max_array_size)
+    }
+
     fn schedule_chunk(
         &self,
         slurm_config: &SlurmConfig,
@@ -121,38 +140,50 @@ impl SlurmInteractor for SlurmCli {
         exp_path: &Path,
     ) -> Result<()> {
         let resource_limits = chunk.limits();
+        let chunk_index = experiment.register_runs(&chunk.runs);
 
         let optional_args = parse_optional_args(slurm_config);
+
+        // `%A` gets replaced with array *job* id, `%a` with the array *task* id
+        // this is read in `src/gourd/status/slurm_files.rs` to get the output.
+        let slurm_out = experiment
+            .slurm_out("%A_%a")
+            .ok_or(anyhow!("Slurm config not found (unreachable)"))?;
+        let slurm_err = experiment
+            .slurm_err("%A_%a")
+            .ok_or(anyhow!("Slurm config not found (unreachable)"))?;
 
         let contents = format!(
             "#!/bin/bash
 #SBATCH --job-name=\"{}\"
-#SBATCH --array=\"{}\"
+#SBATCH --array=\"{}-{}\"
 #SBATCH --ntasks=1
 #SBATCH --partition=\"{}\"
 #SBATCH --time=\"{}\"
 #SBATCH --cpus-per-task=\"{}\"
 #SBATCH --mem-per-cpu=\"{}\"
 #SBATCH --account=\"{}\"
+#SBATCH --output={:?}
+#SBATCH --error={:?}
 {}
+set -x
 
-{} {} $SLURM_ARRAY_TASK_ID
+{} {} {} $SLURM_ARRAY_TASK_ID
 ",
             slurm_config.experiment_name,
-            chunk
-                .runs
-                .iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(","),
+            0,
+            &chunk.runs.len() - 1,
             slurm_config.partition,
             format_slurm_duration(resource_limits.time_limit),
             resource_limits.cpus,
             resource_limits.mem_per_cpu,
             slurm_config.account,
+            slurm_out,
+            slurm_err,
             optional_args,
             experiment.wrapper,
             exp_path.display(),
+            chunk_index
         );
 
         debug!("Sbatch file: {}", contents);
@@ -178,6 +209,10 @@ impl SlurmInteractor for SlurmCli {
             ))?;
 
         let proc = cmd.wait_with_output().context("")?;
+
+        trace!("sbatch exited with code {:?}", proc.status);
+        trace!("sbatch stdout:\n{:?}", proc.stdout);
+        trace!("sbatch stderr:\n{:?}", proc.stderr);
 
         if !proc.status.success() {
             bailc!("Sbatch failed to run", ;

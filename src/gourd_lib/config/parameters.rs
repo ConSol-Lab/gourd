@@ -12,7 +12,7 @@ use crate::bailc;
 use crate::constants::INTERNAL_PARAMETER;
 use crate::constants::INTERNAL_PREFIX;
 use crate::constants::PARAMETER_ESCAPE;
-use crate::constants::SUBPARAMETER_ESCAPE;
+use crate::constants::SUB_PARAMETER_ESCAPE;
 use crate::ctx;
 
 /// Check if the parameters are well-formed.
@@ -187,7 +187,7 @@ fn get_expandable_parameters(
             } else {
                 map.insert(param_name.to_string(), vec![(pos, None)]);
             }
-        } else if let Some(whole_subparam) = arg.strip_prefix(SUBPARAMETER_ESCAPE) {
+        } else if let Some(whole_subparam) = arg.strip_prefix(SUB_PARAMETER_ESCAPE) {
             let mut dot_iter = whole_subparam.split('.');
 
             let param_name = constrict_syntax(dot_iter.next())?.to_string();
@@ -267,7 +267,7 @@ fn expand_subparameter(
         .ok_or(anyhow!("Parameter {param_name} used"))
         .with_context(ctx!(
             "", ;
-            "You cannot use a parameter in a '{SUBPARAMETER_ESCAPE}' while no subparameters are specified",
+            "You cannot use a parameter in a '{SUB_PARAMETER_ESCAPE}' while no subparameters are specified",
         ))?;
 
     let size_of_one = subparams

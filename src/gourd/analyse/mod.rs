@@ -149,7 +149,7 @@ pub fn get_completions(
     let mut completions: BTreeMap<FieldRef, Vec<u128>> = BTreeMap::new();
 
     for (id, status) in statuses {
-        let program_name = experiment.get_program_from_runid(id)?.name;
+        let program_name = experiment.program_from_run_id(id)?.name;
 
         if status.is_completed() {
             let time = match get_completion_time(status.fs_status.completion) {

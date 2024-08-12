@@ -1,14 +1,13 @@
 use std::collections::BTreeMap;
 use std::env;
 use std::fs;
-use std::path::PathBuf;
 
-use gourd_lib::config::FetchedPath;
 use gourd_lib::config::UserInput;
 use gourd_lib::config::UserProgram;
+use gourd_lib::file_system::FileSystemInteractor;
 
 use super::*;
-use crate::slurm::chunk::Chunkable;
+use crate::status::DynamicStatus;
 use crate::test_utils::create_sample_experiment;
 use crate::test_utils::get_compiled_example;
 use crate::test_utils::REAL_FS;
@@ -47,11 +46,12 @@ fn non_matching_arch() {
     first.insert(
         "any".to_string(),
         UserProgram {
-            binary: FetchedPath(out),
+            binary: Some(out),
+            fetch: None,
             arguments: vec![],
             afterscript: None,
-            postprocess_job: None,
             resource_limits: None,
+            next: vec![],
         },
     );
 
@@ -60,17 +60,19 @@ fn non_matching_arch() {
     second.insert(
         "test1".to_string(),
         UserInput {
-            input: Some(FetchedPath(input.clone())),
+            file: Some(input.clone()),
+            glob: None,
             arguments: vec![],
+            fetch: None,
         },
     );
 
-    let (mut experiment, _) = create_sample_experiment(first.into(), second.into());
-    experiment.chunks = experiment
-        .create_chunks(usize::MAX, 1, 0..experiment.runs.len())
+    let (mut experiment, _) = create_sample_experiment(first, second);
+    let status = experiment
+        .status(&FileSystemInteractor { dry_run: true })
         .unwrap();
 
-    match wrap(&mut experiment, &PathBuf::from("/"), "x86_64", &REAL_FS) {
+    match wrap(&mut experiment, &status, "x86_64", &REAL_FS) {
         Err(err) => {
             assert!(format!("{}", err.root_cause()).contains("not match the expected architecture"))
         }
@@ -100,11 +102,12 @@ fn matching_arch() {
     first.insert(
         "any".to_string(),
         UserProgram {
-            binary: FetchedPath(out.clone()),
+            binary: Some(out.clone()),
+            fetch: None,
             arguments: vec![],
             afterscript: None,
-            postprocess_job: None,
             resource_limits: None,
+            next: vec![],
         },
     );
 
@@ -113,30 +116,30 @@ fn matching_arch() {
     second.insert(
         "test1".to_string(),
         UserInput {
-            input: Some(FetchedPath(input.clone())),
+            file: Some(input.clone()),
+            glob: None,
+            fetch: None,
             arguments: vec![],
         },
     );
 
-    let (mut experiment, conf) = create_sample_experiment(first.into(), second.into());
-    experiment.chunks = experiment
-        .create_chunks(usize::MAX, 1, 0..experiment.runs.len())
+    let (mut experiment, conf) = create_sample_experiment(first, second);
+
+    let status = experiment
+        .status(&FileSystemInteractor { dry_run: true })
         .unwrap();
 
-    let cmds = wrap(
-        &mut experiment,
-        &PathBuf::from("/"),
-        env::consts::ARCH,
-        &REAL_FS,
-    )
-    .unwrap();
+    let cmds = wrap(&mut experiment, &status, env::consts::ARCH, &REAL_FS).unwrap();
 
     assert_eq!(1, cmds.len());
     assert_eq!(
         format!("{:?}", cmds[0]),
         format!(
             "{:?}",
-            Command::new(conf.wrapper).arg("0").arg("/").arg("0")
+            Command::new(conf.wrapper)
+                .arg(experiment.file())
+                .arg("0")
+                .arg("0")
         )
     );
 }

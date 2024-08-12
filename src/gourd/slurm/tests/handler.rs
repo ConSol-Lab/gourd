@@ -9,10 +9,9 @@ use super::*;
 fn parse_optional_args_test_all() {
     let config = SlurmConfig {
         experiment_name: "test experiment".to_string(),
+        output_folder: Default::default(),
         partition: "memory".to_string(),
-        array_count_limit: 10,
-        array_size_limit: 1000,
-        out: None,
+        array_size_limit: None,
         account: "test-account".to_string(),
         begin: Some("01:10:00".to_string()),
         mail_type: Some("ALL".to_string()),
@@ -32,10 +31,9 @@ fn parse_optional_args_test_all() {
 fn parse_optional_args_test_only_begin() {
     let config = SlurmConfig {
         experiment_name: "test experiment".to_string(),
+        output_folder: Default::default(),
         partition: "memory".to_string(),
-        array_count_limit: 10,
-        array_size_limit: 1000,
-        out: None,
+        array_size_limit: None,
         account: "test-account".to_string(),
         begin: Some("15:40:15".to_string()),
         mail_type: None,
@@ -67,10 +65,9 @@ fn parse_optional_args_test_custom_args() {
     );
     let config = SlurmConfig {
         experiment_name: "test experiment".to_string(),
+        output_folder: Default::default(),
         partition: "memory".to_string(),
-        array_count_limit: 10,
-        array_size_limit: 1000,
-        out: None,
+        array_size_limit: None,
         account: "test-account".to_string(),
         begin: None,
         mail_type: Some("ALL".to_string()),

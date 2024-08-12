@@ -17,6 +17,8 @@ use self::printing::display_statuses;
 use self::slurm_based::SlurmBasedProvider;
 use crate::cli::printing::generate_progress_bar;
 use crate::slurm::interactor::SlurmCli;
+use crate::status::slurm_files::SlurmFileOutput;
+use crate::status::slurm_files::SlurmFileStatus;
 
 /// File system based status information.
 pub mod fs_based;
@@ -29,6 +31,9 @@ pub mod printing;
 
 /// Printing information about scheduled chunks.
 pub mod chunks;
+
+/// Slurm file based status information.
+pub mod slurm_files;
 
 /// The reasons for slurm to kill a job
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -138,6 +143,9 @@ pub struct Status {
 
     /// Status retrieved from the filesystem.
     pub fs_status: FileSystemBasedStatus,
+
+    /// The stdout and stderr output of the slurm job.
+    pub slurm_file_text: Option<SlurmFileOutput>,
 }
 
 impl Status {
@@ -149,6 +157,7 @@ impl Status {
             true
         } else {
             self.slurm_status
+                .as_ref()
                 .map(|x| x.completion.is_completed())
                 .unwrap_or(false)
         }
@@ -247,13 +256,16 @@ impl DynamicStatus for Experiment {
             versions: SLURM_VERSIONS.to_vec(),
         };
 
-        let slurm_status = if self.env == Environment::Slurm {
-            Some(SlurmBasedProvider::get_statuses(&slurm, self)?)
+        let (slurm_status, slurm_file) = if self.env == Environment::Slurm {
+            (
+                Some(SlurmBasedProvider::get_statuses(&slurm, self)?),
+                Some(SlurmFileStatus::get_statuses(fs, self)?),
+            )
         } else {
-            None
+            (None, None)
         };
 
-        merge_statuses(fs_status, slurm_status, 0..self.runs.len())
+        merge_statuses(fs_status, slurm_status, slurm_file, 0..self.runs.len())
     }
 }
 
@@ -261,28 +273,23 @@ impl DynamicStatus for Experiment {
 pub fn merge_statuses(
     fs: BTreeMap<usize, FileSystemBasedStatus>,
     slurm: Option<BTreeMap<usize, SlurmBasedStatus>>,
+    slurm_file: Option<BTreeMap<usize, SlurmFileOutput>>,
     jobs: impl Iterator<Item = usize>,
 ) -> Result<ExperimentStatus> {
     let mut out = BTreeMap::<usize, Status>::new();
 
     for job_id in jobs {
-        if let Some(slurm_based) = slurm.as_ref() {
-            out.insert(
-                job_id,
-                Status {
-                    slurm_status: slurm_based.get(&job_id).cloned(),
-                    fs_status: fs[&job_id].clone(),
-                },
-            );
-        } else {
-            out.insert(
-                job_id,
-                Status {
-                    slurm_status: None,
-                    fs_status: fs[&job_id].clone(),
-                },
-            );
-        }
+        let slurm_based = slurm.as_ref().and_then(|x| x.get(&job_id).cloned());
+        let slurm_file_text = slurm_file.as_ref().and_then(|x| x.get(&job_id).cloned());
+
+        out.insert(
+            job_id,
+            Status {
+                slurm_status: slurm_based,
+                fs_status: fs[&job_id].clone(),
+                slurm_file_text,
+            },
+        );
     }
 
     Ok(out)

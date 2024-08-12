@@ -55,6 +55,8 @@ fn test_analysis_csv_success() {
     statuses.insert(
         0,
         Status {
+            slurm_file_text: None,
+
             fs_status: FileSystemBasedStatus {
                 completion: crate::status::FsState::Pending,
                 afterscript_completion: Some(Some(String::from("lol-label"))),
@@ -65,6 +67,8 @@ fn test_analysis_csv_success() {
     statuses.insert(
         1,
         Status {
+            slurm_file_text: None,
+
             fs_status: FileSystemBasedStatus {
                 completion: FsState::Completed(Measurement {
                     wall_micros: Duration::from_nanos(0),
@@ -117,6 +121,7 @@ fn test_analysis_png_plot_success() {
     let tmp_dir = TempDir::new("testing").unwrap();
     let mut statuses = BTreeMap::new();
     let status_with_rusage = Status {
+        slurm_file_text: None,
         fs_status: FileSystemBasedStatus {
             completion: FsState::Completed(Measurement {
                 wall_micros: Duration::from_nanos(0),
@@ -145,6 +150,7 @@ fn test_analysis_png_plot_success() {
                 afterscript_completion: Some(Some(String::from("lol-label"))),
             },
             slurm_status: None,
+            slurm_file_text: None,
         },
     );
     statuses.insert(1, status_no_rusage);
@@ -182,6 +188,7 @@ fn test_analysis_png_plot_success() {
         labels: Default::default(),
         afterscript_output_folder: Default::default(),
         slurm: None,
+        chunks: vec![],
     };
 
     let png_output_path = tmp_dir.path().join("analysis.png");

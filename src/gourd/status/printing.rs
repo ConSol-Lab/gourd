@@ -8,6 +8,8 @@ use anyhow::Context;
 use anyhow::Result;
 use gourd_lib::constants::ERROR_STYLE;
 use gourd_lib::constants::NAME_STYLE;
+use gourd_lib::constants::PARAGRAPH_STYLE;
+use gourd_lib::constants::PATH_STYLE;
 use gourd_lib::constants::PRIMARY_STYLE;
 use gourd_lib::constants::SHORTEN_STATUS_CUTOFF;
 use gourd_lib::constants::TERTIARY_STYLE;
@@ -218,14 +220,14 @@ fn short_status(
             completed - failed
         )?;
         if experiment.env == Environment::Slurm {
-            writeln!(f, "  {} jobs need to still be scheduled", total - sched)?;
+            writeln!(f, "  {} jobs still need to be scheduled", total - sched)?;
         }
     }
 
     Ok(())
 }
 
-/// For an input, decide how its shown to a user.
+/// For an input, decide how it's shown to a user.
 fn format_input_name(run: &Run) -> String {
     if let Some(input_name) = &run.generated_from_input {
         input_name.clone()
@@ -289,8 +291,11 @@ fn long_status(
             if status.fs_status.completion == FsState::Pending {
                 if let Some(ss) = &status.slurm_status {
                     write!(f, " on slurm: {}", ss.completion)?;
-                } else if run.slurm_id.is_some() && experiment.env == Environment::Slurm {
-                    write!(f, " {WARNING_STYLE}not found on slurm{WARNING_STYLE:#}")?;
+                } else if let Some(slurm_id) = &run.slurm_id {
+                    write!(
+                        f,
+                        " on slurm with job id {WARNING_STYLE}{slurm_id}{WARNING_STYLE:#}"
+                    )?;
                 } else if run.slurm_id.is_some() && experiment.env == Environment::Local {
                     write!(f, " {WARNING_STYLE}queued!{WARNING_STYLE:#}")?;
                 }
@@ -353,46 +358,76 @@ pub fn display_job(
     if let Some(run) = exp.runs.get(id) {
         let program = exp.get_program(run)?;
 
-        writeln!(f, "{NAME_STYLE}program{NAME_STYLE:#}: {}", run.program)?;
+        writeln!(f, "{NAME_STYLE}program{NAME_STYLE:#}: {}", program.name)?;
         writeln!(
             f,
-            "  {NAME_STYLE}binary{NAME_STYLE:#}: {:?}",
-            program.binary
+            "  {NAME_STYLE}binary{NAME_STYLE:#}: {PATH_STYLE}{}{PATH_STYLE:#}",
+            program.binary.display()
         )?;
 
-        writeln!(f, "{NAME_STYLE}input{NAME_STYLE:#}: {:?}", run.input.file)?;
-
-        if let Some(input_file) = &run.input.file {
-            writeln!(f, "  {NAME_STYLE}file{NAME_STYLE:#}:   {:?}", input_file)?;
-        }
-
-        writeln!(f, "{NAME_STYLE}arguments{NAME_STYLE:#}: {:?}\n", run.input)?;
+        writeln!(f, "{NAME_STYLE}input{NAME_STYLE:#}:")?;
 
         writeln!(
             f,
-            "{NAME_STYLE}output path{NAME_STYLE:#}: {:?}",
-            run.output_path
+            "  {NAME_STYLE}file{NAME_STYLE:#}: {PATH_STYLE}{}{PATH_STYLE:#}",
+            run.input
+                .file
+                .as_ref()
+                .map(|p| p.display().to_string())
+                .unwrap_or("None".to_string())
+        )?;
+
+        writeln!(
+            f,
+            "  {NAME_STYLE}arguments{NAME_STYLE:#}: {:?}\n",
+            run.input.arguments
+        )?;
+
+        writeln!(
+            f,
+            "{NAME_STYLE}output path{NAME_STYLE:#}: {PATH_STYLE}{}{PATH_STYLE:#}",
+            run.output_path.display()
         )?;
         writeln!(
             f,
-            "{NAME_STYLE}stderr path{NAME_STYLE:#}: {:?}",
-            run.err_path
+            "{NAME_STYLE}stderr path{NAME_STYLE:#}: {PATH_STYLE}{}{PATH_STYLE:#}",
+            run.err_path.display()
         )?;
         writeln!(
             f,
-            "{NAME_STYLE}metric path{NAME_STYLE:#}: {:?}\n",
-            run.metrics_path
+            "{NAME_STYLE}metric path{NAME_STYLE:#}: {PATH_STYLE}{}{PATH_STYLE:#}\n",
+            run.metrics_path.display()
         )?;
 
         if let Some(slurm_id) = &run.slurm_id {
             writeln!(
                 f,
-                "scheduled on slurm as {}
-                  with limits
-                 {}
-                ",
+                "scheduled on slurm as {TERTIARY_STYLE}{}{TERTIARY_STYLE:#}\nwith limits\n{}",
                 slurm_id, run.limits
             )?;
+
+            if let Some(slurm_file) = &statuses[&id].slurm_file_text {
+                let slurm_out = exp
+                    .slurm_out(slurm_id)
+                    .ok_or(anyhow!("Slurm config not found (unreachable)"))?;
+                let slurm_err = exp
+                    .slurm_err(slurm_id)
+                    .ok_or(anyhow!("Slurm config not found (unreachable)"))?;
+                writeln!(
+                    f,
+                    "{NAME_STYLE}Slurm job stdout{NAME_STYLE:#} ({PATH_STYLE}{}{PATH_STYLE:#}):
+{PARAGRAPH_STYLE}{}{PARAGRAPH_STYLE:#}",
+                    slurm_out.display(),
+                    slurm_file.stdout
+                )?;
+                writeln!(
+                    f,
+                    "{NAME_STYLE}Slurm job stderr{NAME_STYLE:#} ({PATH_STYLE}{}{PATH_STYLE:#}):
+{PARAGRAPH_STYLE}{}{PARAGRAPH_STYLE:#}",
+                    slurm_err.display(),
+                    slurm_file.stderr
+                )?;
+            }
         }
 
         let status = &statuses[&id];

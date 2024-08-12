@@ -1,15 +1,11 @@
 use std::collections::BTreeMap;
 
-use anyhow::anyhow;
-use anyhow::Context;
 use anyhow::Result;
-use gourd_lib::ctx;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
 use gourd_lib::measurement::Metrics;
 use log::debug;
 use log::trace;
-use log::warn;
 
 use super::FileSystemBasedStatus;
 use super::StatusProvider;
@@ -61,7 +57,7 @@ where
                 {
                     Ok(status) => Some(status),
                     Err(e) => {
-                        warn!("Failed to get status from afterscript {}.", run_id);
+                        // warn!("Failed to get status from afterscript {}: {e}", run_id);
                         debug!("{}", e);
                         None
                     }
@@ -89,19 +85,14 @@ impl FileBasedProvider {
     ) -> Result<Option<String>> {
         let run = &exp.runs[run_id];
 
-        let file = run
-            .afterscript_output_path
-            .clone()
-            .ok_or(anyhow!("Could not get the afterscript information"))
-            .with_context(ctx!(
-                "Could not get the postprocessing information", ;
-                "",
-            ))?;
+        if let Some(file) = run.afterscript_output_path.clone() {
+            if !file.exists() {
+                run_afterscript(run_id, exp)?;
+            }
 
-        if !file.exists() {
-            run_afterscript(run_id, exp)?;
+            assign_label(exp, &file, fs)
+        } else {
+            Ok(None)
         }
-
-        assign_label(exp, &file, fs)
     }
 }

@@ -41,8 +41,8 @@ where
 {
     /// Run an experiment on delftblue.
     ///
-    /// # Returns
-    /// The amount of chunks that have been scheduled.
+    /// ### Returns
+    /// The amount of new chunks that have been scheduled.
     pub fn run_experiment(
         &self,
         experiment: &mut Experiment,
@@ -52,7 +52,12 @@ where
         let slurm_config = slurm_options_from_experiment(experiment)?;
 
         let status = experiment.status(fs)?;
-        let chunks_to_schedule = experiment.next_chunks(slurm_config.array_size_limit, status)?;
+        let max_array_size = if let Some(custom) = slurm_config.array_size_limit {
+            custom
+        } else {
+            self.internal.max_array_size()?
+        };
+        let chunks_to_schedule = experiment.next_chunks(max_array_size, status)?;
 
         let mut counter = 0;
         for (chunk_id, chunk) in chunks_to_schedule.iter().enumerate() {

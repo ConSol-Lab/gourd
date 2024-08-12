@@ -289,7 +289,7 @@ pub struct Config {
     /// If set to true, will throw an error when multiple labels are present in
     /// afterscript output.
     #[serde(default = "LABEL_OVERLAP_DEFAULT")]
-    pub warn_on_label_overlap: bool,
+    pub warn_on_label_overlap: bool, // todo: replace with an enum (warn, error, ignore)
 }
 
 /// The config options when running through Slurm
@@ -302,6 +302,10 @@ pub struct SlurmConfig {
                                   * gourd, but it's one of the options and i couldn't tell if
                                   * it's mandatory or not */
 
+    /// Where slurm should put the stdout and stderr of the job.
+    pub output_folder: PathBuf, /* todo: add truncate and canonicalize to this when creating an
+                                 * experiment, somehow */
+
     /// Which node partition to use. On DelftBlue, the options are:
     /// - "compute"
     /// - "compute-p2"
@@ -313,19 +317,15 @@ pub struct SlurmConfig {
     pub partition: String, /* technically this would be an enum, but it's different per cluster
                             * so i don't know if we should hardcode delftblue's options */
 
-    /// The maximum number of arrays to schedule at once.
-    pub array_count_limit: usize,
-
-    /// The maximum number of jobs to schedule in a Slurm array.
-    pub array_size_limit: usize,
-
-    /// Where slurm should put the stdout and stderr of the job.
-    pub out: Option<PathBuf>,
+    /// Override the maximum number of jobs to schedule in a Slurm array.
+    ///
+    /// If left `None`, a value fetched directly from slurm will be used.
+    pub array_size_limit: Option<usize>,
 
     /// Account to charge for this job
     pub account: String,
 
-    /// Delay the run of the job
+    /// Delay the run of new jobs
     pub begin: Option<String>,
 
     /// Option to set notifications for user by email when a certain event types
