@@ -64,7 +64,7 @@ pub(super) fn dfs(
                             arguments: input.arguments.clone(),
                         },
                         Some(input_name.clone()),
-                        exp.programs[node].limits, // todo: check what node is
+                        exp.programs[node].limits,
                         None,
                         exp,
                         fs,

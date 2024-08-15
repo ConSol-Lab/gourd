@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -7,7 +8,6 @@ use gourd_lib::config::ResourceLimits;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::Run;
 use log::debug;
-use log::trace;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -56,7 +56,12 @@ impl Ord for Chunk {
 /// [`ResourceLimits`].
 pub trait Chunkable {
     /// Next available [`Chunk`]s for scheduling,
-    fn next_chunks(&mut self, chunk_length: usize, status: ExperimentStatus) -> Result<Vec<Chunk>>;
+    fn next_chunks(
+        &mut self,
+        chunk_length: usize,
+        how_many: usize,
+        status: ExperimentStatus,
+    ) -> Result<Vec<Chunk>>;
 
     /// Add the runs to the experiment so the wrapper can find them,
     ///
@@ -66,17 +71,21 @@ pub trait Chunkable {
     /// Once a chunk has been scheduled, mark all of its runs as scheduled with
     /// their slurm ids
     fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String);
+
     /// Get the still pending runs of this experiment.
     fn unscheduled(&self, status: &ExperimentStatus) -> Vec<(usize, &Run)>;
-    // /// Get the still pending runs of this experiment but mutable.
-    // ///
-    // /// returns `Vec<(run id: usize, run object: &mut Run)>`
-    // fn unscheduled_mut(&mut self, status: &ExperimentStatus) -> Vec<(usize, &mut
-    // Run)>;
+
+    /// Get the still pending runs of this experiment.
+    fn scheduled_nodep(&self) -> usize;
 }
 
 impl Chunkable for Experiment {
-    fn next_chunks(&mut self, chunk_length: usize, status: ExperimentStatus) -> Result<Vec<Chunk>> {
+    fn next_chunks(
+        &mut self,
+        chunk_length: usize,
+        how_many: usize,
+        status: ExperimentStatus,
+    ) -> Result<Vec<Chunk>> {
         let mut chunks = vec![];
 
         let runs: Vec<(usize, &Run)> = self.unscheduled(&status);
@@ -104,32 +113,33 @@ impl Chunkable for Experiment {
 
         chunks.sort_unstable();
         chunks.reverse();
-        // decreasing order of size, such that we schedule as much as possible first
+        // Decreasing order of size, such that we schedule as much as possible first
 
-        Ok(chunks)
+        Ok(chunks.into_iter().take(how_many).collect())
     }
 
     fn register_runs(&mut self, runs: &[usize]) -> usize {
         self.chunks.push(runs.to_vec());
+
         debug!(
             "creating chunks: {:?}, latest = {:?}",
             self.chunks,
             &self.chunks[self.chunks.len() - 1]
         );
+
         self.chunks.len() - 1
     }
 
     fn mark_chunk_scheduled(&mut self, chunk: &Chunk, batch_id: String) {
-        for task_id in 0..chunk.runs.len() {
+        for (task_id, run_id) in chunk.runs.iter().enumerate() {
             // because we schedule an array by specifying the run_id(s) in a list,
             // the sub id should be == run_id.
-            self.runs[task_id].slurm_id = Some(format!("{}_{}", batch_id, task_id));
+            self.runs[*run_id].slurm_id = Some(format!("{}_{}", batch_id, task_id));
         }
     }
 
     fn unscheduled(&self, status: &ExperimentStatus) -> Vec<(usize, &Run)> {
-        let u: Vec<_> = self
-            .runs
+        self.runs
             .iter()
             .enumerate()
             .filter(|(r_idx, r)| {
@@ -138,23 +148,18 @@ impl Chunkable for Experiment {
                     && r.slurm_id.is_none()
             })
             .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
-            .collect();
-        trace!(
-            "unscheduled: \n{}",
-            u.iter()
-                .map(|x| format!(
-                    "{}: prog {} with {:?}",
-                    x.0,
-                    x.1.program,
-                    x.1.input
-                        .file
-                        .as_ref()
-                        .map(|x| x.display().to_string())
-                        .unwrap_or(x.1.input.arguments.join(", "))
-                ))
-                .collect::<Vec<_>>()
-                .join("\n")
-        );
-        u
+            .collect()
+    }
+
+    fn scheduled_nodep(&self) -> usize {
+        let mut set = HashSet::new();
+
+        for chunk in &self.chunks {
+            for run in chunk {
+                set.insert(run);
+            }
+        }
+
+        set.len()
     }
 }

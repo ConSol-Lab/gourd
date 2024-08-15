@@ -6,6 +6,7 @@ use gourd_lib::file_system::FileOperations;
 use log::debug;
 use log::trace;
 use log::warn;
+
 /// Assigns a label to a run.
 pub fn assign_label(
     experiment: &Experiment,

@@ -166,7 +166,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                         info!("Would have scheduled the experiment on slurm (dry)");
                     } else {
                         s.run_experiment(&mut experiment, exp_path.clone(), &file_system)?;
-                        print_scheduling(&experiment, true, &file_system)?;
+                        print_scheduling(&experiment, true)?;
                         info!("Experiment started");
                     }
 
@@ -419,7 +419,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     info!("Would have continued the experiment on slurm (dry)");
                 } else {
                     let sched = s.run_experiment(&mut experiment, exp_path, &file_system)?;
-                    print_scheduling(&experiment, false, &file_system)?;
+                    print_scheduling(&experiment, false)?;
                     info!("Experiment continued, you just scheduled {sched} chunks");
                 }
             }

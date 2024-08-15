@@ -12,6 +12,7 @@ use gourd_lib::file_system::FileOperations;
 use inquire::error::InquireResult;
 use inquire::validator::ValueRequiredValidator;
 use inquire::Confirm;
+use inquire::CustomType;
 use inquire::InquireError;
 use inquire::Text;
 use log::debug;
@@ -103,6 +104,7 @@ pub fn init_interactive(
             output_folder: Default::default(), // todo: entered by user
             partition: "".to_string(),
             array_size_limit: None,
+            array_count_limit: 100,
             account: "".to_string(),
             begin: None,
             mail_type: None,
@@ -116,13 +118,11 @@ pub fn init_interactive(
                 .with_help_message("This will be used to name jobs submitted to Slurm.")
                 .prompt())?;
 
-            // todo: lukas fix
-            //  array size limit is now an optional *override* not necessary in most cases
-            // slurm_config.array_size_limit = Some(ask(CustomType::new("Slurm array size
-            // limit: ")     .with_formatter(&|num: usize| format!("{}", num))
-            //     .with_default(slurm_config.array_size_limit.unwrap_or(1000))
-            //     .with_help_message("The number of runs that can be scheduled in one job
-            // array.")     .prompt())?);
+            slurm_config.array_count_limit = ask(CustomType::new("Slurm array count limit: ")
+                .with_formatter(&|num: usize| format!("{}", num))
+                .with_default(slurm_config.array_count_limit)
+                .with_help_message("The number of job arrays that can be scheduled at once.")
+                .prompt())?;
 
             let enter_slurm_data_now = ask(Confirm::new("Enter Slurm credentials now?")
                 .with_help_message(

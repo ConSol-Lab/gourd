@@ -53,7 +53,11 @@ pub fn expand_programs(
         out.push(InternalProgram {
             name: name.to_string(),
             binary: file,
-            afterscript: user.afterscript.clone(),
+            afterscript: user
+                .afterscript
+                .clone()
+                .map(|p| canon_path(&p, fs))
+                .transpose()?,
             limits,
             arguments: user.arguments.clone(),
             next: Vec::new(),

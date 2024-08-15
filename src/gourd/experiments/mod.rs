@@ -75,6 +75,7 @@ impl ExperimentExt for Experiment {
         // Modifications to the slurm configurations
         let slurm = if let Some(mut slurm_conf) = conf.slurm.clone() {
             // if not all directories exist, slurm will fail with no obvious reason why
+            // Mikołaj: This does work no?
             slurm_conf.output_folder = fs.truncate_and_canonicalize_folder(&conf.output_path)?;
             // ...
             Some(slurm_conf)

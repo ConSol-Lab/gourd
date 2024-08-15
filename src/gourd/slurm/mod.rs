@@ -14,8 +14,6 @@ pub mod checks;
 pub mod handler;
 /// Currently used implementation of interacting with SLURM through the CLI
 pub mod interactor;
-/// Getting user usage information from slurm
-pub mod qos;
 
 /// The interface for interacting with a SLURM cluster.
 /// This can be via a version-specific CLI, via a REST API, or via a library.

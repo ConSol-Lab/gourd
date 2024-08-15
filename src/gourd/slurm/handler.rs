@@ -57,7 +57,9 @@ where
         } else {
             self.internal.max_array_size()?
         };
-        let chunks_to_schedule = experiment.next_chunks(max_array_size, status)?;
+
+        let chunks_to_schedule =
+            experiment.next_chunks(max_array_size, slurm_config.array_count_limit, status)?;
 
         let mut counter = 0;
         for (chunk_id, chunk) in chunks_to_schedule.iter().enumerate() {

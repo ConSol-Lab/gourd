@@ -23,7 +23,8 @@ pub async fn run_local(
     let pre_fin = status.iter().filter(|r| r.1.is_completed()).count();
 
     let cmds = wrap(experiment, &status, env::consts::ARCH, fs)?;
-    trace!("Running cmds {:#?}", cmds);
+
+    trace!("About to run: {:#?}", cmds);
 
     experiment.save(fs)?;
 

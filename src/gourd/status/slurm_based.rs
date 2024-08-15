@@ -53,8 +53,6 @@ where
             slurm_map.insert(run.slurm_id.clone(), run_id);
         }
 
-        trace!("Slurm map: {:?}", slurm_map);
-
         let statuses: Vec<SacctOutput> = flatten_job_id(
             connection.get_accounting_data(
                 experiment

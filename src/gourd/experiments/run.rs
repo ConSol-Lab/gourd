@@ -50,7 +50,8 @@ pub fn generate_new_run(
                     &experiment
                         .output_folder
                         .join(format!("{}/{}/{}/", experiment.seq, program, run_id)),
-                )?,
+                )?
+                .join("afterscript"),
             ),
         },
         limits,

@@ -3,14 +3,12 @@ use gourd_lib::constants::PRIMARY_STYLE;
 use gourd_lib::constants::SCHEDULE_BAR_WIDTH;
 use gourd_lib::constants::TERTIARY_STYLE;
 use gourd_lib::experiment::Experiment;
-use gourd_lib::file_system::FileOperations;
 use log::info;
 
 use crate::chunks::Chunkable;
-use crate::status::DynamicStatus;
 
 /// Print user readable infomation about the scheduling status.
-pub fn print_scheduling(exp: &Experiment, starting: bool, fs: &impl FileOperations) -> Result<()> {
+pub fn print_scheduling(exp: &Experiment, starting: bool) -> Result<()> {
     if starting {
         info!(
             "Starting out experiment {PRIMARY_STYLE}{}{PRIMARY_STYLE:#}...",
@@ -23,11 +21,9 @@ pub fn print_scheduling(exp: &Experiment, starting: bool, fs: &impl FileOperatio
         );
     }
 
-    let statuses = exp.status(fs)?;
-
     let total_runs: usize = exp.runs.len();
 
-    let total_scheduled: usize = total_runs - exp.unscheduled(&statuses).len();
+    let total_scheduled: usize = exp.scheduled_nodep();
 
     info!("There are {total_runs} total runs,");
     info!(

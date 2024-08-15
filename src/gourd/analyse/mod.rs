@@ -272,7 +272,7 @@ where
                 datas,
                 Into::<ShapeStyle>::into(Palette99::pick(idx)).stroke_width(3),
             ))?
-            .label(format!("{}", name))
+            .label(name.to_string())
             .legend(move |(x, y)| {
                 Rectangle::new(
                     [(x - 5, y - 5), (x + 5, y + 5)],

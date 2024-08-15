@@ -4,8 +4,8 @@ use anyhow::Result;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
 use gourd_lib::measurement::Metrics;
-use log::debug;
 use log::trace;
+use log::warn;
 
 use super::FileSystemBasedStatus;
 use super::StatusProvider;
@@ -57,8 +57,7 @@ where
                 {
                     Ok(status) => Some(status),
                     Err(e) => {
-                        // warn!("Failed to get status from afterscript {}: {e}", run_id);
-                        debug!("{}", e);
+                        warn!("Failed to get status from afterscript {}: {e}", run_id);
                         None
                     }
                 };

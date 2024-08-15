@@ -105,7 +105,7 @@ fn process() -> Result<()> {
     let mut child = Command::new(&rc.binary_path)
         .current_dir(&rc.work_dir)
         .args(&rc.additional_args)
-        .stdin(if let Some(actual_input) = rc.input_path {
+        .stdin(if let Some(actual_input) = rc.input_path.clone() {
             Stdio::from(
                 File::open(actual_input.clone())
                     .context(format!("Could not open the input {:?}", actual_input))?,
