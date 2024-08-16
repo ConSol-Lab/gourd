@@ -20,12 +20,12 @@ fn gourd_run_test() {
         "input_ten".to_string(),
         UserInput {
             file: Some(env.temp_dir.path().join("input_ten")),
-            glob: None,fetch: None,arguments: vec![],
+            glob: None,fetch: None,group: None,arguments: vec![],
         }),
         ("input_hello".to_string(),
         UserInput {
             file: Some(env.temp_dir.path().join("input_hello")),
-            glob: None,fetch: None,arguments: vec![],
+            glob: None,fetch: None,group: None,arguments: vec![],
         });
         Some(BTreeMap::from([(
             "correct".to_string(),
@@ -66,12 +66,12 @@ fn gourd_status_test() {
         "input_ten".to_string(),
         UserInput {
             file: Some(env.temp_dir.path().join("input_ten")),
-            glob: None,fetch: None,arguments: vec![],
+            glob: None,fetch: None,group: None,arguments: vec![],
         }),
         ("input_hello".to_string(),
         UserInput {
             file: Some(env.temp_dir.path().join("input_hello")),
-            glob: None,fetch: None,arguments: vec![],
+            glob: None,fetch: None,group: None,arguments: vec![],
         });
         Some(BTreeMap::from([(
             "correct".to_string(),
@@ -87,7 +87,7 @@ fn gourd_status_test() {
         "input_ten".to_string(),
         UserInput {
             file: Some(env.temp_dir.path().join("input_ten")),
-            glob: None,fetch: None,arguments: vec![],
+            glob: None,fetch: None,group: None,arguments: vec![],
         })
     );
 
@@ -152,12 +152,12 @@ fn gourd_rerun_test() {
         "input_ten".to_string(),
         UserInput {
             file: Some(env.temp_dir.path().join("input_ten")),
-            glob: None,fetch: None,arguments: vec![],
+            glob: None,fetch: None,group: None,arguments: vec![],
         }),
         ("input_hello".to_string(),
         UserInput {
             file: Some(env.temp_dir.path().join("input_hello")),
-            glob: None,fetch: None,arguments: vec![],
+            glob: None,fetch: None,group: None,arguments: vec![],
         });
         Some(BTreeMap::from([(
             "correct".to_string(),

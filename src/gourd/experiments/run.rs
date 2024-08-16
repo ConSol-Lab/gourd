@@ -1,10 +1,10 @@
-use gourd_lib::config::ResourceLimits;
+use anyhow::Result;
+use gourd_lib::config::slurm::ResourceLimits;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
 use gourd_lib::experiment::Run;
 use gourd_lib::experiment::RunInput;
 use gourd_lib::file_system::FileOperations;
-
 /// This function will generate a new run.
 ///
 /// This should be used by all code paths adding runs to the experiment.
@@ -15,11 +15,12 @@ pub fn generate_new_run(
     program: usize,
     run_input: RunInput,
     input: Option<FieldRef>,
+    input_group: Option<String>,
     limits: ResourceLimits,
     parent: Option<usize>,
     experiment: &Experiment,
     fs: &impl FileOperations,
-) -> anyhow::Result<Run> {
+) -> Result<Run> {
     Ok(Run {
         program,
         input: run_input,
@@ -59,5 +60,6 @@ pub fn generate_new_run(
         rerun: None,
         generated_from_input: input,
         parent,
+        group: input_group,
     })
 }

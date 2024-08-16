@@ -6,7 +6,7 @@ use anstyle::Color;
 use anstyle::Color::Ansi;
 use anstyle::Style;
 
-use crate::config::ResourceLimits;
+use crate::config::slurm::ResourceLimits;
 
 /// The default path to the wrapper, that is, we assume `gourd_wrapper` is in
 /// $PATH.

@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -9,10 +10,9 @@ use chrono::Local;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::config::maps::InternalInputMap;
+use crate::config::slurm::ResourceLimits;
+use crate::config::slurm::SlurmConfig;
 use crate::config::Label;
-use crate::config::ResourceLimits;
-use crate::config::SlurmConfig;
 use crate::ctx;
 use crate::experiment::labels::Labels;
 use crate::file_system::FileOperations;
@@ -39,7 +39,6 @@ pub struct InternalInput {
     /// Command line arguments to be passed to the executable
     pub arguments: Vec<String>,
 
-    #[allow(dead_code)]
     /// Additional data for this input
     pub metadata: Metadata,
 }
@@ -53,6 +52,9 @@ pub struct Metadata {
 
     /// Whether it was fetched.
     pub is_fetched: bool,
+
+    /// The group this item belongs to.
+    pub group: Option<String>,
 }
 
 /// The internal representation of a [`UserProgram`]
@@ -132,6 +134,9 @@ pub struct Run {
 
     /// Edge to the parent run.
     pub parent: Option<usize>,
+
+    /// The group this run belongs to.
+    pub group: Option<String>,
 }
 
 /// An enum to distinguish the run context.
@@ -162,7 +167,7 @@ pub struct Experiment {
     pub wrapper: String,
 
     /// The inputs for the experiment.
-    pub inputs: InternalInputMap,
+    pub inputs: BTreeMap<FieldRef, InternalInput>,
 
     /// The programs for the experiment.
     pub programs: Vec<InternalProgram>,
@@ -190,6 +195,9 @@ pub struct Experiment {
 
     /// A mapping of job array task id indices to run ids.
     pub chunks: Vec<Vec<usize>>,
+
+    /// The input groups present in this experiment.
+    pub groups: Vec<String>,
 
     // last in the struct so that the lockfile has these at the bottom
     /// The pairings of program-input for this experiment.

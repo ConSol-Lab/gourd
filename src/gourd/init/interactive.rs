@@ -4,15 +4,14 @@ use std::path::PathBuf;
 use anyhow::Context;
 use anyhow::Result;
 use gourd_lib::bailc;
+use gourd_lib::config::slurm::SlurmConfig;
 use gourd_lib::config::Config;
-use gourd_lib::config::SlurmConfig;
 use gourd_lib::constants::CMD_STYLE;
 use gourd_lib::ctx;
 use gourd_lib::file_system::FileOperations;
 use inquire::error::InquireResult;
 use inquire::validator::ValueRequiredValidator;
 use inquire::Confirm;
-use inquire::CustomType;
 use inquire::InquireError;
 use inquire::Text;
 use log::debug;
@@ -104,7 +103,7 @@ pub fn init_interactive(
             output_folder: Default::default(), // todo: entered by user
             partition: "".to_string(),
             array_size_limit: None,
-            array_count_limit: 100,
+            array_count_limit: None,
             account: "".to_string(),
             begin: None,
             mail_type: None,
@@ -116,12 +115,6 @@ pub fn init_interactive(
             slurm_config.experiment_name = ask(Text::new("Slurm experiment name: ")
                 .with_validator(ValueRequiredValidator::default())
                 .with_help_message("This will be used to name jobs submitted to Slurm.")
-                .prompt())?;
-
-            slurm_config.array_count_limit = ask(CustomType::new("Slurm array count limit: ")
-                .with_formatter(&|num: usize| format!("{}", num))
-                .with_default(slurm_config.array_count_limit)
-                .with_help_message("The number of job arrays that can be scheduled at once.")
                 .prompt())?;
 
             let enter_slurm_data_now = ask(Confirm::new("Enter Slurm credentials now?")

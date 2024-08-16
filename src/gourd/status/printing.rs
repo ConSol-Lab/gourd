@@ -139,7 +139,7 @@ pub fn display_statuses(
     statuses: &ExperimentStatus,
     full: bool,
 ) -> Result<usize> {
-    if experiment.runs.len() <= SHORTEN_STATUS_CUTOFF || full {
+    if full || experiment.runs.len() <= SHORTEN_STATUS_CUTOFF {
         long_status(f, experiment, statuses)?;
     } else {
         short_status(f, experiment, statuses)?;
@@ -228,13 +228,22 @@ fn short_status(
 }
 
 /// For an input, decide how it's shown to a user.
-fn format_input_name(run: &Run) -> String {
-    if let Some(input_name) = &run.generated_from_input {
-        input_name.clone()
-    } else if let Some(parent_id) = run.parent {
-        format!("postprocessing of {}", parent_id)
+fn format_input_name(exp: &Experiment, run: &Run, grouped: bool) -> String {
+    if !grouped {
+        if let Some(input_name) = &run.generated_from_input {
+            input_name.clone()
+        } else if let Some(parent_id) = run.parent {
+            format!("postprocessing of {}", parent_id)
+        } else {
+            unreachable!("A run cannot spawn out of thin air!");
+        }
+    } else if let Some(input_name) = &run.generated_from_input {
+        format!("{} ({})", exp.programs[run.program].name, input_name)
     } else {
-        unreachable!("A run cannot spawn out of thin air!");
+        // when this function was implemented this branch was unreachable,
+        // but it is reasonable that this will change in the future, and not
+        // panicking here seems reasonable.
+        format_input_name(exp, run, false)
     }
 }
 
@@ -247,21 +256,37 @@ fn long_status(
 ) -> Result<()> {
     let runs = &experiment.runs;
 
+    // map from programs to run ids
     let mut by_program: BTreeMap<FieldRef, Vec<usize>> = BTreeMap::new();
 
     let mut longest_input: usize = 0;
     let mut longest_index: usize = 0;
 
+    let mut grouped_runs: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+
     for (run_id, run_data) in runs.iter().enumerate() {
-        longest_input = max(longest_input, format_input_name(run_data).chars().count());
+        longest_input = max(
+            longest_input,
+            format_input_name(experiment, run_data, run_data.group.is_some())
+                .chars()
+                .count(),
+        );
         longest_index = max(longest_index, run_id.to_string().len());
 
-        let prog_name = experiment.get_program(run_data)?.name;
-
-        if let Some(for_this_prog) = by_program.get_mut(&prog_name) {
-            for_this_prog.push(run_id);
+        if let Some(group) = &run_data.group {
+            if let Some(for_this_group) = grouped_runs.get_mut(group) {
+                for_this_group.push(run_id);
+            } else {
+                grouped_runs.insert(group.clone(), vec![run_id]);
+            }
         } else {
-            by_program.insert(prog_name, vec![run_id]);
+            let prog_name = experiment.get_program(run_data)?.name;
+
+            if let Some(for_this_prog) = by_program.get_mut(&prog_name) {
+                for_this_prog.push(run_id);
+            } else {
+                by_program.insert(prog_name, vec![run_id]);
+            }
         }
     }
 
@@ -270,72 +295,111 @@ fn long_status(
 
         writeln!(f, "For program {}:", prog)?;
 
-        for run_id in prog_runs {
-            let run = &experiment.runs[run_id];
-            let status = statuses[&run_id].clone();
+        display_runs(
+            false,
+            f,
+            experiment,
+            statuses,
+            prog_runs,
+            longest_input,
+            longest_index,
+        )?;
+    }
 
-            write!(
-                f,
-                "  {: >numw$}. {NAME_STYLE}{:.<width$}{NAME_STYLE:#}.... {}",
-                run_id,
-                format_input_name(run),
-                if let Some(r) = run.rerun {
-                    format!("reran as {NAME_STYLE}{r}{NAME_STYLE:#}")
-                } else {
-                    format!("{}", status)
-                },
-                width = longest_input,
-                numw = longest_index
-            )?;
+    for (prog, prog_runs) in grouped_runs {
+        writeln!(f)?;
 
-            if status.fs_status.completion == FsState::Pending {
-                if let Some(ss) = &status.slurm_status {
-                    write!(f, " on slurm: {}", ss.completion)?;
-                } else if let Some(slurm_id) = &run.slurm_id {
-                    write!(
-                        f,
-                        " on slurm with job id {WARNING_STYLE}{slurm_id}{WARNING_STYLE:#}"
-                    )?;
-                } else if run.slurm_id.is_some() && experiment.env == Environment::Local {
-                    write!(f, " {WARNING_STYLE}queued!{WARNING_STYLE:#}")?;
-                }
-            }
+        writeln!(f, "For Group {}:", prog)?;
 
-            writeln!(f)?;
-
-            if let Some(Some(label_text)) = &status.fs_status.afterscript_completion {
-                let display_style = if experiment.labels.map[label_text].rerun_by_default {
-                    ERROR_STYLE
-                } else {
-                    PRIMARY_STYLE
-                };
-
-                write!(
-                    f,
-                    "  {: >numw$}a {:.<width$}.... \
-                            label: {display_style}{label_text}{display_style:#}",
-                    run_id,
-                    "afterscript",
-                    numw = longest_index,
-                    width = longest_input,
-                )?;
-
-                writeln!(f)?;
-            } else if let Some(None) = &status.fs_status.afterscript_completion {
-                write!(
-                    f,
-                    "  {: >numw$}a {TERTIARY_STYLE}afterscript ran \
-                            successfully{TERTIARY_STYLE:#}",
-                    run_id,
-                    numw = longest_index,
-                )?;
-
-                writeln!(f)?;
-            }
-        }
+        display_runs(
+            true,
+            f,
+            experiment,
+            statuses,
+            prog_runs,
+            longest_input,
+            longest_index,
+        )?;
     }
 
     writeln!(f)?;
+
+    Ok(())
+}
+
+/// Display runs of some group.
+fn display_runs(
+    group: bool,
+    f: &mut impl Write,
+    experiment: &Experiment,
+    statuses: &ExperimentStatus,
+    prog_runs: Vec<usize>,
+    longest_input: usize,
+    longest_index: usize,
+) -> Result<()> {
+    for run_id in prog_runs {
+        let run = &experiment.runs[run_id];
+        let status = statuses[&run_id].clone();
+
+        write!(
+            f,
+            "  {: >numw$}. {NAME_STYLE}{:.<width$}{NAME_STYLE:#}.... {}",
+            run_id,
+            format_input_name(experiment, run, group),
+            if let Some(r) = run.rerun {
+                format!("reran as {NAME_STYLE}{r}{NAME_STYLE:#}")
+            } else {
+                format!("{}", status)
+            },
+            width = longest_input,
+            numw = longest_index
+        )?;
+
+        if status.fs_status.completion == FsState::Pending {
+            if let Some(ss) = &status.slurm_status {
+                write!(f, " on slurm: {}", ss.completion)?;
+            } else if let Some(slurm_id) = &run.slurm_id {
+                write!(
+                    f,
+                    " on slurm with job id {WARNING_STYLE}{slurm_id}{WARNING_STYLE:#}"
+                )?;
+            } else if run.slurm_id.is_some() && experiment.env == Environment::Local {
+                write!(f, " {WARNING_STYLE}queued!{WARNING_STYLE:#}")?;
+            }
+        }
+
+        writeln!(f)?;
+
+        if let Some(Some(label_text)) = &status.fs_status.afterscript_completion {
+            let display_style = if experiment.labels.map[label_text].rerun_by_default {
+                ERROR_STYLE
+            } else {
+                PRIMARY_STYLE
+            };
+
+            write!(
+                f,
+                "  {: >numw$}a {:.<width$}.... \
+                            label: {display_style}{label_text}{display_style:#}",
+                run_id,
+                "afterscript",
+                numw = longest_index,
+                width = longest_input,
+            )?;
+
+            writeln!(f)?;
+        } else if let Some(None) = &status.fs_status.afterscript_completion {
+            write!(
+                f,
+                "  {: >numw$}a {TERTIARY_STYLE}afterscript ran \
+                            successfully{TERTIARY_STYLE:#}",
+                run_id,
+                numw = longest_index,
+            )?;
+
+            writeln!(f)?;
+        }
+    }
 
     Ok(())
 }
@@ -383,6 +447,10 @@ pub fn display_job(
             run.input.arguments
         )?;
 
+        if let Some(group) = &run.group {
+            writeln!(f, "{NAME_STYLE}group{NAME_STYLE:#}: {}", group)?;
+        }
+
         writeln!(
             f,
             "{NAME_STYLE}output path{NAME_STYLE:#}: {PATH_STYLE}{}{PATH_STYLE:#}",
@@ -416,14 +484,14 @@ pub fn display_job(
                 writeln!(
                     f,
                     "{NAME_STYLE}Slurm job stdout{NAME_STYLE:#} ({PATH_STYLE}{}{PATH_STYLE:#}):
-{PARAGRAPH_STYLE}{}{PARAGRAPH_STYLE:#}",
+\"{PARAGRAPH_STYLE}{}{PARAGRAPH_STYLE:#}\"",
                     slurm_out.display(),
                     slurm_file.stdout
                 )?;
                 writeln!(
                     f,
                     "{NAME_STYLE}Slurm job stderr{NAME_STYLE:#} ({PATH_STYLE}{}{PATH_STYLE:#}):
-{PARAGRAPH_STYLE}{}{PARAGRAPH_STYLE:#}",
+\"{PARAGRAPH_STYLE}{}{PARAGRAPH_STYLE:#}\"",
                     slurm_err.display(),
                     slurm_file.stderr
                 )?;

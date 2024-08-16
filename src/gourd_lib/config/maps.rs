@@ -15,17 +15,7 @@ use crate::constants::GLOB_ESCAPE;
 use crate::constants::INTERNAL_GLOB;
 use crate::constants::INTERNAL_PREFIX;
 use crate::ctx;
-use crate::experiment::InternalInput;
-use crate::experiment::InternalProgram;
 use crate::file_system::FileOperations;
-
-/// Storing [`InternalInput`]s in a [`BTreeMap`] with their user-given names as
-/// keys
-pub type InternalInputMap = BTreeMap<String, InternalInput>;
-
-/// Storing [`InternalProgram`]s in a [`BTreeMap`] with their user-given names
-/// as keys
-pub type InternalProgramMap = BTreeMap<String, InternalProgram>;
 
 /// This will take a path and canonicalize it.
 pub fn canon_path(path: &Path, fs: &impl FileOperations) -> Result<PathBuf> {

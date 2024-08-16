@@ -74,14 +74,20 @@ impl ExperimentExt for Experiment {
 
         // Modifications to the slurm configurations
         let slurm = if let Some(mut slurm_conf) = conf.slurm.clone() {
-            // if not all directories exist, slurm will fail with no obvious reason why
-            // Mikołaj: This does work no?
+            // NOTE: if not all directories exist, slurm will fail with no obvious reason
+            // why.
             slurm_conf.output_folder = fs.truncate_and_canonicalize_folder(&conf.output_path)?;
             // ...
             Some(slurm_conf)
         } else {
             None
         };
+
+        // get the groups from inputs
+        let groups = expanded_inputs
+            .iter()
+            .filter_map(|(_, input)| input.metadata.group.clone())
+            .collect();
 
         let mut experiment = Self {
             seq,
@@ -107,6 +113,7 @@ impl ExperimentExt for Experiment {
             slurm,
 
             chunks: Vec::new(),
+            groups,
             runs: Vec::new(),
         };
 

@@ -53,15 +53,8 @@ where
             slurm_map.insert(run.slurm_id.clone(), run_id);
         }
 
-        let statuses: Vec<SacctOutput> = flatten_job_id(
-            connection.get_accounting_data(
-                experiment
-                    .runs
-                    .iter()
-                    .filter_map(|x| x.slurm_id.clone())
-                    .collect(),
-            )?,
-        )?;
+        let statuses: Vec<SacctOutput> =
+            flatten_job_id(connection.get_accounting_data(&experiment.creation_time)?)?;
 
         for job in statuses {
             // Mapping of all possible job state codes

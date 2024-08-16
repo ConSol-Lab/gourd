@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use anyhow::Context;
 use anyhow::Result;
 use gourd_lib::bailc;
-use gourd_lib::config::ResourceLimits;
+use gourd_lib::config::slurm::ResourceLimits;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::Run;
 use log::debug;

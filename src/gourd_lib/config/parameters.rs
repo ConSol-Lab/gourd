@@ -105,7 +105,7 @@ pub fn expand_parameters(
                 let indexes = &map[&parameter_name];
 
                 if indexes[0].1.is_some() {
-                    set = expand_subparameter(&parameter_name, param, set, indexes)?;
+                    set = expand_sub_parameter(&parameter_name, param, set, indexes)?;
                 } else {
                     set = expand_parameter(&parameter_name, param, set, indexes)?;
                 }
@@ -131,7 +131,7 @@ pub fn expand_parameters(
     Ok(result)
 }
 
-/// Checks if all subparameters of each paramterers specified in `parameters`
+/// Checks if all sub parameters of each parameter specified in `parameters`
 /// are equal (Helper function).
 fn check_sub_parameter_size_is_equal(parameters: &BTreeMap<String, Parameter>) -> Result<()> {
     for (parameter_name, parameter) in parameters {
@@ -162,7 +162,7 @@ fn check_sub_parameter_size_is_equal(parameters: &BTreeMap<String, Parameter>) -
 /// Gets names and positions of parameters in the provided `input`. (Helper
 /// function)
 ///
-/// Saves paramter names in `expandable_parameters` Set and
+/// Saves parameter names in `expandable_parameters` Set and
 /// `parameter_names_encountered` Set
 ///
 /// Saves map of Index to Parameter name in `map`
@@ -195,7 +195,7 @@ fn get_expandable_parameters(
             let subparam_name = constrict_syntax(dot_iter.next())?.to_string();
 
             if dot_iter.next().is_some() {
-                bailc!("Invalid paramter syntax", ; "", ; "",);
+                bailc!("Invalid parameter syntax", ; "", ; "",);
             }
 
             expandable_parameters.insert(param_name.clone());
@@ -254,8 +254,8 @@ fn expand_parameter(
     Ok(new_set)
 }
 
-/// Expands provided subparameter (Helper function).
-fn expand_subparameter(
+/// Expands provided sub parameter (Helper function).
+fn expand_sub_parameter(
     param_name: &String,
     param: &Parameter,
     set: BTreeSet<(String, Vec<String>)>,

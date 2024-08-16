@@ -7,11 +7,11 @@ use anyhow::Result;
 use crate::bailc;
 use crate::config::maps::canon_path;
 use crate::config::maps::expand_argument_globs;
-use crate::config::maps::InternalInputMap;
 use crate::config::parameters::expand_parameters;
 use crate::config::parameters::validate_parameters;
 use crate::config::Parameter;
 use crate::config::UserInput;
+use crate::experiment::FieldRef;
 use crate::experiment::InternalInput;
 use crate::experiment::Metadata;
 use crate::file_system::FileOperations;
@@ -22,7 +22,7 @@ pub fn expand_inputs(
     inp: &BTreeMap<String, UserInput>,
     parameters: &Option<BTreeMap<String, Parameter>>,
     fs: &impl FileOperations,
-) -> Result<InternalInputMap> {
+) -> Result<BTreeMap<FieldRef, InternalInput>> {
     let mut initial = inp.clone();
     let mut out = BTreeMap::new();
 
@@ -47,6 +47,7 @@ pub fn expand_inputs(
                         metadata: Metadata {
                             glob_from: None,
                             is_fetched: false,
+                            group: user.group,
                         },
                     },
                 );
@@ -65,6 +66,7 @@ pub fn expand_inputs(
                                 metadata: Metadata {
                                     glob_from: Some(name.clone()),
                                     is_fetched: false,
+                                    group: user.group.clone(),
                                 },
                             },
                         );
@@ -83,6 +85,7 @@ pub fn expand_inputs(
                         metadata: Metadata {
                             glob_from: None,
                             is_fetched: true,
+                            group: user.group,
                         },
                     },
                 );
@@ -101,6 +104,7 @@ pub fn expand_inputs(
                         metadata: Metadata {
                             glob_from: None,
                             is_fetched: false,
+                            group: user.group,
                         },
                     },
                 );

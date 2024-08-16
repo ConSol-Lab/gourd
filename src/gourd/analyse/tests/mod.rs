@@ -172,6 +172,7 @@ fn test_analysis_png_plot_success() {
         generated_from_input: None,
         parent: None,
         limits: Default::default(),
+        group: None,
     };
     let experiment = Experiment {
         runs: vec![run.clone(), run.clone(), run.clone(), run],
@@ -189,6 +190,7 @@ fn test_analysis_png_plot_success() {
         afterscript_output_folder: Default::default(),
         slurm: None,
         chunks: vec![],
+        groups: vec![],
     };
 
     let png_output_path = tmp_dir.path().join("analysis.png");

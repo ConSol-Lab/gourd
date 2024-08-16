@@ -1,7 +1,10 @@
 use std::path::Path;
+use std::time::Duration;
 
 use anyhow::Result;
-use gourd_lib::config::SlurmConfig;
+use chrono::DateTime;
+use chrono::Local;
+use gourd_lib::config::slurm::SlurmConfig;
 use gourd_lib::experiment::Experiment;
 
 use crate::chunks::Chunk;
@@ -29,6 +32,21 @@ pub trait SlurmInteractor {
     /// Get the MaxArraySize of this slurm cluster
     fn max_array_size(&self) -> Result<usize>;
 
+    /// Get the MaxSubmit of this slurm cluster
+    fn max_submit(&self) -> Result<usize>;
+
+    /// Get the MaxJobs of this slurm cluster
+    fn max_jobs(&self) -> Result<usize>;
+
+    /// Get the MaxCPU of this slurm cluster
+    fn max_cpu(&self) -> Result<usize>;
+
+    /// Get the MaxMemory of this slurm cluster
+    fn max_memory(&self) -> Result<usize>;
+
+    /// Get the MaxWallDurationPerJob of this slurm cluster
+    fn max_time(&self) -> Result<Duration>;
+
     /// Schedule a new job array on the cluster.
     fn schedule_chunk(
         &self,
@@ -45,11 +63,15 @@ pub trait SlurmInteractor {
     fn get_supported_versions(&self) -> String;
 
     /// Get accounting data of user's jobs
-    fn get_accounting_data(&self, job_id: Vec<String>) -> Result<Vec<SacctOutput>>;
+    fn get_accounting_data(&self, since: &DateTime<Local>) -> Result<Vec<SacctOutput>>;
 
     /// Get vector of all (not finished) jobs scheduled by user
-    fn get_scheduled_jobs(&self) -> Result<Vec<String>>;
+    fn scheduled_jobs(&self) -> Result<Vec<String>>;
 
-    /// Cancel all of the jobs in the `batch_ids` vectoro
+    /// Get the number of currently scheduled or running jobs by the current
+    /// user
+    fn scheduled_count(&self) -> Result<usize>;
+
+    /// Cancel all of the jobs in the `batch_ids` vector
     fn cancel_jobs(&self, batch_ids: Vec<String>) -> Result<()>;
 }

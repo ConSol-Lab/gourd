@@ -5,7 +5,6 @@ use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
 use gourd_lib::measurement::Metrics;
 use log::trace;
-use log::warn;
 
 use super::FileSystemBasedStatus;
 use super::StatusProvider;
@@ -57,7 +56,9 @@ where
                 {
                     Ok(status) => Some(status),
                     Err(e) => {
-                        warn!("Failed to get status from afterscript {}: {e}", run_id);
+                        // TODO: this error appears very often, investigate pls.
+                        //  delete this comment if behaviour is correct and code choices reasonable
+                        trace!("Failed to get status from afterscript {}: {e}", run_id);
                         None
                     }
                 };

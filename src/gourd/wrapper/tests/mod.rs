@@ -64,6 +64,7 @@ fn non_matching_arch() {
             glob: None,
             arguments: vec![],
             fetch: None,
+            group: None,
         },
     );
 
@@ -119,6 +120,7 @@ fn matching_arch() {
             file: Some(input.clone()),
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![],
         },
     );

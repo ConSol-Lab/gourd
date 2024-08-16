@@ -5,7 +5,7 @@ use clap::crate_authors;
 use clap::crate_name;
 use clap::crate_version;
 use gourd_lib::bailc;
-use gourd_lib::config::ResourceLimits;
+use gourd_lib::config::slurm::ResourceLimits;
 use gourd_lib::constants::style_from_fg;
 use gourd_lib::constants::ERROR_STYLE;
 use gourd_lib::constants::HELP_STYLE;

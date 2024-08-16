@@ -162,6 +162,10 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     s.check_version()?;
                     s.check_partition(&slurm_options_from_experiment(&experiment)?.partition)?;
 
+                    for program in &experiment.programs {
+                        s.verify_resource_limits(&program.limits)?;
+                    }
+
                     if cmd.dry {
                         info!("Would have scheduled the experiment on slurm (dry)");
                     } else {
@@ -321,7 +325,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             let id_list = if *all {
-                s.internal.get_scheduled_jobs()?
+                s.internal.scheduled_jobs()?
             } else if let Some(ids) = run_ids {
                 // verify that every id has a slurm id in the experiment
                 ids.iter()
@@ -374,10 +378,6 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     id_list.join(", ")
                 );
             } else {
-                info!(
-                    "Cancelling runs {TERTIARY_STYLE}[{}]{TERTIARY_STYLE:#}",
-                    id_list.join(", ")
-                );
                 s.internal.cancel_jobs(id_list)?;
             }
         }
@@ -463,6 +463,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     old_run.program,
                     old_run.input.clone(),
                     old_run.generated_from_input.clone(),
+                    old_run.group.clone(),
                     // since we still update & save the limits for every program,
                     // new resource limits are fetched from the old run's program.
                     // in a future stateless gourd, we will only update the limits for new runs,

@@ -10,6 +10,7 @@ fn test_expand_parameters_ok_no_expandable() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec!["nice".to_string()],
         },
     );
@@ -28,6 +29,7 @@ fn test_expand_parameters_ok_parameter() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec!["-e".to_string(), "param|x".to_string()],
         },
     );
@@ -47,6 +49,7 @@ fn test_expand_parameters_ok_parameter() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec!["-e".to_string(), "a".to_string()],
         },
     );
@@ -56,6 +59,7 @@ fn test_expand_parameters_ok_parameter() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec!["-e".to_string(), "b".to_string()],
         },
     );
@@ -65,6 +69,7 @@ fn test_expand_parameters_ok_parameter() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec!["-e".to_string(), "c".to_string()],
         },
     );
@@ -81,6 +86,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "param|x".to_string(),
@@ -105,6 +111,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -119,6 +126,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -133,6 +141,7 @@ fn test_expand_parameters_ok_parameter_doubled() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -153,6 +162,7 @@ fn test_expand_parameters_ok_subparameter() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "subparam|x.1".to_string(),
@@ -190,6 +200,7 @@ fn test_expand_parameters_ok_subparameter() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -204,6 +215,7 @@ fn test_expand_parameters_ok_subparameter() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -218,6 +230,7 @@ fn test_expand_parameters_ok_subparameter() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -238,6 +251,7 @@ fn test_expand_parameters_ok_both() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "subparam|x.1".to_string(),
@@ -290,6 +304,7 @@ fn test_expand_parameters_ok_both() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -306,6 +321,7 @@ fn test_expand_parameters_ok_both() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -322,6 +338,7 @@ fn test_expand_parameters_ok_both() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -338,6 +355,7 @@ fn test_expand_parameters_ok_both() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -354,6 +372,7 @@ fn test_expand_parameters_ok_both() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -370,6 +389,7 @@ fn test_expand_parameters_ok_both() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -386,6 +406,7 @@ fn test_expand_parameters_ok_both() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "a".to_string(),
@@ -402,6 +423,7 @@ fn test_expand_parameters_ok_both() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "b".to_string(),
@@ -418,6 +440,7 @@ fn test_expand_parameters_ok_both() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "c".to_string(),
@@ -440,6 +463,7 @@ fn test_expand_parameters_fail_subparameter_not_declared() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec!["-e".to_string(), "param|x".to_string()],
         },
     );
@@ -456,6 +480,7 @@ fn test_expand_parameters_fail_subparameter_size_not_match() {
             file: None,
             glob: None,
             fetch: None,
+            group: None,
             arguments: vec![
                 "-e".to_string(),
                 "param|x_1".to_string(),

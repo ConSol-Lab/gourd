@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use gourd_lib::config::ResourceLimits;
+use gourd_lib::config::slurm::ResourceLimits;
 
 use super::*;
 

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use gourd_lib::config::SBatchArg;
-use gourd_lib::config::SlurmConfig;
+use gourd_lib::config::slurm::SBatchArg;
+use gourd_lib::config::slurm::SlurmConfig;
 
 use super::*;
 
@@ -12,7 +12,7 @@ fn parse_optional_args_test_all() {
         output_folder: Default::default(),
         partition: "memory".to_string(),
         array_size_limit: None,
-        array_count_limit: 100,
+        array_count_limit: None,
         account: "test-account".to_string(),
         begin: Some("01:10:00".to_string()),
         mail_type: Some("ALL".to_string()),
@@ -35,7 +35,7 @@ fn parse_optional_args_test_only_begin() {
         output_folder: Default::default(),
         partition: "memory".to_string(),
         array_size_limit: None,
-        array_count_limit: 100,
+        array_count_limit: None,
         account: "test-account".to_string(),
         begin: Some("15:40:15".to_string()),
         mail_type: None,
@@ -70,7 +70,7 @@ fn parse_optional_args_test_custom_args() {
         output_folder: Default::default(),
         partition: "memory".to_string(),
         array_size_limit: None,
-        array_count_limit: 100,
+        array_count_limit: None,
         account: "test-account".to_string(),
         begin: None,
         mail_type: Some("ALL".to_string()),

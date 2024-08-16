@@ -64,6 +64,7 @@ pub(super) fn dfs(
                             arguments: input.arguments.clone(),
                         },
                         Some(input_name.clone()),
+                        input.metadata.group.clone(),
                         exp.programs[node].limits,
                         None,
                         exp,
@@ -83,6 +84,7 @@ pub(super) fn dfs(
                             arguments: runs[pchild.0].input.arguments.clone(),
                         },
                         None,
+                        None, // no groups for children
                         runs[pchild.0].limits,
                         Some(pchild.0),
                         exp,

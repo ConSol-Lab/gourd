@@ -11,7 +11,7 @@ pub mod status;
 use std::fmt::Display;
 use std::fmt::Formatter;
 
-use gourd_lib::config::ResourceLimits;
+use gourd_lib::config::slurm::ResourceLimits;
 use gourd_lib::experiment::Experiment;
 
 /// The status of a single run
