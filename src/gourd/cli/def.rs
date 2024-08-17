@@ -1,11 +1,10 @@
 use std::path::PathBuf;
-use std::time::Duration;
 
-use clap::builder::PossibleValue;
 use clap::ArgAction;
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
+use clap::ValueEnum;
 
 /// Structure of the main command (gourd).
 #[allow(unused)]
@@ -27,7 +26,7 @@ pub struct Cli {
     #[arg(short, long, default_value = "./gourd.toml", global = true)]
     pub config: PathBuf,
 
-    /// Verbose mode, displays debug info. For even more try: -vv.
+    /// Verbose mode, prints debug info. For even more try: -vv.
     #[arg(short, long, global = true, action = ArgAction::Count)]
     pub verbose: u8,
 
@@ -158,54 +157,74 @@ pub struct InitStruct {
 }
 
 /// Arguments supplied with the `analyse` command.
-#[derive(Args, Debug, Clone)]
+#[derive(Args, Debug, Clone, Copy)]
 pub struct AnalyseStruct {
     /// The id of the experiment to analyse
     /// [default: newest experiment].
     #[arg(value_name = "EXPERIMENT")]
     pub experiment_id: Option<usize>,
 
-    /// The output format of the analysis.
-    /// For all formats see the manual.
-    #[arg(long, short, default_value = "csv", value_parser = [
-        PossibleValue::new("csv"),
-        PossibleValue::new("plot-svg"),
-        PossibleValue::new("plot-png"),
-    ])]
-    pub output: String,
+    /// TODO
+    #[command(subcommand)]
+    pub subcommand: AnalSubcommand,
 }
 
-/// Arguments supplied with the `set-limits` command.
-#[derive(Args, Debug, Clone)]
-pub struct SetLimitsStruct {
-    /// The id of the experiment of which to change limits
-    /// [default: newest experiment]
+/// Enum for subcommands of the `run` subcommand.
+#[derive(Subcommand, Debug, Copy, Clone)]
+pub enum AnalSubcommand {
+    /// TODO
+    #[command()]
+    Plot {
+        /// TODO
+        #[arg(short, long, default_value = "plot-png")]
+        format: PlotType,
+    },
+
+    /// TODO
+    #[command()]
+    Groups,
+
+    /// TODO
+    #[command()]
+    Inputs,
+
+    /// TODO
+    #[command()]
+    Programs,
+}
+
+/// Enum for the output format of the analysis.
+#[derive(ValueEnum, Debug, Clone, Default, Copy)]
+pub enum PlotType {
+    /// Output a CSV of a cactus plot.
+    Csv,
+
+    /// Output an SVG cactus plot.
+    PlotSvg,
+
+    /// Output a PNG cactus plot.
+    #[default]
+    PlotPng,
+}
+
+impl PlotType {
+    /// get the file extension for this plot type
+    pub fn ext(&self) -> &str {
+        match self {
+            PlotType::Csv => "csv",
+            PlotType::PlotSvg => "svg",
+            PlotType::PlotPng => "png",
+        }
+    }
+}
+
+/// Arguments supplied with the `export` command.
+#[derive(Args, Debug, Clone, Copy)]
+pub struct ExportStruct {
+    /// The id of the experiment to analyse
+    /// [default: newest experiment].
     #[arg(value_name = "EXPERIMENT")]
     pub experiment_id: Option<usize>,
-
-    /// The program for which to set resource limits.
-    #[arg(short, long)]
-    pub program: Option<String>,
-
-    /// Set resource limits for all programs.
-    #[arg(
-        short,
-        long,
-        conflicts_with_all = ["program"],
-    )]
-    pub all: bool,
-
-    /// Take the resource limits from a toml file.
-    #[arg(long)]
-    pub mem: Option<usize>,
-
-    /// Take the resource limits from a toml file.
-    #[arg(long)]
-    pub cpu: Option<usize>,
-
-    /// Take the resource limits from a toml file.
-    #[arg(long, value_parser = humantime::parse_duration)]
-    pub time: Option<Duration>,
 }
 
 /// Enum for root-level `gourd` commands.
@@ -238,6 +257,10 @@ pub enum GourdCommand {
     /// Output metrics of completed runs.
     #[command()]
     Analyse(AnalyseStruct),
+
+    /// Output metrics of completed runs.
+    #[command()]
+    Export(ExportStruct),
 
     /// Print information about the version.
     #[command()]

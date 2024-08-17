@@ -92,7 +92,7 @@ pub struct RunInput {
     ///
     /// Holds the concatenation of [`UserProgram`] specified arguments and
     /// [`UserInput`] arguments.
-    pub arguments: Vec<String>,
+    pub args: Vec<String>,
 }
 
 /// Describes a matching between an algorithm and an input.
