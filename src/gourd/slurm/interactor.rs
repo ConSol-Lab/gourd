@@ -11,6 +11,7 @@ use chrono::DateTime;
 use chrono::Local;
 use gourd_lib::bailc;
 use gourd_lib::config::slurm::SlurmConfig;
+use gourd_lib::constants::CMD_DOC_STYLE;
 use gourd_lib::constants::SHORTEN_STATUS_CUTOFF;
 use gourd_lib::constants::SLURM_VERSIONS;
 use gourd_lib::constants::TERTIARY_STYLE;
@@ -19,7 +20,6 @@ use gourd_lib::experiment::Experiment;
 use log::debug;
 use log::info;
 use log::trace;
-use regex_lite::Regex;
 
 use super::handler::parse_optional_args;
 use super::SacctOutput;
@@ -154,11 +154,17 @@ impl SlurmInteractor for SlurmCli {
     }
 
     fn max_array_size(&self) -> Result<usize> {
-        match scontrol_limit("MaxArraySize")?.parse() {
+        let out = scontrol_limit("MaxArraySize")?;
+        match out.parse() {
             Ok(x) => Ok(x),
             Err(e) => {
                 debug!("Could not parse max array size from slurm: {e}");
-                Ok(usize::MAX)
+                bailc!(
+                    "Could not parse max array size from slurm", ;
+                    "Slurm gave output for MaxArraySize: {}", out;
+                    "If this persists, you can manually add the limit to the slurm config as \
+                    {CMD_DOC_STYLE}array_size_limit{CMD_DOC_STYLE:#}",
+                )
             }
         }
     }
@@ -182,7 +188,10 @@ impl SlurmInteractor for SlurmCli {
                 Ok(x) => Ok(x),
                 Err(e) => {
                     debug!("Could not parse max submissions from slurm: {e}");
-                    Ok(usize::MAX)
+                    Ok(usize::MAX) // since this function is only used for
+                                   // checking limits,
+                                   // if we can't parse the limit then just
+                                   // ignore the check
                 }
             }
         }
@@ -193,96 +202,7 @@ impl SlurmInteractor for SlurmCli {
             Ok(x) => Ok(x),
             Err(e) => {
                 debug!("Could not parse max job count from slurm: {e}");
-                Ok(usize::MAX)
-            }
-        }
-    }
-
-    fn max_cpu(&self) -> Result<usize> {
-        match sacctmgr_limit("MaxCPUs")?.parse() {
-            Ok(x) => Ok(x),
-            Err(e) => {
-                debug!("Could not parse max cpus allowed from slurm: {e}");
-                Ok(usize::MAX)
-            }
-        }
-    }
-
-    fn max_memory(&self) -> Result<usize> {
-        todo!()
-    }
-
-    fn max_time(&self) -> Result<Duration> {
-        let time = &sacctmgr_limit("MaxWallDurationPerJob")?;
-        // According to slurm docs:
-        // "Maximum wall clock time each job is able to use in this association.
-        // This is overridden if set directly on a user. Default is the cluster's limit.
-        // <max wall> format is
-        // * <min> or
-        // * <min>:<sec> or
-        // * <hr>:<min>:<sec> or
-        // * <days>-<hr>:<min>:<sec> or
-        // * <days>-<hr>.
-        // The value is recorded in minutes with rounding as needed."
-
-        let a = Regex::new(r"(\d+)-(\d+):(\d+):(\d+)")?;
-        let b = Regex::new(r"(\d+)-(\d+)")?;
-        let c = Regex::new(r"(\d+):(\d+):(\d+)")?;
-        let d = Regex::new(r"(\d+):(\d+)")?;
-        let e = Regex::new(r"(\d+)")?;
-
-        let err = "regex error in slurm interactor";
-        match time {
-            x if a.is_match(x) => {
-                if let Some(caps) = a.captures(x) {
-                    let days = caps.get(1).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    let hours = caps.get(2).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    let minutes = caps.get(3).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    let seconds = caps.get(4).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    Ok(Duration::from_secs(
-                        days * 24 * 60 * 60 + hours * 60 * 60 + minutes * 60 + seconds,
-                    ))
-                } else {
-                    unreachable!("No captures from matching regex (??)")
-                }
-            }
-            y if b.is_match(y) => {
-                if let Some(caps) = b.captures(y) {
-                    let days = caps.get(1).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    let hours = caps.get(2).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    Ok(Duration::from_secs(days * 24 * 60 * 60 + hours * 60 * 60))
-                } else {
-                    unreachable!("No captures from matching regex (??)")
-                }
-            }
-            z if c.is_match(z) => {
-                if let Some(caps) = c.captures(z) {
-                    let hours = caps.get(1).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    let minutes = caps.get(2).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    let seconds = caps.get(3).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    Ok(Duration::from_secs(
-                        hours * 60 * 60 + minutes * 60 + seconds,
-                    ))
-                } else {
-                    unreachable!("No captures from matching regex (??)")
-                }
-            }
-            w if d.is_match(w) => {
-                if let Some(caps) = d.captures(w) {
-                    let hours = caps.get(1).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    let minutes = caps.get(2).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    Ok(Duration::from_secs(hours * 60 * 60 + minutes * 60))
-                } else {
-                    unreachable!("No captures from matching regex (??)")
-                }
-            }
-            _ => {
-                if let Some(caps) = e.captures(time) {
-                    let minutes = caps.get(1).ok_or(anyhow!(err))?.as_str().parse::<u64>()?;
-                    Ok(Duration::from_secs(minutes * 60))
-                } else {
-                    Ok(Duration::MAX)
-                }
+                Ok(usize::MAX) // ignore the check
             }
         }
     }
@@ -493,24 +413,26 @@ set -x
             info!("Cancelling {} runs", batch_ids.len());
         }
 
-        let mut cancel = Command::new("scancel");
-        cancel.args(&batch_ids);
+        for chunk in batch_ids.chunks(500) {
+            let mut cancel = Command::new("scancel");
+            cancel.args(chunk);
 
-        debug!("Running cancel: {:?}", cancel);
+            debug!("Running cancel: {:?}", cancel);
 
-        let output = cancel.output().with_context(ctx!(
-          "Failed to cancel runs",;
-          "Make sure that the `scancel` program is accessible",
-        ))?;
+            let output = cancel.output().with_context(ctx!(
+              "Failed to cancel runs",;
+              "Make sure that the `scancel` program is accessible",
+            ))?;
 
-        if !output.status.success() {
-            bailc!("Failed to cancel runs", ;
-                "scancel printed: {}", String::from_utf8(output.stderr).unwrap();
-                "",
-            );
-        } else {
-            info!("{} runs cancelled", batch_ids.len());
+            if !output.status.success() {
+                bailc!("Failed to cancel runs", ;
+                    "scancel printed: {}", String::from_utf8(output.stderr).unwrap();
+                    "",
+                );
+            }
         }
+
+        info!("{} runs cancelled", batch_ids.len());
 
         Ok(())
     }

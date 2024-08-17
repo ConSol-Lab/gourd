@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::time::Duration;
 
 use anyhow::Result;
 use chrono::DateTime;
@@ -37,15 +36,6 @@ pub trait SlurmInteractor {
 
     /// Get the MaxJobs of this slurm cluster
     fn max_jobs(&self) -> Result<usize>;
-
-    /// Get the MaxCPU of this slurm cluster
-    fn max_cpu(&self) -> Result<usize>;
-
-    /// Get the MaxMemory of this slurm cluster
-    fn max_memory(&self) -> Result<usize>;
-
-    /// Get the MaxWallDurationPerJob of this slurm cluster
-    fn max_time(&self) -> Result<Duration>;
 
     /// Schedule a new job array on the cluster.
     fn schedule_chunk(

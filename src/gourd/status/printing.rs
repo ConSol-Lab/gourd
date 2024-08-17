@@ -309,7 +309,7 @@ fn long_status(
     for (prog, prog_runs) in grouped_runs {
         writeln!(f)?;
 
-        writeln!(f, "For Group {}:", prog)?;
+        writeln!(f, "For group {}:", prog)?;
 
         display_runs(
             true,

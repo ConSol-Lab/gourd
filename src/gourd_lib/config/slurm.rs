@@ -35,7 +35,7 @@ pub struct SlurmConfig {
     /// The maximum number of arrays to schedule at once.
     ///
     /// If left `None`, a value fetched directly from slurm will be used.
-    pub array_count_limit: Option<usize>,
+    pub max_submit: Option<usize>,
 
     /// Account to charge for this job
     pub account: String,

@@ -162,10 +162,6 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     s.check_version()?;
                     s.check_partition(&slurm_options_from_experiment(&experiment)?.partition)?;
 
-                    for program in &experiment.programs {
-                        s.verify_resource_limits(&program.limits)?;
-                    }
-
                     if cmd.dry {
                         info!("Would have scheduled the experiment on slurm (dry)");
                     } else {

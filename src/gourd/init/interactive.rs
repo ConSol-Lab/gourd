@@ -103,7 +103,7 @@ pub fn init_interactive(
             output_folder: Default::default(), // todo: entered by user
             partition: "".to_string(),
             array_size_limit: None,
-            array_count_limit: None,
+            max_submit: None,
             account: "".to_string(),
             begin: None,
             mail_type: None,
