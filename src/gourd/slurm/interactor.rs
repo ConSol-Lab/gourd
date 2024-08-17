@@ -207,43 +207,6 @@ impl SlurmInteractor for SlurmCli {
         }
     }
 
-    fn max_cpu(&self) -> Result<usize> {
-        match sacctmgr_limit("MaxCPUs")?.parse() {
-            Ok(x) => Ok(x),
-            Err(e) => {
-                debug!("Could not parse max cpus allowed from slurm: {e}");
-                Ok(usize::MAX) // ignore the check
-            }
-        }
-    }
-
-    fn max_memory(&self) -> Result<usize> {
-        todo!()
-    }
-
-    fn max_time(&self) -> Result<Duration> {
-        let time = &sacctmgr_limit("MaxWallDurationPerJob")?;
-        // <days>-<hr>:<min>:<sec> or
-        let time_pattern = Regex::new(r"(\d+)-(\d+):(\d+):(\d+)")?;
-        if let Some(caps) = time_pattern.captures(time) {
-            match (
-                caps.get(1).map(|x| x.as_str().parse::<u64>()),
-                caps.get(2).map(|x| x.as_str().parse::<u64>()),
-                caps.get(3).map(|x| x.as_str().parse::<u64>()),
-                caps.get(4).map(|x| x.as_str().parse::<u64>()),
-            ) {
-                (Some(Ok(days)), Some(Ok(hours)), Some(Ok(minutes)), Some(Ok(seconds))) => {
-                    Ok(Duration::from_secs(
-                        days * 24 * 60 * 60 + hours * 60 * 60 + minutes * 60 + seconds,
-                    ))
-                }
-                _ => unreachable!("No captures from matching regex (??)"),
-            }
-        } else {
-            Ok(Duration::MAX) // ignore the check
-        }
-    }
-
     fn schedule_chunk(
         &self,
         slurm_config: &SlurmConfig,
@@ -330,7 +293,7 @@ set -x
 
         if !proc.status.success() {
             bailc!("Sbatch failed to run", ;
-                "Sbatch printed: {}", String::from_utf8(proc.stderr).unwrap();
+                "Sbatch printed: {}", String::from_utf8_lossy(&proc.stderr);
                 "Please ensure that you are running on slurm",
             );
         }
@@ -463,7 +426,7 @@ set -x
 
             if !output.status.success() {
                 bailc!("Failed to cancel runs", ;
-                    "scancel printed: {}", String::from_utf8(output.stderr).unwrap();
+                    "SCancel printed: {}", String::from_utf8_lossy(&output.stderr);
                     "",
                 );
             }

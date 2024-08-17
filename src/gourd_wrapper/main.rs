@@ -179,7 +179,7 @@ fn process_args(args: &[String], fs: &impl FileOperations) -> Result<RunConf> {
     let program = &exp.get_program(&run)?;
 
     let mut additional_args = program.arguments.clone();
-    additional_args.append(&mut run.input.arguments.clone());
+    additional_args.append(&mut run.input.args.clone());
 
     Ok(RunConf {
         binary_path: program.binary.clone().to_path_buf(),

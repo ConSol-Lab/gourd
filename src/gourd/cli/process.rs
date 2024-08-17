@@ -10,10 +10,12 @@ use clap::CommandFactory;
 use clap::FromArgMatches;
 use colog::default_builder;
 use colog::formatter;
+use csv::Writer;
 use gourd_lib::bailc;
 use gourd_lib::config::Config;
 use gourd_lib::constants::CMD_STYLE;
 use gourd_lib::constants::ERROR_STYLE;
+use gourd_lib::constants::PATH_STYLE;
 use gourd_lib::constants::PRIMARY_STYLE;
 use gourd_lib::constants::TERTIARY_STYLE;
 use gourd_lib::ctx;
@@ -32,12 +34,14 @@ use super::def::ContinueStruct;
 use super::def::RerunOptions;
 use super::log::LogTokens;
 use super::printing::get_styles;
-use crate::analyse::analysis_csv;
-use crate::analyse::analysis_plot;
+use crate::analyse::csvs::metrics_table;
+use crate::analyse::plotting::analysis_plot;
 use crate::chunks::Chunkable;
+use crate::cli::def::AnalSubcommand;
 use crate::cli::def::AnalyseStruct;
 use crate::cli::def::CancelStruct;
 use crate::cli::def::Cli;
+use crate::cli::def::ExportStruct;
 use crate::cli::def::GourdCommand;
 use crate::cli::def::RunSubcommand;
 use crate::cli::def::StatusStruct;
@@ -252,64 +256,94 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
 
         GourdCommand::Analyse(AnalyseStruct {
             experiment_id,
-            output,
+            subcommand: AnalSubcommand::Plot { format },
         }) => {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             let statuses = experiment.status(&file_system)?;
 
-            // Checking if there are completed jobs to analyse.
-            let mut completed_runs = statuses
+            let out_path =
+                experiment
+                    .home
+                    .join(format!("plot_{}.{}", experiment.seq, format.ext()));
+
+            if statuses
                 .values()
-                .filter(|x| x.fs_status.completion.is_completed());
-
-            debug!("Starting analysis...");
-
-            if cmd.dry {
-                info!("Would have analysed the experiment (dry)");
-
-                return Ok(());
-            }
-
-            let mut output_path = experiment.home.clone();
-
-            if completed_runs.next().is_some() {
-                match &output[..] {
-                    "csv" => {
-                        output_path.push(format!("analysis_{}.csv", experiment.seq));
-                        analysis_csv(&output_path, statuses).with_context(ctx!(
-                                "Could not analyse to a CSV file at {:?}",
-                                &output_path; "",
-                        ))?;
-                    }
-                    "plot-png" => {
-                        output_path.push(format!("plot_{}.png", experiment.seq));
-                        analysis_plot(&output_path, statuses, experiment, true)
-                            .with_context(ctx!(
-                                "Could not create a plot at {:?}", &output_path; "", ))?;
-                    }
-                    "plot-svg" => {
-                        output_path.push(format!("plot_{}.svg", experiment.seq));
-                        analysis_plot(&output_path, statuses, experiment, false).with_context(
-                            ctx!(
-                                    "Could not create a plot at {:?}",
-                                    &output_path; "",
-                            ),
-                        )?;
-                    }
-                    _ => bailc!("Unsupported output format {}", &output;
-                        "Use 'csv', 'plot-png', or 'plot-svg'.", ; "" ,),
-                }
-            } else {
+                .filter(|x| x.fs_status.completion.is_completed())
+                .count()
+                == 0
+            {
                 bailc!(
                     "No runs have completed yet", ;
                     "There are no results to analyse.", ;
-                    "Try later. To see job status, use {CMD_STYLE}gourd status{CMD_STYLE:#}.",
+                    "Try again later. To see job status, use {CMD_STYLE}gourd status{CMD_STYLE:#}.",
                 );
-            };
+            }
 
-            info!("Analysis successful!");
-            info!("Results have been placed in {:?}", &output_path);
+            if cmd.dry {
+                return Ok(());
+            } else {
+                let out = analysis_plot(&out_path, statuses, &experiment, *format)?;
+                info!("Plot saved to:");
+                println!("{PATH_STYLE}{}{PATH_STYLE:#}", out.display());
+            }
+        }
+
+        GourdCommand::Analyse(AnalyseStruct {
+            experiment_id: _x,
+            subcommand: AnalSubcommand::Groups,
+        }) => {
+            todo!();
+        }
+
+        GourdCommand::Analyse(AnalyseStruct {
+            experiment_id: _x,
+            subcommand: AnalSubcommand::Inputs,
+        }) => {
+            todo!();
+        }
+
+        GourdCommand::Analyse(AnalyseStruct {
+            experiment_id: _x,
+            subcommand: AnalSubcommand::Programs,
+        }) => {
+            todo!();
+        }
+
+        GourdCommand::Export(ExportStruct { experiment_id }) => {
+            let experiment = read_experiment(experiment_id, cmd, &file_system)?;
+
+            let out_path = experiment
+                .home
+                .join(format!("experiment_{}.csv", experiment.seq));
+            let statuses = experiment.status(&file_system)?;
+
+            if statuses
+                .values()
+                .filter(|x| x.fs_status.completion.is_completed())
+                .count()
+                == 0
+            {
+                bailc!(
+                    "No runs have completed yet", ;
+                    "There are no results to export.", ;
+                    "Try again later. To see job status, use {CMD_STYLE}gourd status{CMD_STYLE:#}.",
+                );
+            }
+
+            let content = metrics_table(&experiment, &statuses)?;
+
+            if cmd.dry {
+                info!("Would have saved following csv:\n{}", content);
+                info!("To file:");
+                println!("{PATH_STYLE}{}{PATH_STYLE:#}", out_path.display());
+            } else {
+                let mut writer = Writer::from_path(out_path.clone())?;
+                content.write_csv(&mut writer)?;
+
+                info!("{PRIMARY_STYLE}Saved experiment results in:{PRIMARY_STYLE:#}");
+                println!("{PATH_STYLE}{}{PATH_STYLE:#}", out_path.display());
+            }
         }
 
         GourdCommand::Cancel(CancelStruct {
