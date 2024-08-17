@@ -444,7 +444,7 @@ pub fn display_job(
         writeln!(
             f,
             "  {NAME_STYLE}arguments{NAME_STYLE:#}: {:?}\n",
-            run.input.arguments
+            run.input.args
         )?;
 
         if let Some(group) = &run.group {
@@ -486,14 +486,14 @@ pub fn display_job(
                     "{NAME_STYLE}Slurm job stdout{NAME_STYLE:#} ({PATH_STYLE}{}{PATH_STYLE:#}):
 \"{PARAGRAPH_STYLE}{}{PARAGRAPH_STYLE:#}\"",
                     slurm_out.display(),
-                    slurm_file.stdout
+                    slurm_file.stdout.trim()
                 )?;
                 writeln!(
                     f,
                     "{NAME_STYLE}Slurm job stderr{NAME_STYLE:#} ({PATH_STYLE}{}{PATH_STYLE:#}):
 \"{PARAGRAPH_STYLE}{}{PARAGRAPH_STYLE:#}\"",
                     slurm_err.display(),
-                    slurm_file.stderr
+                    slurm_file.stderr.trim()
                 )?;
             }
         }

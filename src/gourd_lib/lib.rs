@@ -1,4 +1,5 @@
 //! The architecture of our codebase, shared between wrapper and CLI.
+#[deny(rustdoc::broken_intra_doc_links)]
 
 /// A struct and related methods for global configuration,
 /// declaratively specifying experiments.
