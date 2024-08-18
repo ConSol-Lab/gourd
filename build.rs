@@ -106,17 +106,27 @@ fn main() -> Result<()> {
         println!("cargo::rerun-if-changed=src/resources/uninstall.sh");
 
         let gourd = generate_man(GOURD_MANPAGE.parse()?, &docs)?;
+
+        #[cfg(feature = "documentation-latex")]
         generate_pdf(GOURD_MANPAGE.parse()?, &docs)?;
+
         generate_html(gourd, &docs)?;
 
         let gourd_toml = generate_man(GOURD_TOML_MANPAGE.parse()?, &docs)?;
+
+        #[cfg(feature = "documentation-latex")]
         generate_pdf(GOURD_TOML_MANPAGE.parse()?, &docs)?;
+
         generate_html(gourd_toml, &docs)?;
 
         let gourd_tutorial = generate_man(GOURD_TUTORIAL_MANPAGE.parse()?, &docs)?;
+
+        #[cfg(feature = "documentation-latex")]
         generate_pdf(GOURD_TUTORIAL_MANPAGE.parse()?, &docs)?;
+
         generate_html(gourd_tutorial, &docs)?;
 
+        #[cfg(feature = "documentation-latex")]
         generate_latex(
             MAINTAINER_DOCS.parse()?,
             &docs,

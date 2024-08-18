@@ -1,4 +1,4 @@
-name: Main
+name: main
 
 on: [push]
 
@@ -88,7 +88,9 @@ jobs:
           target/doc/
 
     - name: Prepare fonts
-      run: sudo apt-get install -y fonts-linuxlibertine mandoc
+      uses: ConorMacBride/install-package@v1
+      with:
+        apt: fonts-linuxlibertine mandoc
 
     - name: Prepare texlive
       uses: teatimeguest/setup-texlive-action@v3
@@ -121,7 +123,7 @@ jobs:
           latex2man
 
     - name: Documentation
-      run: cargo build --release --features documentation -vv
+      run: cargo build --release --features "documentation documentation-latex" -vv
 
     - name: Upload documentation
       uses: actions/upload-artifact@v4

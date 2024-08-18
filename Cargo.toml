@@ -19,6 +19,9 @@ build = "build.rs"
 # Compile the documentation with this flag.
 documentation = []
 
+# Compile the latex pdfs with this flag.
+documentation-latex = []
+
 # Include built-in examples with this flag.
 builtin-examples = ["tar", "flate2"]
 

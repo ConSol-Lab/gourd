@@ -13,10 +13,10 @@
 \newcommand{\thecommand}{GOURD.TOML}
 \newcommand{\mansection}{1}
 \newcommand{\mansectionname}{File Formats Manual}
-\newcommand{\mandate}{06 AUGUST 2024}
-\setDate{06 AUGUST 2024}
+\newcommand{\mandate}{19 AUGUST 2024}
+\setDate{19 AUGUST 2024}
 \setVersionWord{Version:}
-\setVersion{1.0.2}
+\setVersion{1.1.0}
 
 \input{docs/user/latex2man_styling.tex}
 
@@ -126,17 +126,22 @@
               \item[\Opt{experiment\_name} = string]
                 The name under which runs for this experiment will be scheduled
                 on Slurm.
+              \item[\Opt{output\_folder} = path]
+                The folder where the raw slurm outputs will be stored. This can be useful
+                for debugging.
               \item[\Opt{partition} = string]
                 The partition on which this should be ran on the supercomputer.
                 Running \Prog{gourd} \Arg{run} \Arg{slurm} with an invalid partition
                 will display all of the valid partitions.
-              \item[\Opt{array\_size\_limit} = number]
+              \item[\Opt{array\_size\_limit?} = number]
                 This specifies the limit of runs that can be put in one Slurm batch.
                 \Prog{gourd} will work to split the workload such that this limit
-                is never exceeded.
-              \item[\Opt{array\_count\_limit} = number]
+                is never exceeded. \\ \\
+                By default this is auto-detected.
+              \item[\Opt{max\_submit?} = number]
                 This specifies the limits of possible batches of runs.
-                Once again \Prog{gourd} will work to never cross this limit.
+                Once again \Prog{gourd} will work to never cross this limit. \\ \\
+                By default this is auto-detected.
               \item[\Opt{account} = string]
                 Which account to use for running jobs on Slurm.
                 For example one account available on DelftBlue is "Education-EEMCS-MSc-CS".
@@ -151,9 +156,8 @@
               \begin{verbatim}
 [slurm]
 experiment_name = "test experiment"
+output_folder = "./slurmout/"
 partition = "compute"
-array_count_limit = 7
-array_size_limit = 1
 account = "Education-EEMCS-MSc-CS"
               \end{verbatim}
 
@@ -197,15 +201,17 @@ mem_per_cpu = 512
         Each program begins with \Arg{[programs.program-name]}, where \Arg{program-name} can be any unique name.
 
         \begin{Description}[Options]\setlength{\itemsep}{0cm}
-            \item[\Opt{binary} = fetched\_path]
+            \item[\Opt{binary} = path]
               Path to the program executable.
+            \item[\Opt{fetch} = fetched\_path]
+              URL to the program executable.
             \item[\Opt{arguments?} = list of string]
               Arguments to be passed to the executable. \\ \\
               By default an empty list.
             \item[\Opt{afterscript?} = path]
               See the \textbf{AFTERSCRIPTS} section for more information. \\ \\
               By default there is no afterscript.
-            \item[\Opt{postprocess\_job?} = string]
+            \item[\Opt{next?} = list of string]
               See the \textbf{POSTPROCESSING} section for more information. \\ \\
               By default there is no postprocessing.
             \item[\Opt{resource\_limits?}]
@@ -214,6 +220,8 @@ mem_per_cpu = 512
               this program. \\ \\
               By default, use the global resource limits.
         \end{Description}
+
+        Only one of \Opt{binary}, \Opt{fetch} must be specified.
 
         \subsection{EXAMPLE}
 
@@ -240,21 +248,28 @@ arguments = ["--test"]
         Each input contains the following keys:
 
         \begin{Description}[Options]\setlength{\itemsep}{0cm}
-            \item[\Opt{input?} = fetched\_path]
+            \item[\Opt{file?} = path]
               Path to a file, the contents of which are passed to the program as standard input. \\ \\
               By default, no standard input is provided.
+            \item[\Opt{fetch?} = fetched\_path]
+              URL to a file, the contents of which are passed to the program as standard input.
+            \item[\Opt{glob?} = fetched\_path]
+              A glob expression of multiple files, the contents of which are passed to the program
+              as standard input.
             \item[\Opt{arguments?} = list of string]
               Additional command-line arguments to be passed to the program.
               The input arguments are appended to the programs arguments. \\ \\
               By default, there are no additional arguments.
         \end{Description}
 
+        Only one of \Opt{file}, \Opt{fetch}, \Opt{glob} can be specified.
+
         \subsection{EXAMPLE}
             A valid input would be for example:
 
             \begin{verbatim}
 [input.some_name_for_this_input]
-input = "./test.txt"
+file = "./test.txt"
 arguments = ["--a", "--b"]
             \end{verbatim}
             This applied to program `\texttt{program}' would be equivalent to:
@@ -268,14 +283,14 @@ program [program args] --a --b < ./test.txt
 
         Globs can be applied to arguments of inputs and conveniently reference multiple files.
 
-        If an argument starts with \Arg{glob|}, it will be treated as a glob.
+        If an argument starts with \Arg{path|}, it will be treated as a glob.
         The input will be instantiated for every match of the provided glob.
 
         \subsubsection{Example}
 
             \begin{verbatim}
 [inputs.testrun1]
-arguments = ["-f1", "glob|./inputs/*.in", "-f2", "glob|./input2/*.in"]
+arguments = ["-f1", "path|./inputs/*.in", "-f2", "path|./input2/*.in"]
             \end{verbatim}
 
             Given that the current directory contains the files
@@ -405,9 +420,8 @@ values = ["10", "20"]
         Postprocessing jobs are jobs that run after another job and
         can transform its input without influencing the original jobs input.
 
-        Postprocessing programs are specified as \Arg{[postprocess\_program.name]}
-        they have exactly the same fields as regular programs defined in the
-        \textbf{PROGRAMS} section.
+        Postprocessing programs are just normal programs but they a different
+        program references them in their \texttt{next} field.
 
         Postprocessing programs are ran in the same directory as the original
         job, and get the originals job \texttt{stdout} as their \texttt{stdin}.
@@ -418,16 +432,16 @@ values = ["10", "20"]
 [program.test_program]
 binary = "./algorithm"
 arguments = []
-postprocess_job = "example_name"
+next = ["example_name"]
 
-[postprocess_program.example_name]
+[program.example_name]
 binary = "./verifier"
 arguments = []
             \end{verbatim}
 
     \section{AFTERSCRIPTS}
 
-        Afterscripts are essentially postprocessing but one that does not constitute
+        Afterscripts are postprocessing but one that does not constitute
         a full Slurm job.
 
         These are ran when \Prog{gourd} \Arg{status} is invoked, and their results are
@@ -542,7 +556,7 @@ RuntimeException thrown while parsing
 
         Any config field which accepts \texttt{fetched\_path} can accept remote resources.
 
-        The syntax for fetched resources is "\texttt{url| remote\_path | local\_path}"
+        The syntax for fetched resources is "\texttt{remote\_path | local\_path}"
         (whitespace insensitive).
 
         \subsection{EXAMPLE}
@@ -551,7 +565,7 @@ RuntimeException thrown while parsing
 
             \begin{verbatim}
 [input.some_input]
-input = “fetch|https://test.com/input.txt | ./path/to/store/the/file.txt”
+fetch = “https://test.com/input.txt | ./path/to/store/the/file.txt”
 arguments = [“any”, “input”, “arguments”]
             \end{verbatim}
             This will download the file at \texttt{test.com/input.txt} and save it
@@ -565,7 +579,7 @@ arguments = [“any”, “input”, “arguments”]
 
             \begin{verbatim}
 [program.some_example]
-binary = “fetch|https://test.com/program.exe | ./path/to/store/the/program.exe”
+fetch = “https://test.com/program.exe | ./path/to/store/the/program.exe”
 arguments = [“any”, “program”, “arguments”]
             \end{verbatim}
 

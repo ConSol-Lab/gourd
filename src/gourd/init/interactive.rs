@@ -7,6 +7,7 @@ use gourd_lib::bailc;
 use gourd_lib::config::slurm::SlurmConfig;
 use gourd_lib::config::Config;
 use gourd_lib::constants::CMD_STYLE;
+use gourd_lib::constants::WRAPPER_DEFAULT;
 use gourd_lib::ctx;
 use gourd_lib::file_system::FileOperations;
 use inquire::error::InquireResult;
@@ -54,7 +55,7 @@ pub fn init_interactive(
         parameters: None,
         slurm: None,
         resource_limits: None,
-        wrapper: Default::default(),
+        wrapper: WRAPPER_DEFAULT(),
         labels: None,
         input_schema: None,
         warn_on_label_overlap: false,
@@ -100,7 +101,7 @@ pub fn init_interactive(
         // These defaults are used in script mode and for user input.
         let mut slurm_config = SlurmConfig {
             experiment_name: "my-experiment".to_string(),
-            output_folder: Default::default(), // todo: entered by user
+            output_folder: PathBuf::from("./slurmout/"),
             partition: "".to_string(),
             array_size_limit: None,
             max_submit: None,

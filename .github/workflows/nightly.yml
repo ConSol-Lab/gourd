@@ -1,0 +1,161 @@
+name: nightly
+
+on:
+  issue_comment:
+    types: [created, edited]
+  push:
+    branches:
+      - "master"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  nightly-ubuntu:
+    name: "nightly-ubuntu"
+    runs-on: "ubuntu-latest"
+    if: ${{ (github.event.issue.pull_request  &&  contains(github.event.comment.body, '+prepare')) || (github.event_name == 'push')}}
+
+    steps:
+    - name: Prepare
+      uses: actions/checkout@v4
+    - name: Gather rust nightly
+      uses: dtolnay/rust-toolchain@nightly
+
+    - name: Prepare fonts
+      uses: ConorMacBride/install-package@v1
+      with:
+        apt: fonts-linuxlibertine mandoc
+
+    - name: Prepare texlive
+      uses: teatimeguest/setup-texlive-action@v3
+      with:
+        packages: |
+          cleveref
+          hyperref
+          xetex
+          amsmath
+          a4wide
+          ntgclass
+          verbatim
+          changepage
+          amsfonts
+          mathspec
+          pgf
+          framed
+          caption
+          geometry
+          listings
+          isodate
+          parskip
+          tools
+          titlesec
+          etoolbox
+          fancyhdr
+          fontspec
+          xkeyval
+          substr
+          latex2man
+
+    - name: Documentation
+      run: cargo build --release --features documentation -vv
+
+    - name: Prepare blue installer
+      run: INSTALL_PATH="\$HOME/.local/bin" MANINSTALL_PATH="\$HOME/.local/share/man" target/release/generate-installer.sh
+
+    - name: Delft blue
+      run: mv target/release/install-x86_64-unknown-linux-gnu.sh target/release/install-delftblue.sh && mv target/release/uninstall-x86_64-unknown-linux-gnu.sh target/release/uninstall-delftblue.sh
+
+    - name: Prepare installer
+      run: target/release/generate-installer.sh
+
+    - name: Upload installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: "installer linux"
+        path: |
+          target/release/install-x86_64-unknown-linux-gnu.sh
+          target/release/uninstall-x86_64-unknown-linux-gnu.sh
+
+  nightly-windows:
+    name: "nightly-windows"
+    runs-on: "windows-latest"
+    if: ${{ (github.event.issue.pull_request  &&  contains(github.event.comment.body, '+prepare')) || (github.event_name == 'push')}}
+
+    steps:
+    - name: Prepare
+      uses: actions/checkout@v4
+    - name: Gather rust nightly
+      uses: dtolnay/rust-toolchain@nightly
+
+    - name: Documentation
+      run: cargo build --release -vv
+
+    - name: Upload exes
+      uses: actions/upload-artifact@v4
+      with:
+        name: "installer windows"
+        path: |
+          target/release/gourd.exe
+          target/release/gourd_wrapper.exe
+
+
+  nightly-macos:
+    name: "nightly-macos"
+    runs-on: "macos-latest"
+    if: ${{ (github.event.issue.pull_request  &&  contains(github.event.comment.body, '+prepare')) || (github.event_name == 'push')}}
+
+    steps:
+    - name: Prepare
+      uses: actions/checkout@v4
+    - name: Gather rust nightly
+      uses: dtolnay/rust-toolchain@nightly
+
+    - name: Prepare fonts
+      uses: ConorMacBride/install-package@v1
+      with:
+        brew: mandoc
+
+    - name: Prepare texlive
+      uses: teatimeguest/setup-texlive-action@v3
+      with:
+        packages: |
+          cleveref
+          hyperref
+          xetex
+          amsmath
+          a4wide
+          ntgclass
+          verbatim
+          changepage
+          amsfonts
+          mathspec
+          pgf
+          framed
+          caption
+          geometry
+          listings
+          isodate
+          parskip
+          tools
+          titlesec
+          etoolbox
+          fancyhdr
+          fontspec
+          xkeyval
+          substr
+          latex2man
+
+    - name: Documentation
+      run: cargo build --release --features documentation -vv
+
+    - name: Prepare installer
+      run: target/release/generate-installer.sh
+
+    - name: Upload installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: "installer macos"
+        path: |
+          target/release/install-aarch64-apple-darwin.sh
+          target/release/uninstall-aarch64-apple-darwin.sh

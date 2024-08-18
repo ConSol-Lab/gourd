@@ -19,23 +19,23 @@ and on Microsoft Windows.
 
 The easiest way to install `gourd` is to run the shell installer.
 
-These binary releases are hosted courtesy of Lukáš Chládek (Thank You!).
+These binary releases can be found in the GitHub releases tab.
 
 ```
-$ wget https://gourd.chla.cz/[your system here] \
-  && sudo sh ./[your system here]
+$ sudo sh install-[your system here].sh
 ```
 
-This command, of course, requires `wget` to be installed.
+This command, of course, requires a UNIX system.
+
+For Windows simply use the two execuables provided.
 
 <br clear="left"/>
 
 The distributed installers are: (One of these should be put in place of `[your system here]`)
-- [`install-x86_64-unknown-linux-musl.sh`](https://gourd.chla.cz/install-x86_64-unknown-linux-musl.sh) (Linux systems based on musl eg: Alpine, Void)
-- [`install-x86_64-unknown-linux-gnu.sh`](https://gourd.chla.cz/install-x86_64-unknown-linux-gnu.sh) (Linux systems based on gnu eg: Ubuntu, Windows WSL)
-- [`install-x86_64-apple-darwin.sh`](https://gourd.chla.cz/install-x86_64-apple-darwin.sh) (Apple x86)
-- [`install-aarch64-apple-darwin.sh`](https://gourd.chla.cz/install-aarch64-apple-darwin.sh) (Apple ARM)
-- [`install-delftblue.sh`](https://gourd.chla.cz/install-delftblue.sh) (Specifically made for DelftBlue, run it without `sudo`)
+- `install-x86_64-unknown-linux-gnu.sh` - Linux systems based on gnu eg: Ubuntu, Windows WSL.
+- `install-aarch-apple-darwin.sh` - Apple ARM.
+- `install-delftblue.sh` - Specifically made for DelftBlue, run it without `sudo`.
+- Windows exe files: `gourd.exe` and `gourd_wrapper.exe`.
 
 Customizing installation folders is explained [here](https://gourd.chla.cz/manpages/maintainer.pdf).
 
@@ -48,7 +48,7 @@ $ gourd version
 
 Congratulations! Now you can use `gourd`.
 
-There is extensive tutorials and documentation which can be accessed in many different formats.
+There are extensive tutorials and documentation which can be accessed in many different formats.
 
 With a web browser:
 
@@ -79,12 +79,9 @@ $ gourd init [directory name]
 ### Uninstalling
 
 Same as for the installer, the available uninstallers are:
-- [`uninstall-x86_64-unknown-linux-musl.sh`](https://gourd.chla.cz/uninstall-x86_64-unknown-linux-musl.sh)
-- [`uninstall-x86_64-unknown-linux-gnu.sh`](https://gourd.chla.cz/uninstall-x86_64-unknown-linux-gnu.sh)
-- [`uninstall-x86_64-apple-darwin.sh`](https://gourd.chla.cz/uninstall-x86_64-apple-darwin.sh)
-- [`uninstall-aarch64-apple-darwin.sh`](https://gourd.chla.cz/uninstall-aarch64-apple-darwin.sh)
-- [`uninstall-delftblue.sh`](https://gourd.chla.cz/uninstall-delftblue.sh)
-
+- `uninstall-x86_64-unknown-linux-gnu.sh`
+- `uninstall-aarch64-apple-darwin.sh`
+- `uninstall-delftblue.sh`
 
 ### Other systems
 
