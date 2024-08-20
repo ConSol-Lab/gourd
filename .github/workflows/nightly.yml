@@ -1,12 +1,11 @@
 name: nightly
 
 on:
-  issue_comment:
-    types: [created]
+  pull_request:
+    types: [milestoned]
   push:
     branches:
       - "main"
-      - "releases-fix"
 
 env:
   CARGO_TERM_COLOR: always
@@ -15,13 +14,13 @@ jobs:
   nightly-ubuntu:
     name: "nightly-ubuntu"
     runs-on: "ubuntu-latest"
-    if: ${{ (github.event.issue.pull_request  &&  contains(github.event.comment.body, '+prepare')) || (github.event_name == 'push')}}
+    if: ${{ (github.event.milestone.title == 'prepare') || (github.event_name == 'push')}}
 
     steps:
     - name: Prepare
       uses: actions/checkout@v4
       with:
-        ref: ${{ github.event.issue.pull_request.base.ref }}
+        ref: ${{ github.event.pull_request.base.ref }}
 
     - name: Print
       run: echo "${{ toJSON(github.event) }}"
@@ -93,7 +92,7 @@ jobs:
     - name: Prepare
       uses: actions/checkout@v4
       with:
-        ref: ${{ github.event.issue.pull_request.base.ref }}
+        ref: ${{ github.event.pull_request.base.ref }}
     - name: Gather rust nightly
       uses: dtolnay/rust-toolchain@nightly
 
@@ -118,7 +117,7 @@ jobs:
     - name: Prepare
       uses: actions/checkout@v4
       with:
-        ref: ${{ github.event.issue.pull_request.base.ref }}
+        ref: ${{ github.event.pull_request.base.ref }}
     - name: Gather rust nightly
       uses: dtolnay/rust-toolchain@nightly
 
