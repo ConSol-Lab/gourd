@@ -2,10 +2,11 @@ name: nightly
 
 on:
   issue_comment:
-    types: [created, edited]
+    types: [created]
   push:
     branches:
-      - "master"
+      - "main"
+      - "releases-fix"
 
 env:
   CARGO_TERM_COLOR: always
@@ -19,6 +20,12 @@ jobs:
     steps:
     - name: Prepare
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.issue.pull_request.base.ref }}
+
+    - name: Print
+      run: echo "${{ toJSON(github.event) }}"
+
     - name: Gather rust nightly
       uses: dtolnay/rust-toolchain@nightly
 
@@ -85,6 +92,8 @@ jobs:
     steps:
     - name: Prepare
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.issue.pull_request.base.ref }}
     - name: Gather rust nightly
       uses: dtolnay/rust-toolchain@nightly
 
@@ -108,6 +117,8 @@ jobs:
     steps:
     - name: Prepare
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.issue.pull_request.base.ref }}
     - name: Gather rust nightly
       uses: dtolnay/rust-toolchain@nightly
 
