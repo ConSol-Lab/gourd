@@ -48,10 +48,6 @@ pub mod slurm;
 /// setups and examples.
 pub mod init;
 
-/// Functionality for retrieving resources (binaries and test cases)
-/// from files, remote servers, and source code.
-pub mod resources;
-
 /// The command line interface and relevant structures.
 #[cfg(not(tarpaulin_include))]
 pub mod cli;

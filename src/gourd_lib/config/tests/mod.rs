@@ -287,6 +287,7 @@ fn parse_valid_escape_hatch_file() {
             UserProgram {
                 binary: Some(PathBuf::from("/bin/sleep".to_string())),
                 fetch: None,
+                git: None,
                 arguments: vec![],
                 afterscript: None,
                 resource_limits: None,

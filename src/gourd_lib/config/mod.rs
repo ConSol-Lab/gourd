@@ -55,6 +55,9 @@ pub struct UserProgram {
     /// for it are: `rwxr-xr--`.
     pub fetch: Option<FetchedResource<0o754>>,
 
+    /// A git reference to the program.
+    pub git: Option<GitProgram>,
+
     /// The cli arguments for the executable.
     #[serde(default = "EMPTY_ARGS")]
     pub arguments: Vec<String>,
@@ -70,6 +73,23 @@ pub struct UserProgram {
     /// The programs to postprocess this one.
     #[serde(default)]
     pub next: Vec<String>,
+}
+
+/// An algorithm fetched from a git repository.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct GitProgram {
+    /// The URI to the git repository.
+    pub git_uri: String,
+
+    /// The commit id to fetch from the git repository.
+    pub commit_id: String,
+
+    /// The command to build the algorithm.
+    pub build_command: String,
+
+    /// The path to the binary relative to the repository.
+    pub path: PathBuf,
 }
 
 /// Fetch a remote resource

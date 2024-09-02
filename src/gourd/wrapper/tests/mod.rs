@@ -48,6 +48,7 @@ fn non_matching_arch() {
         UserProgram {
             binary: Some(out),
             fetch: None,
+            git: None,
             arguments: vec![],
             afterscript: None,
             resource_limits: None,
@@ -105,6 +106,7 @@ fn matching_arch() {
         UserProgram {
             binary: Some(out.clone()),
             fetch: None,
+            git: None,
             arguments: vec![],
             afterscript: None,
             resource_limits: None,

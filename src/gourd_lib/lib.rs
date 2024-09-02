@@ -19,6 +19,9 @@ pub mod error;
 /// Constant values.
 pub mod constants;
 
+/// Resource fetching helpers.
+pub mod resources;
+
 /// Interactions with the network for fetching resources.
 #[cfg(feature = "fetching")]
 pub mod network;

@@ -9,10 +9,9 @@ use anyhow::Result;
 use gourd_lib::bailc;
 use gourd_lib::ctx;
 use gourd_lib::experiment::Experiment;
+use gourd_lib::resources::run_script;
 use log::debug;
 use log::trace;
-
-use crate::resources::run_script;
 
 /// Runs the afterscript on jobs that are completed and do not yet have an
 /// afterscript output.

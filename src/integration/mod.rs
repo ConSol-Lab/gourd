@@ -143,6 +143,7 @@ fn new_program(
         UserProgram {
             binary: Some(compile_example(dir, contents, None)),
             fetch: None,
+            git: None,
             arguments: extra_args.iter().map(|s| s.to_string()).collect(),
             afterscript: None,
             next: post.map(|p| vec![p.to_string()]).unwrap_or_default(),

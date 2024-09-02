@@ -4,6 +4,7 @@ use anyhow::Context;
 use anyhow::Result;
 
 use crate::bailc;
+use crate::config::fetching::fetch_git;
 use crate::config::maps::canon_path;
 use crate::config::Config;
 use crate::config::UserProgram;
@@ -22,9 +23,11 @@ pub fn expand_programs(
 
     for (name, user) in prog {
         let file = canon_path(
-            &match (&user.binary, &user.fetch) {
-                (Some(f), None) => f.clone(),
-                (None, Some(fetched)) => fetched.fetch(fs)?,
+            &match (&user.binary, &user.fetch, &user.git) {
+                (Some(f), None, None) => f.clone(),
+                (None, Some(fetched), None) => fetched.fetch(fs)?,
+                (None, None, Some(git)) => fetch_git(git)?,
+
                 _ => {
                     bailc!(
                         "Wrong number of file sources specified.",;

@@ -205,6 +205,8 @@ mem_per_cpu = 512
               Path to the program executable.
             \item[\Opt{fetch} = fetched\_path]
               URL to the program executable.
+            \item[\Opt{git} = git\_object]
+              See the \textbf{ALGORITHM VERSIONS} section for more information. \\ \\
             \item[\Opt{arguments?} = list of string]
               Arguments to be passed to the executable. \\ \\
               By default an empty list.
@@ -591,6 +593,35 @@ arguments = [“any”, “program”, “arguments”]
             It may be beneficial to create a folder and store all downloaded resources
             inside, then when there is a need for cleaning the cache this amounts
             to deleting the folder
+
+    \section{ALGORITHM VERSIONS}
+
+        Algorithms may be fetched and compiled straight from a git repository.
+
+        The user in this case has to provide the commit ID of the desired HEAD,
+        the build command and the path to the output binary.
+
+        The build command and the path to the output binary are both ran relaitvely
+        to the repostory root.
+
+        \subsection{EXAMPLE}
+
+            \begin{verbatim}
+[program.testprogram1]
+arguments = ["a"]
+
+[program.testprogram1.git]
+git_uri = "https://github.com/Nerdylicious/DijkstraShortestPath.git"
+build_command = "g++ ./DijkstraShortestPath.cpp"
+path = "./a.out"
+commit_id = "e90e7f6811f399075bc058f12e2324fb64701b02"
+            \end{verbatim}
+            This will clone the repository, check it out at the correct point in time
+            build the dijkstra algorithm and finally run it.
+
+        \subsection{CACHING}
+
+            Similarly to fetching, delete the repository folder if you want to refetch the files.
 
   \section{SEE ALSO}
       \Prog{gourd(1)} \Prog{gourd-tutorial(7)}
