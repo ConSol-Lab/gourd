@@ -623,6 +623,40 @@ commit_id = "e90e7f6811f399075bc058f12e2324fb64701b02"
 
             Similarly to fetching, delete the repository folder if you want to refetch the files.
 
+    \section{INPUT SCHEMA}
+
+        The \texttt{input\_schema} field can be specified with a file that contains
+        an additional list unnamed of inputs.
+
+        This is an option to allow for script-generated input lists, in case
+        the structure of the files cannot be expressed by a glob pattern.
+
+        \textbf{Avoid using this if possible.}
+
+
+        \subsection{EXAMPLE}
+
+            Assume that \texttt{gourd.toml} specifies:
+
+            \begin{verbatim}
+input_schema = "./inputs.toml"
+            \end{verbatim}
+            And a file in the same folder called \texttt{inputs.toml}
+            exists, containing:
+
+            \begin{verbatim}
+[[input]]
+file = "./jeden"
+
+[[input]]
+file = "./dwa"
+            \end{verbatim}
+            We have just added two new inputs programatically to the input list.
+
+            These inputs have all of the fields of normal inputs, but
+            they do not support naming and will always have automatically assigned
+            names.
+
   \section{SEE ALSO}
       \Prog{gourd(1)} \Prog{gourd-tutorial(7)}
 
