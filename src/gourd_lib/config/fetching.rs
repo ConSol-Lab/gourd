@@ -77,7 +77,10 @@ pub fn fetch_git(program: &GitProgram) -> Result<PathBuf> {
 
     let augumented = vec!["-c", &bc];
 
+    #[cfg(unix)]
     run_script("sh", augumented, &repo_base)?;
+    #[cfg(not(unix))]
+    run_script(bc, vec![], &repo_base)?;
 
     Ok(repo_base.join(program.path.clone()))
 }
