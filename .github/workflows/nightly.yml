@@ -61,7 +61,7 @@ jobs:
           latex2man
 
     - name: Documentation
-      run: cargo build --release --features documentation -vv
+      run: cargo build --release --no-default-features --features "builtin-examples documentation" -vv
 
     - name: Prepare blue installer
       run: INSTALL_PATH="\$HOME/.local/bin" MANINSTALL_PATH="\$HOME/.local/share/man" target/release/generate-installer.sh
