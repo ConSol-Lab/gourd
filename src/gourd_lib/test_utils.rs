@@ -1,4 +1,5 @@
 use std::fs::File;
+#[cfg(feature = "builtin-examples")]
 use std::io::Read;
 use std::io::Write;
 use std::path::Path;
@@ -6,6 +7,7 @@ use std::path::PathBuf;
 
 use anyhow::bail;
 use anyhow::Result;
+#[cfg(feature = "builtin-examples")]
 use tar::Archive;
 use tempdir::TempDir;
 
@@ -57,6 +59,7 @@ impl FileOperations for EmptyFilesystem {
         bail!("File not found")
     }
 
+    #[cfg(feature = "builtin-examples")]
     fn write_archive<T: Read>(&self, _path: &Path, _data: Archive<T>) -> Result<()> {
         bail!("File not found")
     }

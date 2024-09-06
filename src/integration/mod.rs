@@ -30,6 +30,7 @@ mod init_interactive;
 mod rerun;
 mod run;
 mod version;
+mod versioning;
 mod workflow;
 
 use std::collections::BTreeMap;
@@ -82,7 +83,7 @@ macro_rules! gourd {
         {
             let backtrace = std::env::var("RUST_BACKTRACE").unwrap_or("0".to_string());
             std::env::set_var("RUST_BACKTRACE", "0");
-            let out = std::process::Command::new($env.gourd_path.clone()).args(&[$($arg),*]).output().unwrap();
+            let out = std::process::Command::new($env.gourd_path.clone()).args(&[$($arg),*]).current_dir(&$env.temp_dir).output().unwrap();
             std::env::set_var("RUST_BACKTRACE", backtrace);
             out
         }
@@ -91,7 +92,7 @@ macro_rules! gourd {
         {
             let backtrace = std::env::var("RUST_BACKTRACE").unwrap_or("0".to_string());
             std::env::set_var("RUST_BACKTRACE", "0");
-            let out = std::process::Command::new($env.gourd_path.clone()).args(&[$($arg),*]).output().unwrap();
+            let out = std::process::Command::new($env.gourd_path.clone()).args(&[$($arg),*]).current_dir(&$env.temp_dir).output().unwrap();
             std::env::set_var("RUST_BACKTRACE", backtrace);
             if !out.status.success() {
                 panic!("gourd {} failed: {}", $msg, String::from_utf8(out.stderr).unwrap());

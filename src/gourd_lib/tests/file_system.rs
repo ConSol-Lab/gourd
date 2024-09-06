@@ -1,3 +1,5 @@
+#![cfg(feature = "builtin-examples")]
+
 use std::fs;
 use std::fs::File;
 

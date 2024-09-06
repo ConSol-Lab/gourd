@@ -1,5 +1,6 @@
 use std::fs;
 use std::fs::File;
+#[cfg(feature = "builtin-examples")]
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
@@ -12,9 +13,9 @@ use log::info;
 use log::trace;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+#[cfg(feature = "builtin-examples")]
 use tar::Archive;
 
-use crate::bailc;
 use crate::error::ctx;
 
 /// Interactor with the actual physical file system.
@@ -39,6 +40,7 @@ pub trait FileOperations {
     fn try_write_toml<T: Serialize>(&self, path: &Path, data: &T) -> Result<()>;
 
     /// Write all files in a .tar directory structure at the provided path.
+    #[cfg(feature = "builtin-examples")]
     fn write_archive<T: Read>(&self, path: &Path, data: Archive<T>) -> Result<()>;
 
     /// Write all bytes to a file.
@@ -97,7 +99,10 @@ impl FileOperations for FileSystemInteractor {
         )
     }
 
+    #[cfg(feature = "builtin-examples")]
     fn write_archive<T: Read>(&self, path: &Path, mut data: Archive<T>) -> Result<()> {
+        use crate::bailc;
+
         // Verify the path
         if path.exists() {
             bailc!(

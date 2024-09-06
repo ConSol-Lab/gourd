@@ -47,13 +47,13 @@ fn test_run_afterscript_for_run_good_weather() {
 
     let output_path = tmp_dir.path().join("afterscript_output.toml");
 
-    assert!(run_afterscript_for_run(
+    run_afterscript_for_run(
         &afterscript_path,
         &results_path,
         &output_path,
-        tmp_dir.path()
+        tmp_dir.path(),
     )
-    .is_ok());
+    .unwrap();
 
     let mut contents = String::new();
     assert!(fs::File::open(output_path)
