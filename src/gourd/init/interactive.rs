@@ -50,6 +50,7 @@ pub fn init_interactive(
         output_path: PathBuf::from("experiments"),
         metrics_path: PathBuf::from("experiments"),
         experiments_folder: PathBuf::from("experiments"),
+        git_resources: None,
         programs: Default::default(),
         inputs: Default::default(),
         parameters: None,

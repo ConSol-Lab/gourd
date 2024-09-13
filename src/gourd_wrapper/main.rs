@@ -11,6 +11,7 @@
 /// Measurements for unix-like systems.
 mod measurement_unix;
 
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::fs::File;
@@ -60,6 +61,8 @@ struct RunConf {
     err_path: PathBuf,
     /// Additional arguments.
     additional_args: Vec<String>,
+    /// Environment variables.
+    envs: BTreeMap<String, String>
 }
 
 fn main() {
@@ -105,6 +108,7 @@ fn process() -> Result<()> {
     let mut child = Command::new(&rc.binary_path)
         .current_dir(&rc.work_dir)
         .args(&rc.additional_args)
+        .envs(&rc.envs)
         .stdin(if let Some(actual_input) = rc.input_path.clone() {
             Stdio::from(
                 File::open(actual_input.clone())
@@ -188,6 +192,7 @@ fn process_args(args: &[String], fs: &impl FileOperations) -> Result<RunConf> {
         result_path: run.metrics_path.clone(),
         work_dir: run.work_dir.clone(),
         err_path: run.err_path.clone(),
+        envs: program.env.clone(),
         additional_args,
     })
 }

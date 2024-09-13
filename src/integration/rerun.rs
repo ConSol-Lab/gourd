@@ -20,6 +20,7 @@ fn test_dry_one_run() {
             file: None,
             glob: None,
             fetch: None,
+            git: None,
             group: None,arguments: vec!["10".to_string()],
         },
     ));
@@ -45,8 +46,9 @@ fn test_two_one_run() {
         UserInput {
             file: None,
             glob: None,
-            fetch: None,
-            group: None,arguments: vec!["10".to_string()],
+
+            fetch: None,git: None,group: None,
+            arguments: vec!["10".to_string()],
         },
     ));
     let conf_path = save_gourd_toml(&conf, &env.temp_dir);
@@ -71,21 +73,22 @@ fn test_setting_resource_limits() {
         UserInput {
             file: None,
             glob: None,
-            fetch: None,
-            group: None,arguments: vec!["1".to_string()],
+            fetch: None,git: None,group: None,
+            arguments: vec!["1".to_string()],
         }),
         ("input_two".to_string(),
         UserInput {
             file: None,
             glob: None,
-            fetch: None,group: None,arguments: vec!["2".to_string()],
+            fetch: None,git: None,group: None,
+            arguments: vec!["2".to_string()],
         }),
         ("input_five".to_string(),
         UserInput {
             file: None,
             glob: None,
-            fetch: None,
-            group: None,arguments: vec!["5".to_string()],
+            fetch: None,git: None,group: None,
+            arguments: vec!["5".to_string()],
         })
     );
 

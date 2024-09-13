@@ -47,6 +47,7 @@ pub fn create_sample_experiment(
         output_path: TempDir::new("output").unwrap().into_path(),
         metrics_path: TempDir::new("metrics").unwrap().into_path(),
         experiments_folder: TempDir::new("experiments").unwrap().into_path(),
+        git_resources: None,
         wrapper: "".to_string(),
         programs: prog,
         inputs,

@@ -34,6 +34,9 @@ pub mod parameters;
 /// Fetching for resources.
 pub mod fetching;
 
+/// References to Git submodules.
+pub mod git;
+
 /// Slurm configuration.
 pub mod slurm;
 
@@ -49,18 +52,21 @@ pub struct UserProgram {
     /// A path to the executable.
     pub binary: Option<PathBuf>,
 
-    /// Fetch the program binary remotely
+    /// Fetch the program binary remotely.
     /// ### Permissions
     /// If this file is fetched on unix, the permissions
     /// for it are: `rwxr-xr--`.
     pub fetch: Option<FetchedResource<0o754>>,
 
-    /// A git reference to the program.
-    pub git: Option<GitProgram>,
+    /// Fetch the program as a file from a Git repository.
+    pub git: Option<GitResource>,
 
     /// The cli arguments for the executable.
     #[serde(default = "EMPTY_ARGS")]
     pub arguments: Vec<String>,
+
+    /// Environment variables for the executable (key, value).
+    pub env: Option<BTreeMap<String, String>>,
 
     /// The path to the afterscript, if there is one.
     #[serde(default = "AFTERSCRIPT_DEFAULT")]
@@ -75,30 +81,45 @@ pub struct UserProgram {
     pub next: Vec<String>,
 }
 
-/// An algorithm fetched from a git repository.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct GitProgram {
-    /// The URI to the git repository.
-    pub git_uri: String,
-
-    /// The commit id to fetch from the git repository.
-    pub commit_id: String,
-
-    /// The command to build the algorithm.
-    pub build_command: String,
-
-    /// The path to the binary relative to the repository.
-    pub path: PathBuf,
-}
-
 /// Fetch a remote resource
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
 pub struct FetchedResource<const PERMISSIONS: u32> {
-    /// The url from which to fetch this resource
+    /// The url from which to fetch this resource.
     pub url: String,
-    /// The file in which to store this resource
+    /// The file in which to store this resource.
     pub store: PathBuf,
+}
+
+const fn _default_true() -> bool {
+    true
+}
+
+/// Fetch a resource from a Git submodule.
+///
+/// Optionally, at most one of the `commit` and `tag` fields can be used to
+/// override the default behavior of using the repository's main branch.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
+pub struct GitResource {
+    /// The name of the submodule to fetch from.
+    pub submodule_name: String,
+
+    #[serde(default)]
+    /// The commit/tag to checkout within the submodule.
+    pub rev: Option<String>,
+
+    #[serde(default)]
+    /// The command to run prior to retrieving the file.
+    pub compile_script: Option<String>,
+
+    /// The file to copy from the Git repository.
+    pub file: PathBuf,
+
+    /// The location to store the copied file in.
+    pub store: PathBuf,
+
+    #[serde(default = "_default_true")]
+    /// Whether to 'git fetch' if a commit cannot be found.
+    pub enable_fetch: bool,
 }
 
 /// A pair of a path to an input and additional cli arguments.
@@ -123,6 +144,9 @@ pub struct UserInput {
 
     /// A glob of input files
     pub glob: Option<String>,
+
+    /// Fetch the program as a file from a Git repository.
+    pub git: Option<GitResource>,
 
     /// Fetch the input file remotely
     /// ### Permissions
@@ -269,6 +293,10 @@ pub struct Config {
     /// The path to a folder where the experiments will be stored.
     pub experiments_folder: PathBuf,
 
+    /// The list of resources to fetch from Git, for use in parameter literals.
+    #[serde(rename = "git_resource")]
+    pub git_resources: Option<BTreeMap<String, GitResource>>,
+
     /// The list of tested algorithms.
     #[serde(rename = "program")]
     pub programs: BTreeMap<String, UserProgram>,
@@ -326,6 +354,7 @@ impl Default for Config {
             output_path: PathBuf::from("run-output"),
             metrics_path: PathBuf::from("run-metrics"),
             experiments_folder: PathBuf::from("experiments"),
+            git_resources: None,
             wrapper: WRAPPER_DEFAULT(),
             programs: BTreeMap::default(),
             inputs: BTreeMap::default(),
@@ -349,6 +378,17 @@ impl Config {
           "More help and examples can be found with \
           {CMD_STYLE}man gourd.toml{CMD_STYLE:#}",
         ))?;
+
+        // Obtain resources copied from a Git repository
+        // (this may contain the schema, so must happen before it)
+        match &initial.git_resources {
+            Some(git_resource_map) => {
+                for resource in git_resource_map {
+                    resource.1.fetch(fs)?;
+                }
+            },
+            None => {},
+        }   
 
         if let Some(schema) = &initial.input_schema {
             initial.inputs = Config::parse_schema_inputs(schema.as_path(), initial.inputs, fs)?;

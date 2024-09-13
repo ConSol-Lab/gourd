@@ -49,6 +49,7 @@ fn non_matching_arch() {
             binary: Some(out),
             fetch: None,
             git: None,
+            env: None,
             arguments: vec![],
             afterscript: None,
             resource_limits: None,
@@ -66,6 +67,7 @@ fn non_matching_arch() {
             arguments: vec![],
             fetch: None,
             group: None,
+            git: None,
         },
     );
 
@@ -107,6 +109,7 @@ fn matching_arch() {
             binary: Some(out.clone()),
             fetch: None,
             git: None,
+            env: None,
             arguments: vec![],
             afterscript: None,
             resource_limits: None,
@@ -124,6 +127,7 @@ fn matching_arch() {
             fetch: None,
             group: None,
             arguments: vec![],
+            git: None,
         },
     );
 

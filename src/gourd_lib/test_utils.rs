@@ -71,6 +71,10 @@ impl FileOperations for EmptyFilesystem {
     fn set_permissions(&self, _: &Path, _: u32) -> Result<()> {
         bail!("File not found")
     }
+
+    fn copy(&self, _: &Path, _: &Path) -> Result<PathBuf> {
+        bail!("File not found")
+    }
 }
 
 /// Create a sample config file from a string, used in testing.

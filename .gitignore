@@ -12,3 +12,4 @@ Cargo.lock
 /*.man
 compile.fish
 /*.profraw
+.nvimlog

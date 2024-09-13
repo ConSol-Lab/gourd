@@ -4,7 +4,6 @@ use anyhow::Context;
 use anyhow::Result;
 
 use crate::bailc;
-use crate::config::fetching::fetch_git;
 use crate::config::maps::canon_path;
 use crate::config::Config;
 use crate::config::UserProgram;
@@ -26,7 +25,7 @@ pub fn expand_programs(
             &match (&user.binary, &user.fetch, &user.git) {
                 (Some(f), None, None) => f.clone(),
                 (None, Some(fetched), None) => fetched.fetch(fs)?,
-                (None, None, Some(git)) => fetch_git(git)?,
+                (None, None, Some(git)) => git.fetch(fs)?,
 
                 _ => {
                     bailc!(
@@ -52,6 +51,11 @@ pub fn expand_programs(
             }
         }
 
+        let env_map = match &user.env {
+            Some(user_env_map) => {user_env_map.clone()},
+            None => BTreeMap::new(),
+        };
+
         mapper.insert(name, out.len());
         out.push(InternalProgram {
             name: name.to_string(),
@@ -63,6 +67,7 @@ pub fn expand_programs(
                 .transpose()?,
             limits,
             arguments: user.arguments.clone(),
+            env: env_map,
             next: Vec::new(),
         });
     }

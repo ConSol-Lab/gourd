@@ -16,6 +16,7 @@ fn test_analyse_csv() {
             file: None,
             glob: None,
             fetch: None,
+            git: None,
             group: None,arguments: vec!["10".to_string()],
         },
     ));

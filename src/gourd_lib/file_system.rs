@@ -65,6 +65,9 @@ pub trait FileOperations {
 
     /// Create a new template repository.
     fn init_git_repository(&self, path: &Path) -> Result<()>;
+
+    /// Copies a file, creating the target directory if it does not exist.
+    fn copy(&self, src: &Path, dst: &Path) -> Result<PathBuf>;
 }
 
 impl FileOperations for FileSystemInteractor {
@@ -248,6 +251,21 @@ impl FileOperations for FileSystemInteractor {
         Repository::init(path)?;
         info!("Successfully created a Git repository");
         Ok(())
+    }
+
+    fn copy(&self, src: &Path, dst: &Path) -> Result<PathBuf> {
+        let src_path = self.canonicalize(src)?;
+        let dst_path = self.truncate_and_canonicalize(dst)?;
+
+        if self.dry_run {
+            info!("Would have copied '{:?}' to '{:?}' (dry)", src, dst);
+        } else {
+            fs::copy(src_path, &dst_path)
+                .with_context(ctx!("Could not copy to '{:?}'.", dst;
+                                   "Ensure that you have sufficient permissions.",))?;
+        }
+
+        Ok(dst_path)
     }
 }
 

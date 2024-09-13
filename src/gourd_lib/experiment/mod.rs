@@ -66,6 +66,9 @@ pub struct InternalProgram {
     /// The [`Executable`] of this program (absolute path to it)
     pub binary: PathBuf,
 
+    /// The environment variables to run the program with
+    pub env: BTreeMap<String, String>,
+
     /// An executable afterscript to run on the output of this program
     pub afterscript: Option<PathBuf>,
 
