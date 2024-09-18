@@ -1,4 +1,5 @@
 use std::cmp::max;
+use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::io::Write;
@@ -59,7 +60,9 @@ impl Display for FsState {
             FsState::Pending => write!(f, "pending?"),
             FsState::Running => write!(f, "running!"),
             FsState::Completed(metrics) => {
-                if metrics.exit_code == 0 {
+                if f.sign_minus() {
+                    write!(f, "completed")
+                } else if metrics.exit_code == 0 {
                     if f.alternate() {
                         write!(
                             f,
@@ -171,26 +174,32 @@ fn short_status(
     let mut by_program: BTreeMap<String, (usize, usize, usize, usize)> = BTreeMap::new();
 
     for (run_id, run_data) in runs.iter().enumerate() {
-        if !by_program.contains_key(&run_data.program.to_string()) {
-            by_program.insert(run_data.program.clone().to_string(), (0, 0, 0, 0));
-        }
-
-        if let Some(for_this_prog) = by_program.get_mut(&run_data.program.to_string()) {
-            let status = statuses[&run_id].clone();
-
-            if status.is_completed() {
-                for_this_prog.0 += 1;
+        let prog = experiment.programs[run_data.program].name.clone();
+        match by_program.entry(prog) {
+            Entry::Vacant(e) => {
+                e.insert((0, 0, 0, 0));
             }
+            Entry::Occupied(mut o) => {
+                let mut for_this_prog = *o.get();
 
-            if status.has_failed(experiment) {
-                for_this_prog.1 += 1;
+                let status = statuses[&run_id].clone();
+
+                if status.is_completed() {
+                    for_this_prog.0 += 1;
+                }
+
+                if status.has_failed(experiment) {
+                    for_this_prog.1 += 1;
+                }
+
+                if status.is_scheduled() {
+                    for_this_prog.2 += 1;
+                }
+
+                for_this_prog.3 += 1;
+
+                o.insert(for_this_prog);
             }
-
-            if status.is_scheduled() {
-                for_this_prog.2 += 1;
-            }
-
-            for_this_prog.3 += 1;
         }
     }
 

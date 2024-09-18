@@ -10,8 +10,8 @@ use gourd_lib::measurement::Measurement;
 use tempdir::TempDir;
 
 use super::*;
-use crate::cli::def::PlotType::PlotPng;
-use crate::cli::def::PlotType::PlotSvg;
+use crate::cli::def::PlotType::Png;
+use crate::cli::def::PlotType::Svg;
 use crate::status::FileSystemBasedStatus;
 use crate::status::FsState;
 use crate::status::SlurmBasedStatus;
@@ -144,13 +144,13 @@ fn test_analysis_png_plot_success() {
     };
 
     let png_output_path = tmp_dir.path().join("analysis.png");
-    analysis_plot(&png_output_path, statuses.clone(), &experiment, PlotPng).unwrap();
+    analysis_plot(&png_output_path, statuses.clone(), &experiment, Png).unwrap();
 
     assert!(&png_output_path.exists());
     assert!(fs::read(&png_output_path).is_ok_and(|r| !r.is_empty()));
 
     let svg_output_path = tmp_dir.path().join("analysis.svg");
-    analysis_plot(&svg_output_path, statuses, &experiment, PlotSvg).unwrap();
+    analysis_plot(&svg_output_path, statuses, &experiment, Svg).unwrap();
 
     assert!(&svg_output_path.exists());
     assert!(fs::read(&svg_output_path).is_ok_and(|r| !r.is_empty()));

@@ -25,10 +25,14 @@ pub(crate) static TEST_RUSAGE: RUsage = RUsage {
 
 #[test]
 fn test_table_display() {
-    let table: Table<&str, 2> = Table {
-        header: Some(["hello", "world"]),
-        body: vec![["a", "b b b b b"], ["hi", ":)"]],
-        footer: Some(["bye", ""]),
+    let table: Table = Table {
+        columns: 2,
+        header: Some(vec!["hello".into(), "world".into()]),
+        body: vec![
+            vec!["a".into(), "b b b b b".into()],
+            vec!["hi".into(), ":)".into()],
+        ],
+        footer: Some(vec!["bye".into(), "".into()]),
     };
     assert_eq!(
         "\
@@ -38,6 +42,48 @@ fn test_table_display() {
 | hi    | :)        |
 *-------*-----------*
 | bye   |           |
+",
+        table.to_string()
+    )
+}
+
+#[test]
+fn test_table_column_widths() {
+    let table: Table = Table {
+        columns: 2,
+        header: Some(vec!["hallo".into(), "world".into()]),
+        body: vec![
+            vec!["a".into(), "b b b b b".into()],
+            vec!["hi".into(), ":)".into()],
+        ],
+        footer: Some(vec!["bye".into(), "".into()]),
+    };
+    assert_eq!(vec![5, 9], table.column_widths())
+}
+
+#[test]
+fn test_appending_columns() {
+    let column: Column = Column {
+        header: Some("hello".into()),
+        body: vec!["a".into(), "b b b b b".into()],
+        footer: Some("bye".into()),
+    };
+    let mut table: Table = Table {
+        columns: 1,
+        header: Some(vec!["hello".into()]),
+        body: vec![vec!["a".into()], vec!["hi".into()]],
+        footer: Some(vec!["bye".into()]),
+    };
+    table.append_column(column);
+
+    assert_eq!(
+        "\
+| hello | hello     |
+*-------*-----------*
+| a     | a         |
+| hi    | b b b b b |
+*-------*-----------*
+| bye   | bye       |
 ",
         table.to_string()
     )
