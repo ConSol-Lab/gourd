@@ -22,20 +22,70 @@ pub mod plotting;
 
 /// Represent a human-readable table.
 /// Universal between CSV exporting and in-line display.
+///
+/// Since tables store the display strings, their entries are in essence
+/// immutable. Cells are not meant to be read or modified, since that would
+/// likely involve parsing the number in it, which is just unhygienic.
+///
+/// You can append rows to a table, or create new columns. (TODO: reference the
+/// correct functions here when they exist.)
 #[derive(Debug, Clone)]
-pub struct Table<R: ToString + AsRef<[u8]>, const N: usize> {
+pub struct Table {
+    /// Number of columns in the table.
+    pub columns: usize,
     /// CSV-style table header.
-    pub header: Option<[R; N]>,
-    /// The table entries (= rows).
-    pub body: Vec<[R; N]>,
+    pub header: Option<Vec<String>>,
+    /// The table entries (vector of rows, each row is a vector of entries)
+    /// (`Vec<Row<Entry>>`).
+    pub body: Vec<Vec<String>>,
     /// An optional footer, can be used to aggregate statistics, for example.
-    pub footer: Option<[R; N]>,
+    pub footer: Option<Vec<String>>,
 }
 
-impl<R: ToString + AsRef<[u8]>, const N: usize> Table<R, N> {
+/// A column that can be appended to the end of a [`Table`].
+///
+/// Intended to be created through a [`ColumnGenerator`].
+#[derive(Debug, Clone)]
+pub struct Column {
+    /// The text header of the column. Defaults to empty string
+    pub header: Option<String>,
+    /// The row cells of this column
+    pub body: Vec<String>,
+    /// The footer cell of this column. Defaults to empty string.
+    pub footer: Option<String>,
+}
+
+/// Create a [`Column`] from a list of entries of type `X`.
+#[derive(Debug, Clone)]
+pub struct ColumnGenerator<X> {
+    /// The text header of the column. Defaults to empty string
+    pub header: Option<String>,
+    /// A function to convert a type `X` element into the content of its
+    /// equivalent row in the column body.
+    pub body: fn(&Experiment, &X) -> Result<String>,
+    /// A footer cell that can hold info aggregated
+    /// from all the entries in the original list.
+    pub footer: fn(&Experiment, &[X]) -> Result<Option<String>>,
+}
+
+impl<X> ColumnGenerator<X> {
+    /// Generate a column from a vector of entries.
+    pub fn generate(&self, exp: &Experiment, from: &[X]) -> Result<Column> {
+        Ok(Column {
+            header: self.header.clone(),
+            body: from
+                .iter()
+                .map(|x| (self.body)(exp, x))
+                .collect::<Result<Vec<String>>>()?,
+            footer: (self.footer)(exp, from)?,
+        })
+    }
+}
+
+impl Table {
     /// Get the width (in utf-8 characters) of the longest entry of each column
-    pub fn column_widths(&self) -> [usize; N] {
-        let mut col_widths = [0usize; N];
+    pub fn column_widths(&self) -> Vec<usize> {
+        let mut col_widths = vec![0; self.columns];
 
         for row in self
             .header
@@ -73,14 +123,47 @@ impl<R: ToString + AsRef<[u8]>, const N: usize> Table<R, N> {
 
         Ok(())
     }
+
+    /// Append a column to the table.
+    // Known issue: https://github.com/rust-lang/rust-clippy/issues/13185
+    #[allow(clippy::manual_inspect)]
+    pub fn append_column(&mut self, column: Column) {
+        self.columns += 1;
+        self.header = self
+            .header
+            .as_mut()
+            .map(|h| {
+                h.push(column.header.clone().unwrap_or_default());
+                h
+            })
+            .cloned();
+        debug_assert_eq!(self.body.len(), column.body.len());
+        self.body = self
+            .body
+            .iter_mut()
+            .zip(column.body.iter())
+            .map(|(a, b)| {
+                a.push(b.clone());
+                a.clone()
+            })
+            .collect();
+        self.footer = self
+            .footer
+            .as_mut()
+            .map(|f| {
+                f.push(column.footer.clone().unwrap_or_default());
+                f
+            })
+            .cloned();
+    }
 }
 
-impl<R: ToString + AsRef<[u8]>, const N: usize> Display for Table<R, N> {
+impl Display for Table {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let col_widths = self.column_widths();
         if let Some(header) = &self.header {
             for (width, value) in col_widths.iter().zip(header.iter()) {
-                write!(f, "| {: <width$} ", value.to_string())?;
+                write!(f, "| {: <width$} ", value)?;
             }
             writeln!(f, "|")?;
 
@@ -92,7 +175,7 @@ impl<R: ToString + AsRef<[u8]>, const N: usize> Display for Table<R, N> {
 
         for row in self.body.iter() {
             for (width, value) in col_widths.iter().zip(row.iter()) {
-                write!(f, "| {: <width$} ", value.to_string())?;
+                write!(f, "| {: <width$} ", value)?;
             }
             writeln!(f, "|")?;
         }
@@ -104,7 +187,7 @@ impl<R: ToString + AsRef<[u8]>, const N: usize> Display for Table<R, N> {
             writeln!(f, "*")?;
 
             for (width, value) in col_widths.iter().zip(footer.iter()) {
-                write!(f, "| {: <width$} ", value.to_string())?;
+                write!(f, "| {: <width$} ", value)?;
             }
             writeln!(f, "|")?;
         }

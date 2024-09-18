@@ -34,6 +34,7 @@ use super::def::ContinueStruct;
 use super::def::RerunOptions;
 use super::log::LogTokens;
 use super::printing::get_styles;
+use crate::analyse::csvs::groups_table;
 use crate::analyse::csvs::metrics_table;
 use crate::analyse::plotting::analysis_plot;
 use crate::chunks::Chunkable;
@@ -41,7 +42,6 @@ use crate::cli::def::AnalSubcommand;
 use crate::cli::def::AnalyseStruct;
 use crate::cli::def::CancelStruct;
 use crate::cli::def::Cli;
-use crate::cli::def::ExportStruct;
 use crate::cli::def::GourdCommand;
 use crate::cli::def::RunSubcommand;
 use crate::cli::def::StatusStruct;
@@ -290,10 +290,20 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
         }
 
         GourdCommand::Analyse(AnalyseStruct {
-            experiment_id: _x,
+            experiment_id,
             subcommand: AnalSubcommand::Groups,
         }) => {
-            todo!();
+            let experiment = read_experiment(experiment_id, cmd, &file_system)?;
+
+            let statuses = experiment.status(&file_system)?;
+
+            let tables = groups_table(&experiment, &statuses)?;
+
+            info!("Groups for experiment {}", experiment.seq);
+            for table in tables {
+                info!("\n{table}");
+            }
+            info!("Run with {CMD_STYLE}--save{CMD_STYLE:#} to get the tables in CSV format.");
         }
 
         GourdCommand::Analyse(AnalyseStruct {
@@ -310,7 +320,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             todo!();
         }
 
-        GourdCommand::Export(ExportStruct { experiment_id }) => {
+        GourdCommand::Export(AnalyseStruct { experiment_id, .. }) => {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             let out_path = experiment

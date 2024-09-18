@@ -172,11 +172,12 @@ pub struct AnalyseStruct {
 /// Enum for subcommands of the `run` subcommand.
 #[derive(Subcommand, Debug, Copy, Clone)]
 pub enum AnalSubcommand {
-    /// TODO
+    /// Generate a cactus plot for the runs of this experiment.
     #[command()]
     Plot {
-        /// TODO
-        #[arg(short, long, default_value = "plot-png")]
+        /// What file format to make the cactus plot in.
+        /// Options are `png` (default), `svg`, `csv` (not yet implemented).
+        #[arg(short, long, default_value = "png")]
         format: PlotType,
     },
 
@@ -200,11 +201,11 @@ pub enum PlotType {
     Csv,
 
     /// Output an SVG cactus plot.
-    PlotSvg,
+    Svg,
 
     /// Output a PNG cactus plot.
     #[default]
-    PlotPng,
+    Png,
 }
 
 impl PlotType {
@@ -212,19 +213,10 @@ impl PlotType {
     pub fn ext(&self) -> &str {
         match self {
             PlotType::Csv => "csv",
-            PlotType::PlotSvg => "svg",
-            PlotType::PlotPng => "png",
+            PlotType::Svg => "svg",
+            PlotType::Png => "png",
         }
     }
-}
-
-/// Arguments supplied with the `export` command.
-#[derive(Args, Debug, Clone, Copy)]
-pub struct ExportStruct {
-    /// The id of the experiment to analyse
-    /// [default: newest experiment].
-    #[arg(value_name = "EXPERIMENT")]
-    pub experiment_id: Option<usize>,
 }
 
 /// Enum for root-level `gourd` commands.
@@ -260,7 +252,7 @@ pub enum GourdCommand {
 
     /// Output metrics of completed runs.
     #[command()]
-    Export(ExportStruct),
+    Export(AnalyseStruct),
 
     /// Print information about the version.
     #[command()]
