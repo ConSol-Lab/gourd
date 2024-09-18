@@ -119,6 +119,7 @@ plotters = {version = "0.3.6", default-features = false, features = [
         "colormaps",
         "ab_glyph"
 ]}
+lazy_static = "1.5.0"
 
 [build-dependencies]
 # To generate shell completions for the CLI.
