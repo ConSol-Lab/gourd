@@ -135,7 +135,8 @@ pub struct SlurmBasedStatus {
     pub exit_code_slurm: isize,
 }
 
-/// All possible postprocessing statuses of a run.
+/// The status of a single run. Contains [`FileSystemBasedStatus`],
+/// and in case of running on slurm [`SlurmBasedStatus`] and [`SlurmFileOutput`]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Status {
     /// Status retrieved from slurm.
