@@ -81,6 +81,7 @@ jobs:
           target/release/uninstall-x86_64-unknown-linux-gnu.sh
           target/release/install-delftblue.sh
           target/release/uninstall-delftblue.sh
+        retention-days: 7
 
   nightly-windows:
     name: "nightly-windows"
@@ -105,6 +106,7 @@ jobs:
         path: |
           target/release/gourd.exe
           target/release/gourd_wrapper.exe
+        retention-days: 4
 
 
   nightly-macos:
@@ -168,3 +170,4 @@ jobs:
         path: |
           target/release/install-aarch64-apple-darwin.sh
           target/release/uninstall-aarch64-apple-darwin.sh
+        retention-days: 7

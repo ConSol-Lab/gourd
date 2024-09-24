@@ -27,8 +27,8 @@ pub mod plotting;
 /// immutable. Cells are not meant to be read or modified, since that would
 /// likely involve parsing the number in it, which is just unhygienic.
 ///
-/// You can append rows to a table, or create new columns. (TODO: reference the
-/// correct functions here when they exist.)
+/// You can append rows to a table with [`Table::append_column`],
+/// or create new columns using [`ColumnGenerator`]s.
 #[derive(Debug, Clone)]
 pub struct Table {
     /// Number of columns in the table.
@@ -160,6 +160,7 @@ impl Table {
 
 impl Display for Table {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f)?;
         let col_widths = self.column_widths();
         if let Some(header) = &self.header {
             for (width, value) in col_widths.iter().zip(header.iter()) {
