@@ -4,9 +4,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::anyhow;
-use anyhow::Context;
 use anyhow::Result;
-use gourd_lib::bailc;
 use gourd_lib::constants::PLOT_SIZE;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
@@ -42,7 +40,7 @@ pub fn analysis_plot(
     match plot_type {
         PlotType::Png => make_plot(data, BitMapBackend::new(&path, PLOT_SIZE))?,
         PlotType::Svg => make_plot(data, SVGBackend::new(&path, PLOT_SIZE))?,
-        PlotType::Csv => bailc!("Plotting in CSV is not yet implemented!"),
+        // PlotType::Csv => bailc!("Plotting in CSV is not yet implemented!"),
     }
 
     Ok(path.into())

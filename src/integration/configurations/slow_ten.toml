@@ -1,0 +1,15 @@
+
+output_path = ""
+metrics_path = ""
+experiments_folder = ""
+wrapper = ""
+
+warn_on_label_overlap = false
+
+[program.slow]
+binary = "slow_fib"
+arguments = []
+next = []
+
+[input.input_ten]
+arguments = ["10"]

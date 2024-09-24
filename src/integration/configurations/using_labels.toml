@@ -1,0 +1,37 @@
+
+output_path = ""
+metrics_path = ""
+experiments_folder = ""
+wrapper = ""
+
+warn_on_label_overlap = false
+
+[program.fibonacci]
+binary = "fibonacci"
+arguments = []
+next = []
+
+[program.fast_fib]
+binary = "fast_fib"
+arguments = []
+next = []
+
+[program.fast_fast_fib]
+binary = "fast_fast_fib"
+
+[program.slow_fib]
+binary = "slow_fib"
+
+[program.hello]
+binary = "hello"
+
+[input.input_ten]
+arguments = ["10"]
+
+[input.hello]
+file = "./src/integration/inputs/1.in"
+arguments = []
+
+[label.correct]
+regex = "55"
+priority = 1
