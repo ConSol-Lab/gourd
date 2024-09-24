@@ -23,7 +23,7 @@ fn gourd_run_test() {
     // run status
     let _ = gourd!(env; "-c", conf_path.to_str().unwrap(), "status", "-s"; "status 1");
     let _o = gourd!(env; "-c", conf_path.to_str().unwrap(), "continue", "-s"; "continue");
-    // let _e = read_experiment_from_stdout(&_o).unwrap();
+
     let _ = gourd!(env; "-c", conf_path.to_str().unwrap(), "status", "-s"; "status 2");
     let _ = gourd!(env; "-c", conf_path.to_str().unwrap(), "rerun", "-r", "0", "-s"; "rerun");
 
@@ -61,7 +61,7 @@ fn gourd_status_test() {
     // 3 programs on input "hello" will fail, 1 post on a failed will fail
     assert_eq!(1, text_out.match_indices("failed").count());
     // 3 programs on input 10 will pass, 1 post on a good output will pass
-    // assert_eq!(4, text_out.match_indices("success").count()); // TODO: fix
+    assert_eq!(4, text_out.match_indices("success").count()); // TODO: fix
 
     let output = gourd!(env; "-c", conf2_path.to_str().unwrap(), "run", "local", "-s"; "run local");
 
@@ -81,8 +81,8 @@ fn gourd_status_test() {
     );
 
     let _text_out = std::str::from_utf8(status_2_returned.stdout.as_slice()).unwrap();
-    // assert_eq!(0, text_out.match_indices("failed").count()); // TODO: fix
-    // assert_eq!(1, text_out.match_indices("success").count());
+    assert_eq!(0, text_out.match_indices("failed").count()); // TODO: fix
+    assert_eq!(1, text_out.match_indices("success").count());
 
     assert!(!gourd!(env; "cancel").status.success());
 }
@@ -105,15 +105,15 @@ fn gourd_rerun_test() {
     let _ = gourd!(env; "-c", conf_path.to_str().unwrap(), "status", "-s"; "status");
 
     let rerun_output_1 = gourd!(env; "-c", conf_path.to_str().unwrap(), "rerun", "-s"; "rerun");
-    let _text_err = std::str::from_utf8(rerun_output_1.stderr.as_slice()).unwrap();
-    // assert!(text_err.contains("2 new runs have been created")); // TODO: fix
+    let text_err = std::str::from_utf8(rerun_output_1.stderr.as_slice()).unwrap();
+    assert!(text_err.contains("2 new runs have been created")); // TODO: fix
 
     let _ = gourd!(env; "-c", conf_path.to_str().unwrap(), "continue", "-s"; "continue");
 
     let rerun_output_2 = gourd!(env; "-c", conf_path.to_str().unwrap(), "rerun", "-s"; "rerun");
-    let _text_err = std::str::from_utf8(rerun_output_2.stderr.as_slice()).unwrap();
-    // assert!(text_err.contains("3 new runs have been created")); // TODO: confirm
-    // that "4" is correct
+    let text_err = std::str::from_utf8(rerun_output_2.stderr.as_slice()).unwrap();
+    assert!(text_err.contains("3 new runs have been created")); // TODO: confirm
+                                                                // that "4" is correct
 
     assert!(!gourd!(env; "cancel").status.success());
 }
