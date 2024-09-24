@@ -35,7 +35,7 @@ fn test_table_display() {
         footer: Some(vec!["bye".into(), "".into()]),
     };
     assert_eq!(
-        "\
+        "
 | hello | world     |
 *-------*-----------*
 | a     | b b b b b |
@@ -77,7 +77,7 @@ fn test_appending_columns() {
     table.append_column(column);
 
     assert_eq!(
-        "\
+        "
 | hello | hello     |
 *-------*-----------*
 | a     | a         |

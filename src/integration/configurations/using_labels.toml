@@ -26,11 +26,12 @@ binary = "slow_fib"
 binary = "hello"
 
 [input.input_ten]
-arguments = ["10"]
+file = "./src/integration/inputs/2.in"
+arguments = ["12"]
 
 [input.hello]
 file = "./src/integration/inputs/1.in"
-arguments = []
+arguments = ["hello"]
 
 [label.correct]
 regex = "55"

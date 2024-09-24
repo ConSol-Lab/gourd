@@ -10,7 +10,6 @@ use clap::CommandFactory;
 use clap::FromArgMatches;
 use colog::default_builder;
 use colog::formatter;
-use csv::Writer;
 use gourd_lib::bailc;
 use gourd_lib::config::Config;
 use gourd_lib::constants::CMD_DOC_STYLE;
@@ -260,9 +259,9 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             subcommand:
                 AnalSubcommand::Plot {
                     format,
-                    save: save_a,
+                    output: save_a,
                 },
-            save: save_b,
+            output: save_b,
         }) => {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
@@ -297,34 +296,37 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 let out = analysis_plot(&out_path, statuses, &experiment, *format)?;
                 info!("Plot saved to:");
                 println!("{PATH_STYLE}{}{PATH_STYLE:#}", out.display());
+                // non-info printing can let scripts easily get the path from
+                // the last line.
             }
         }
 
         GourdCommand::Analyse(AnalyseStruct {
             experiment_id,
             subcommand: AnalSubcommand::Table(csv),
-            save,
+            output: save,
         }) => {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
             let statuses = experiment.status(&file_system)?;
 
             let tables = tables_from_command(&experiment, &statuses, csv.clone())?;
 
-            if let Some(path) = &save.clone().or(csv.save.clone()) {
+            if let Some(path) = &save.clone().or(csv.output.clone()) {
                 let count = tables.len();
                 if cmd.dry {
                     info!("Would have saved {count} table(s) to {}", path.display());
                 } else {
-                    let mut writer = Writer::from_path(path)?;
                     for table in tables {
-                        table.write_csv(&mut writer)?;
+                        table.write_to_path(path)?;
                     }
-                    writer.flush()?;
-                    info!(
-                        "{count} Table{} saved to {PATH_STYLE}{}{PATH_STYLE:#}",
-                        if count > 1 { "s" } else { "" },
-                        path.display()
-                    );
+                    info!("{count} Table{} saved to", if count > 1 { "s" } else { "" });
+                    println!("{PATH_STYLE}{}{PATH_STYLE:#}", path.display());
+                    // non-info printing can let scripts easily get the path
+                    // from the last line.
+                }
+            } else if cmd.script {
+                for table in tables {
+                    println!("{:-}\n", table);
                 }
             } else {
                 for table in tables {
@@ -335,7 +337,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     info!("{}", table);
                 }
                 info!(
-                    "Run with {CMD_STYLE} --save=\"path/to/location.csv\" {CMD_STYLE:#} \
+                    "Run with {CMD_STYLE} --output=\"path/to/location.csv\" {CMD_STYLE:#} \
                     to save to a csv file"
                 );
                 if csv.format.is_none() {
