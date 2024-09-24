@@ -131,3 +131,4 @@ jobs:
         name: documentation
         path: |
           target/release/manpages/
+          retention-days: 7

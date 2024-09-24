@@ -157,49 +157,132 @@ pub struct InitStruct {
 }
 
 /// Arguments supplied with the `analyse` command.
-#[derive(Args, Debug, Clone, Copy)]
+#[derive(Args, Debug, Clone)]
 pub struct AnalyseStruct {
     /// The id of the experiment to analyse
     /// [default: newest experiment].
     #[arg(value_name = "EXPERIMENT")]
     pub experiment_id: Option<usize>,
 
-    /// TODO
+    /// Plot analysis or create a table for the run metrics.
     #[command(subcommand)]
     pub subcommand: AnalSubcommand,
+
+    /// If you want to save to a specific file
+    #[arg(long)]
+    pub save: Option<PathBuf>,
 }
 
 /// Enum for subcommands of the `run` subcommand.
-#[derive(Subcommand, Debug, Copy, Clone)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum AnalSubcommand {
     /// Generate a cactus plot for the runs of this experiment.
     #[command()]
     Plot {
         /// What file format to make the cactus plot in.
-        /// Options are `png` (default), `svg`, `csv` (not yet implemented).
+        /// Options are `png` (default), `svg`
         #[arg(short, long, default_value = "png")]
         format: PlotType,
+
+        /// If you want to save to a specific file
+        #[arg(long)]
+        save: Option<PathBuf>,
     },
 
-    /// TODO
+    /// Generate tables for the metrics of the runs in this experiment.
     #[command()]
-    Groups,
+    Table(CsvFormatting),
+}
 
-    /// TODO
-    #[command()]
-    Inputs,
+/// Construct a CSV by specifying desired columns and any grouping of runs.
+#[derive(Args, Debug, Clone)]
+pub struct CsvFormatting {
+    /// Group together the averages based on a number of conditions.
+    ///
+    /// Specifying multiple conditions means that all equalities must hold.
+    #[arg(short, long, value_delimiter = ',', num_args = 0..)]
+    pub group: Vec<GroupBy>,
 
-    /// TODO
-    #[command()]
-    Programs,
+    /// Choose which columns to include in the table.
+    #[arg(short, long, value_delimiter = ',', num_args = 1..)]
+    pub format: Option<Vec<CsvColumn>>,
+
+    /// If you want to save to a specific file
+    #[arg(long)]
+    pub save: Option<PathBuf>,
+}
+
+/// Choice of grouping together runs based on equality conditions
+#[derive(ValueEnum, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Copy)]
+pub enum GroupBy {
+    /// Group together runs that have the same program.
+    Program,
+    /// Group together runs that have the same input.
+    Input,
+    /// Group together runs that have the same input group.
+    Group,
+}
+
+/// Enum for the columns that can be included in the CSV.
+#[derive(ValueEnum, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Copy)]
+pub enum CsvColumn {
+    /// The name of the program that was run.
+    Program,
+    /// The input file that was used.
+    File,
+    /// The arguments that were passed to the program.
+    Args,
+    /// The group that the run was in.
+    Group,
+    /// The afterscript that was run.
+    Afterscript,
+    /// The slurm completion status of the run.
+    Slurm,
+    /// The metrics saved file for the run
+    FsStatus,
+    /// The run process exit code
+    ExitCode,
+    /// Process wall time
+    WallTime,
+    /// Process user time
+    UserTime,
+    /// Process system time
+    SystemTime,
+    /// Maximum resident set size
+    MaxRSS,
+    /// Integral shared memory size
+    IxRSS,
+    /// Integral unshared data size
+    IdRSS,
+    /// Integral unshared stack size
+    IsRSS,
+    /// Page reclaims (soft page faults)
+    MinFlt,
+    /// Page faults (hard page faults)
+    MajFlt,
+    /// Swaps
+    NSwap,
+    /// Block input operations
+    InBlock,
+    /// Block output operations
+    OuBlock,
+    /// IPC messages sent
+    MsgSent,
+    /// IPC messages received
+    MsgRecv,
+    /// Signals received
+    NSignals,
+    /// Voluntary context switches
+    NVCsw,
+    /// Involuntary context switches
+    NIvCsw,
 }
 
 /// Enum for the output format of the analysis.
 #[derive(ValueEnum, Debug, Clone, Default, Copy)]
 pub enum PlotType {
-    /// Output a CSV of a cactus plot.
-    Csv,
-
+    // /// Output a CSV of a cactus plot.
+    // Csv,
     /// Output an SVG cactus plot.
     Svg,
 
@@ -212,7 +295,7 @@ impl PlotType {
     /// get the file extension for this plot type
     pub fn ext(&self) -> &str {
         match self {
-            PlotType::Csv => "csv",
+            // PlotType::Csv => "csv",
             PlotType::Svg => "svg",
             PlotType::Png => "png",
         }
@@ -249,10 +332,6 @@ pub enum GourdCommand {
     /// Output metrics of completed runs.
     #[command()]
     Analyse(AnalyseStruct),
-
-    /// Output metrics of completed runs.
-    #[command()]
-    Export(AnalyseStruct),
 
     /// Print information about the version.
     #[command()]

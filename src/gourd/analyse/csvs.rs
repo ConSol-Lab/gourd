@@ -5,9 +5,13 @@ use std::time::Duration;
 use anyhow::Result;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::measurement::Measurement;
+use gourd_lib::measurement::RUsage;
 
 use crate::analyse::ColumnGenerator;
 use crate::analyse::Table;
+use crate::cli::def::CsvColumn;
+use crate::cli::def::CsvFormatting;
+use crate::cli::def::GroupBy;
 use crate::status::ExperimentStatus;
 use crate::status::FsState;
 use crate::status::Status;
@@ -40,38 +44,70 @@ fn create_column_full<X>(
     }
 }
 
-/// TODO: all metrics
-pub fn metrics_generators() -> &'static BTreeMap<String, ColumnGenerator<(usize, Status)>> {
-    /// TODO: documentation
-    static ONCE: OnceLock<BTreeMap<String, ColumnGenerator<(usize, Status)>>> = OnceLock::new();
+/// Shorthand to create a column generator for a metric that is derived from the
+/// `rusage`
+macro_rules! rusage_metrics {
+    ($name:expr, $field:expr) => {
+        create_column_full(
+            $name,
+            |_, x| {
+                Ok(match &x.1.fs_status.completion {
+                    FsState::Completed(Measurement {
+                        rusage: Some(r), ..
+                    }) => format!("{:?}", $field(r)),
+                    _ => "N/A".to_string(),
+                })
+            },
+            |_, runs| {
+                let (total, n) = runs.iter().fold((0, 0), |(sum, count), run| {
+                    match &run.1.fs_status.completion {
+                        FsState::Completed(Measurement {
+                            rusage: Some(r), ..
+                        }) => (sum + $field(r), count + 1),
+                        _ => (sum, count),
+                    }
+                });
+
+                Ok(Some(format!("{:.2}", ((total as f64) / (n as f64)))))
+            },
+        )
+    };
+}
+
+/// Create a map of column generators for the metrics that can be included in
+/// CSV analysis
+pub fn metrics_generators() -> &'static BTreeMap<CsvColumn, ColumnGenerator<(usize, Status)>> {
+    /// A `OnceLock` to ensure that the metrics generators are only created once
+    /// (and not for every table in case of grouping).
+    static ONCE: OnceLock<BTreeMap<CsvColumn, ColumnGenerator<(usize, Status)>>> = OnceLock::new();
     ONCE.get_or_init(|| {
         let mut map = BTreeMap::new();
         map.insert(
-            "program".to_string(),
+            CsvColumn::Program,
             create_column("program", |exp: &Experiment, x: &(usize, Status)| {
                 Ok(exp.get_program(&exp.runs[x.0])?.name.clone())
             }),
         );
         map.insert(
-            "file".to_string(),
+            CsvColumn::File,
             create_column("input file", |exp, x: &(usize, Status)| {
                 Ok(format!("{:?}", &exp.runs[x.0].input.file))
             }),
         );
         map.insert(
-            "args".to_string(),
+            CsvColumn::Args,
             create_column("input args", |exp, x: &(usize, Status)| {
                 Ok(format!("{:?}", &exp.runs[x.0].input.args))
             }),
         );
         map.insert(
-            "group".to_string(),
+            CsvColumn::Group,
             create_column("input group", |exp: &Experiment, x: &(usize, Status)| {
                 Ok(exp.runs[x.0].group.clone().unwrap_or("N/A".to_string()))
             }),
         );
         map.insert(
-            "afterscript".to_string(),
+            CsvColumn::Afterscript,
             create_column("afterscript", |_, x| {
                 Ok(x.1
                     .fs_status
@@ -82,7 +118,7 @@ pub fn metrics_generators() -> &'static BTreeMap<String, ColumnGenerator<(usize,
             }),
         );
         map.insert(
-            "slurm".to_string(),
+            CsvColumn::Slurm,
             create_column("slurm", |_, x| {
                 Ok(x.1
                     .slurm_status
@@ -90,13 +126,13 @@ pub fn metrics_generators() -> &'static BTreeMap<String, ColumnGenerator<(usize,
             }),
         );
         map.insert(
-            "fs_status".to_string(),
+            CsvColumn::FsStatus,
             create_column("file system status", |_, x| {
                 Ok(format!("{:-}", x.1.fs_status.completion))
             }),
         );
         map.insert(
-            "exit_code".to_string(),
+            CsvColumn::ExitCode,
             ColumnGenerator {
                 header: Some("exit code".to_string()),
                 body: |_, x: &(usize, Status)| {
@@ -111,7 +147,7 @@ pub fn metrics_generators() -> &'static BTreeMap<String, ColumnGenerator<(usize,
             },
         );
         map.insert(
-            "wall_time".to_string(),
+            CsvColumn::WallTime,
             create_column_full(
                 "wall time",
                 |_, x| {
@@ -133,7 +169,7 @@ pub fn metrics_generators() -> &'static BTreeMap<String, ColumnGenerator<(usize,
             ),
         );
         map.insert(
-            "user_time".to_string(),
+            CsvColumn::UserTime,
             create_column_full(
                 "user time",
                 |_, x| {
@@ -159,7 +195,7 @@ pub fn metrics_generators() -> &'static BTreeMap<String, ColumnGenerator<(usize,
             ),
         );
         map.insert(
-            "system_time".to_string(),
+            CsvColumn::SystemTime,
             create_column_full(
                 "system time",
                 |_, x| {
@@ -185,136 +221,61 @@ pub fn metrics_generators() -> &'static BTreeMap<String, ColumnGenerator<(usize,
             ),
         );
 
-        // TODO: find a way to shorten these
         map.insert(
-            "maxrss".to_string(),
-            create_column_full(
-                "max RSS",
-                |_, x| {
-                    Ok(match &x.1.fs_status.completion {
-                        FsState::Completed(Measurement {
-                            rusage: Some(r), ..
-                        }) => format!("{:?}", r.maxrss),
-                        _ => "N/A".to_string(),
-                    })
-                },
-                |_, runs| {
-                    let (total, n) = runs.iter().fold((0, 0), |(sum, count), run| {
-                        match &run.1.fs_status.completion {
-                            FsState::Completed(Measurement {
-                                rusage: Some(r), ..
-                            }) => (sum + r.maxrss, count + 1),
-                            _ => (sum, count),
-                        }
-                    });
-
-                    Ok(Some(format!("{:?}", (total / n))))
-                },
-            ),
+            CsvColumn::MaxRSS,
+            rusage_metrics!("max rss", |r: &RUsage| r.maxrss),
         );
         map.insert(
-            "minflt".to_string(),
-            create_column_full(
-                "soft page faults",
-                |_, x| {
-                    Ok(match &x.1.fs_status.completion {
-                        FsState::Completed(Measurement {
-                            rusage: Some(r), ..
-                        }) => format!("{:?}", r.minflt),
-                        _ => "N/A".to_string(),
-                    })
-                },
-                |_, runs| {
-                    let (total, n) = runs.iter().fold((0, 0), |(sum, count), run| {
-                        match &run.1.fs_status.completion {
-                            FsState::Completed(Measurement {
-                                rusage: Some(r), ..
-                            }) => (sum + r.minflt, count + 1),
-                            _ => (sum, count),
-                        }
-                    });
-
-                    Ok(Some(format!("{:?}", (total / n))))
-                },
-            ),
+            CsvColumn::IxRSS,
+            rusage_metrics!("shared mem size", |r: &RUsage| r.ixrss),
         );
         map.insert(
-            "majflt".to_string(),
-            create_column_full(
-                "hard page faults",
-                |_, x| {
-                    Ok(match &x.1.fs_status.completion {
-                        FsState::Completed(Measurement {
-                            rusage: Some(r), ..
-                        }) => format!("{:?}", r.majflt),
-                        _ => "N/A".to_string(),
-                    })
-                },
-                |_, runs| {
-                    let (total, n) = runs.iter().fold((0, 0), |(sum, count), run| {
-                        match &run.1.fs_status.completion {
-                            FsState::Completed(Measurement {
-                                rusage: Some(r), ..
-                            }) => (sum + r.majflt, count + 1),
-                            _ => (sum, count),
-                        }
-                    });
-
-                    Ok(Some(format!("{:?}", (total / n))))
-                },
-            ),
+            CsvColumn::IdRSS,
+            rusage_metrics!("unshared mem size", |r: &RUsage| r.idrss),
         );
         map.insert(
-            "nvcsw".to_string(),
-            create_column_full(
-                "voluntary context switches",
-                |_, x| {
-                    Ok(match &x.1.fs_status.completion {
-                        FsState::Completed(Measurement {
-                            rusage: Some(r), ..
-                        }) => format!("{:?}", r.nvcsw),
-                        _ => "N/A".to_string(),
-                    })
-                },
-                |_, runs| {
-                    let (total, n) = runs.iter().fold((0, 0), |(sum, count), run| {
-                        match &run.1.fs_status.completion {
-                            FsState::Completed(Measurement {
-                                rusage: Some(r), ..
-                            }) => (sum + r.nvcsw, count + 1),
-                            _ => (sum, count),
-                        }
-                    });
-
-                    Ok(Some(format!("{:?}", (total / n))))
-                },
-            ),
+            CsvColumn::IsRSS,
+            rusage_metrics!("unshared stack size", |r: &RUsage| r.isrss),
         );
         map.insert(
-            "nivcsw".to_string(),
-            create_column_full(
-                "involuntary context switches",
-                |_, x| {
-                    Ok(match &x.1.fs_status.completion {
-                        FsState::Completed(Measurement {
-                            rusage: Some(r), ..
-                        }) => format!("{:?}", r.nivcsw),
-                        _ => "N/A".to_string(),
-                    })
-                },
-                |_, runs| {
-                    let (total, n) = runs.iter().fold((0, 0), |(sum, count), run| {
-                        match &run.1.fs_status.completion {
-                            FsState::Completed(Measurement {
-                                rusage: Some(r), ..
-                            }) => (sum + r.nivcsw, count + 1),
-                            _ => (sum, count),
-                        }
-                    });
-
-                    Ok(Some(format!("{:?}", (total / n))))
-                },
-            ),
+            CsvColumn::MinFlt,
+            rusage_metrics!("soft page faults", |r: &RUsage| r.minflt),
+        );
+        map.insert(
+            CsvColumn::MajFlt,
+            rusage_metrics!("hard page faults", |r: &RUsage| r.majflt),
+        );
+        map.insert(
+            CsvColumn::NSwap,
+            rusage_metrics!("swaps", |r: &RUsage| r.nswap),
+        );
+        map.insert(
+            CsvColumn::InBlock,
+            rusage_metrics!("block input operations", |r: &RUsage| r.inblock),
+        );
+        map.insert(
+            CsvColumn::OuBlock,
+            rusage_metrics!("block output operations", |r: &RUsage| r.oublock),
+        );
+        map.insert(
+            CsvColumn::MsgSent,
+            rusage_metrics!("IPC messages sent", |r: &RUsage| r.msgsnd),
+        );
+        map.insert(
+            CsvColumn::MsgRecv,
+            rusage_metrics!("IPC messages received", |r: &RUsage| r.msgrcv),
+        );
+        map.insert(
+            CsvColumn::NSignals,
+            rusage_metrics!("signals received", |r: &RUsage| r.nsignals),
+        );
+        map.insert(
+            CsvColumn::NVCsw,
+            rusage_metrics!("voluntary context switches", |r: &RUsage| r.nvcsw),
+        );
+        map.insert(
+            CsvColumn::NIvCsw,
+            rusage_metrics!("involuntary context switches", |r: &RUsage| r.nivcsw),
         );
 
         map
@@ -322,37 +283,18 @@ pub fn metrics_generators() -> &'static BTreeMap<String, ColumnGenerator<(usize,
 }
 
 /// Generate a [`Table`] of metrics for this experiment.
-///
-/// Header:
-/// ```text
-/// | run id | program | input file | input args | afterscript | slurm? | file system status | exit code | wall time | user time | system time | max rss    | minor pf | major pf | voluntary cs | involuntary cs |
-/// ```
-pub fn metrics_table(experiment: &Experiment, statuses: &ExperimentStatus) -> Result<Table> {
-    let header = [
-        "program",
-        "file",
-        "args",
-        "group",
-        "afterscript",
-        "slurm",
-        "fs_status",
-        "exit_code",
-        "wall_time",
-        "user_time",
-        "system_time",
-        "maxrss",
-        "minflt",
-        "majflt",
-        "nvcsw",
-        "nivcsw",
-    ];
-
+/// TODO: better documentation
+pub fn metrics_table(
+    experiment: &Experiment,
+    header: Vec<CsvColumn>,
+    status_tuples: Vec<(usize, Status)>,
+) -> Result<Table> {
     let mut metrics_table = Table {
         columns: 1,
         header: Some(vec!["run id".into()]),
-        body: statuses
-            .keys()
-            .map(|id| vec![format!("run {id}")])
+        body: status_tuples
+            .iter()
+            .map(|(id, _)| vec![format!("run {id}")])
             .collect(),
         footer: Some(vec!["average".into()]),
     };
@@ -360,8 +302,7 @@ pub fn metrics_table(experiment: &Experiment, statuses: &ExperimentStatus) -> Re
     let generators = metrics_generators();
 
     for column_name in header {
-        let status_tuples: Vec<(usize, Status)> = statuses.clone().into_iter().collect();
-        let col = generators.get(column_name).unwrap();
+        let col = generators[&column_name].clone();
         let column = col.generate(experiment, &status_tuples)?;
         metrics_table.append_column(column);
     }
@@ -369,88 +310,57 @@ pub fn metrics_table(experiment: &Experiment, statuses: &ExperimentStatus) -> Re
     Ok(metrics_table)
 }
 
-/// Generate a [`Table`] of metrics for this experiment, with averages per input
-/// group.
-pub fn groups_table(_experiment: &Experiment, _statuses: &ExperimentStatus) -> Result<Vec<Table>> {
-    // let mut grouped_runs: BTreeMap<String, Vec<usize>> = BTreeMap::new();
-    //
-    // for (run_id, run_data) in experiment.runs.iter().enumerate() {
-    //     if let Some(group) = &run_data.group {
-    //         grouped_runs
-    //             .entry(group.clone())
-    //             .and_modify(|e| e.push(run_id))
-    //             .or_insert(vec![run_id]);
-    //     }
-    // }
-    //
-    // let mut tables = vec![];
-    // for (group, runs) in grouped_runs {
-    //     // let mut groups_table = Table {
-    //     //     header: Some([
-    //     //         "group".into(),
-    //     //         "run id".into(),
-    //     //         "program".into(),
-    //     //         "input file".into(),
-    //     //         "input args".into(),
-    //     //         "fs status".into(),
-    //     //         "exit code".into(),
-    //     //         "wall time".into(),
-    //     //         "user time".into(),
-    //     //         "system time".into(),
-    //     //         "max rss".into(),
-    //     //         "minor pf".into(),
-    //     //         "major pf".into(),
-    //     //         "voluntary cs".into(),
-    //     //         "involuntary cs".into(),
-    //     //     ]),
-    //     //     body: vec![],
-    //     //     footer: None,
-    //     // };
-    //
-    //     let mut averages = [0f64; 8];
-    //     let mut count = 0.0;
-    //     for run_id in runs {
-    //         let status = &statuses[&run_id];
-    //         let mut record: [String; 15] = Default::default();
-    //
-    //         record[0] = group.clone();
-    //         record[1] = run_id.to_string();
-    //         record[2] = experiment
-    //             .get_program(&experiment.runs[run_id])?
-    //             .name
-    //             .clone();
-    //         record[3] = format!("{:?}", &experiment.runs[run_id].input.file);
-    //         record[4] = format!("{:?}", &experiment.runs[run_id].input.args);
-    //
-    //         // let (fs_metrics, completed) = fs_metrics(status, &mut averages);
-    //         // if completed {
-    //         //     count += 1.0;
-    //         // }
-    //         // fs_metrics
-    //         //     .iter()
-    //         //     .enumerate()
-    //         //     .for_each(|(i, x)| record[i + 5] = x.clone());
-    //
-    //         // groups_table.body.push(record);
-    //     }
-    //
-    //     averages = averages.map(|x| x / count);
-    //
-    //     let mut footer: [String; 15] = Default::default();
-    //     footer[6] = "Average:".into();
-    //     footer[7] = format!("{:?}", Duration::from_nanos(averages[0] as u64));
-    //     footer[8] = format!("{:?}", Duration::from_nanos(averages[1] as u64));
-    //     footer[9] = format!("{:?}", Duration::from_nanos(averages[2] as u64));
-    //     averages
-    //         .iter()
-    //         .skip(3)
-    //         .enumerate()
-    //         .for_each(|(i, a)| footer[i + 10] = format!("{a:.2}"));
-    //
-    //     // groups_table.footer = Some(footer);
-    //
-    //     tables.push(groups_table);
-    // }
-    todo!()
-    // Ok(tables)
+/// Generate a vector of [`Table`]s from an experiment and its status.
+pub fn tables_from_command(
+    experiment: &Experiment,
+    statuses: &ExperimentStatus,
+    fmt: CsvFormatting,
+) -> Result<Vec<Table>> {
+    let header = fmt.format.unwrap_or(vec![
+        CsvColumn::Program,
+        CsvColumn::File,
+        CsvColumn::Args,
+        CsvColumn::Group,
+        CsvColumn::Afterscript,
+        CsvColumn::Slurm,
+        CsvColumn::FsStatus,
+        CsvColumn::ExitCode,
+        CsvColumn::WallTime,
+        CsvColumn::UserTime,
+        CsvColumn::SystemTime,
+    ]);
+
+    let mut groups: Vec<Vec<(usize, Status)>> = vec![statuses.clone().into_iter().collect()];
+
+    for condition in fmt.group {
+        let mut temp = vec![];
+        for g in groups {
+            match condition {
+                GroupBy::Group => {
+                    g.chunk_by(|(a_id, _), (b_id, _)| {
+                        experiment.runs[*a_id].group == experiment.runs[*b_id].group
+                    })
+                    .for_each(|x| temp.push(x.to_vec()));
+                }
+                GroupBy::Input => {
+                    g.chunk_by(|(a_id, _), (b_id, _)| {
+                        experiment.runs[*a_id].input == experiment.runs[*b_id].input
+                    })
+                    .for_each(|x| temp.push(x.to_vec()));
+                }
+                GroupBy::Program => {
+                    g.chunk_by(|(a_id, _), (b_id, _)| {
+                        experiment.runs[*a_id].program == experiment.runs[*b_id].program
+                    })
+                    .for_each(|x| temp.push(x.to_vec()));
+                }
+            }
+        }
+        groups = temp;
+    }
+
+    groups
+        .into_iter()
+        .map(|runs| metrics_table(experiment, header.clone(), runs))
+        .collect()
 }

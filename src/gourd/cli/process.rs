@@ -13,6 +13,7 @@ use colog::formatter;
 use csv::Writer;
 use gourd_lib::bailc;
 use gourd_lib::config::Config;
+use gourd_lib::constants::CMD_DOC_STYLE;
 use gourd_lib::constants::CMD_STYLE;
 use gourd_lib::constants::ERROR_STYLE;
 use gourd_lib::constants::PATH_STYLE;
@@ -34,8 +35,7 @@ use super::def::ContinueStruct;
 use super::def::RerunOptions;
 use super::log::LogTokens;
 use super::printing::get_styles;
-use crate::analyse::csvs::groups_table;
-use crate::analyse::csvs::metrics_table;
+use crate::analyse::csvs::tables_from_command;
 use crate::analyse::plotting::analysis_plot;
 use crate::chunks::Chunkable;
 use crate::cli::def::AnalSubcommand;
@@ -254,18 +254,29 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             }
         }
 
+        // handle plotting separately
         GourdCommand::Analyse(AnalyseStruct {
             experiment_id,
-            subcommand: AnalSubcommand::Plot { format },
+            subcommand:
+                AnalSubcommand::Plot {
+                    format,
+                    save: save_a,
+                },
+            save: save_b,
         }) => {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             let statuses = experiment.status(&file_system)?;
 
             let out_path =
-                experiment
-                    .home
-                    .join(format!("plot_{}.{}", experiment.seq, format.ext()));
+                save_a
+                    .clone()
+                    .or(save_b.clone())
+                    .unwrap_or(experiment.home.join(format!(
+                        "plot_{}.{}",
+                        experiment.seq,
+                        format.ext()
+                    )));
 
             if statuses
                 .values()
@@ -291,68 +302,52 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
 
         GourdCommand::Analyse(AnalyseStruct {
             experiment_id,
-            subcommand: AnalSubcommand::Groups,
+            subcommand: AnalSubcommand::Table(csv),
+            save,
         }) => {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
-
             let statuses = experiment.status(&file_system)?;
 
-            let tables = groups_table(&experiment, &statuses)?;
+            let tables = tables_from_command(&experiment, &statuses, csv.clone())?;
 
-            info!("Groups for experiment {}", experiment.seq);
-            for table in tables {
-                info!("\n{table}");
-            }
-            info!("Run with {CMD_STYLE}--save{CMD_STYLE:#} to get the tables in CSV format.");
-        }
-
-        GourdCommand::Analyse(AnalyseStruct {
-            experiment_id: _x,
-            subcommand: AnalSubcommand::Inputs,
-        }) => {
-            todo!();
-        }
-
-        GourdCommand::Analyse(AnalyseStruct {
-            experiment_id: _x,
-            subcommand: AnalSubcommand::Programs,
-        }) => {
-            todo!();
-        }
-
-        GourdCommand::Export(AnalyseStruct { experiment_id, .. }) => {
-            let experiment = read_experiment(experiment_id, cmd, &file_system)?;
-
-            let out_path = experiment
-                .home
-                .join(format!("experiment_{}.csv", experiment.seq));
-            let statuses = experiment.status(&file_system)?;
-
-            if statuses
-                .values()
-                .filter(|x| x.fs_status.completion.is_completed())
-                .count()
-                == 0
-            {
-                bailc!(
-                    "No runs have completed yet", ;
-                    "There are no results to export.", ;
-                    "Try again later. To see job status, use {CMD_STYLE}gourd status{CMD_STYLE:#}.",
-                );
-            }
-
-            let content = metrics_table(&experiment, &statuses)?;
-
-            if cmd.dry {
-                info!("Would have saved following csv:\n{}", content);
-                info!("To file:");
-                println!("{PATH_STYLE}{}{PATH_STYLE:#}", out_path.display());
+            if let Some(path) = &save.clone().or(csv.save.clone()) {
+                let count = tables.len();
+                if cmd.dry {
+                    info!("Would have saved {count} table(s) to {}", path.display());
+                } else {
+                    let mut writer = Writer::from_path(path)?;
+                    for table in tables {
+                        table.write_csv(&mut writer)?;
+                    }
+                    writer.flush()?;
+                    info!(
+                        "{count} Table{} saved to {PATH_STYLE}{}{PATH_STYLE:#}",
+                        if count > 1 { "s" } else { "" },
+                        path.display()
+                    );
+                }
             } else {
-                let mut writer = Writer::from_path(out_path.clone())?;
-                content.write_csv(&mut writer)?;
-
-                info!("{PRIMARY_STYLE}Saved experiment results in:{PRIMARY_STYLE:#}");
-                println!("{PATH_STYLE}{}{PATH_STYLE:#}", out_path.display());
+                for table in tables {
+                    info!(
+                        "Table for {TERTIARY_STYLE}{}{TERTIARY_STYLE:#} runs",
+                        table.body.len()
+                    );
+                    info!("{}", table);
+                }
+                info!(
+                    "Run with {CMD_STYLE} --save=\"path/to/location.csv\" {CMD_STYLE:#} \
+                    to save to a csv file"
+                );
+                if csv.format.is_none() {
+                    info!(
+                        "Hint: use the {CMD_DOC_STYLE} --format {CMD_DOC_STYLE:#} \
+                        flag to customise the table columns"
+                    );
+                    info!(
+                        "Example: {CMD_STYLE} \
+                        --format=\"program,group,wall-time,n-iv-csw\" {CMD_STYLE:#}"
+                    );
+                }
             }
         }
 
