@@ -40,7 +40,6 @@ pub fn analysis_plot(
     match plot_type {
         PlotType::Png => make_plot(data, BitMapBackend::new(&path, PLOT_SIZE))?,
         PlotType::Svg => make_plot(data, SVGBackend::new(&path, PLOT_SIZE))?,
-        // PlotType::Csv => bailc!("Plotting in CSV is not yet implemented!"),
     }
 
     Ok(path.into())

@@ -61,6 +61,7 @@ impl Display for FsState {
             FsState::Running => write!(f, "running!"),
             FsState::Completed(metrics) => {
                 if f.sign_minus() {
+                    // reduced output, guarantees similar length output to pending? and running!
                     write!(f, "completed")
                 } else if metrics.exit_code == 0 {
                     if f.alternate() {

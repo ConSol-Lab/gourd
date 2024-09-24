@@ -2,6 +2,9 @@
 // It is a resource compiled independently in the unit tests for `runner.rs`.
 #![allow(unused)]
 
+/// Fibonacci sequence, iterative implementation O(n)
+///
+/// Accept one u128 through **stdin** and print the fibonacci number in **stdout**
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let mut input_line = String::new();
