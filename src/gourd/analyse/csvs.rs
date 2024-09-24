@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-use std::sync::OnceLock;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -46,6 +44,11 @@ fn create_column_full<X>(
 
 /// Shorthand to create a column generator for a metric that is derived from the
 /// `rusage`
+// We cannot use a higher order function here because [`ColumnGenerator`] takes
+// an fn() -> .. and not a closure (impl Fn()), for conciseness and readability
+// there. the downside is that you can't use any environment variables in the
+// closure, and that includes arguments passed to the higher order function.
+// Macros are evaluated before compilation and thus circumvent this issue.
 macro_rules! rusage_metrics {
     ($name:expr, $field:expr) => {
         create_column_full(
@@ -74,212 +77,154 @@ macro_rules! rusage_metrics {
     };
 }
 
-/// Create a map of column generators for the metrics that can be included in
-/// CSV analysis
-pub fn metrics_generators() -> &'static BTreeMap<CsvColumn, ColumnGenerator<(usize, Status)>> {
-    /// A `OnceLock` to ensure that the metrics generators are only created once
-    /// (and not for every table in case of grouping).
-    static ONCE: OnceLock<BTreeMap<CsvColumn, ColumnGenerator<(usize, Status)>>> = OnceLock::new();
-    ONCE.get_or_init(|| {
-        let mut map = BTreeMap::new();
-        map.insert(
-            CsvColumn::Program,
-            create_column("program", |exp: &Experiment, x: &(usize, Status)| {
-                Ok(exp.get_program(&exp.runs[x.0])?.name.clone())
-            }),
-        );
-        map.insert(
-            CsvColumn::File,
-            create_column("input file", |exp, x: &(usize, Status)| {
-                Ok(format!("{:?}", &exp.runs[x.0].input.file))
-            }),
-        );
-        map.insert(
-            CsvColumn::Args,
-            create_column("input args", |exp, x: &(usize, Status)| {
-                Ok(format!("{:?}", &exp.runs[x.0].input.args))
-            }),
-        );
-        map.insert(
-            CsvColumn::Group,
-            create_column("input group", |exp: &Experiment, x: &(usize, Status)| {
-                Ok(exp.runs[x.0].group.clone().unwrap_or("N/A".to_string()))
-            }),
-        );
-        map.insert(
-            CsvColumn::Afterscript,
-            create_column("afterscript", |_, x| {
-                Ok(x.1
-                    .fs_status
-                    .afterscript_completion
-                    .clone()
-                    .unwrap_or(Some("N/A".to_string()))
-                    .unwrap_or("done, no label".to_string()))
-            }),
-        );
-        map.insert(
-            CsvColumn::Slurm,
-            create_column("slurm", |_, x| {
-                Ok(x.1
-                    .slurm_status
-                    .map_or("N/A".to_string(), |x| x.completion.to_string()))
-            }),
-        );
-        map.insert(
-            CsvColumn::FsStatus,
-            create_column("file system status", |_, x| {
-                Ok(format!("{:-}", x.1.fs_status.completion))
-            }),
-        );
-        map.insert(
-            CsvColumn::ExitCode,
-            ColumnGenerator {
-                header: Some("exit code".to_string()),
-                body: |_, x: &(usize, Status)| {
-                    Ok(match &x.1.fs_status.completion {
-                        FsState::Completed(measurement) => {
-                            format!("{:?}", measurement.exit_code)
-                        }
-                        _ => "N/A".to_string(),
-                    })
-                },
-                footer: |_, _| Ok(None),
+
+/// Get a [`ColumnGenerator`] for every possible column of [`CsvColumn`].
+pub fn metrics_generators(col: CsvColumn) -> ColumnGenerator<(usize, Status)> {
+    match col {
+        CsvColumn::Program => create_column("program", |exp: &Experiment, x: &(usize, Status)| {
+            Ok(exp.get_program(&exp.runs[x.0])?.name.clone())
+        }),
+        CsvColumn::File => create_column("input file", |exp, x: &(usize, Status)| {
+            Ok(exp.runs[x.0]
+                .input
+                .file
+                .as_ref()
+                .map_or("None".to_string(), |p| format!("{:?}", p)))
+        }),
+        CsvColumn::Args => create_column("input args", |exp, x: &(usize, Status)| {
+            Ok(format!("{:?}", &exp.runs[x.0].input.args))
+        }),
+        CsvColumn::Group => create_column("group", |exp: &Experiment, x: &(usize, Status)| {
+            Ok(exp.runs[x.0].group.clone().unwrap_or("N/A".to_string()))
+        }),
+        CsvColumn::Label => create_column("label", |_, x| {
+            Ok(x.1
+                .fs_status
+                .afterscript_completion
+                .clone()
+                .unwrap_or(Some("N/A".to_string()))
+                .unwrap_or("no label".to_string()))
+        }),
+        CsvColumn::Afterscript => create_column("afterscript", |exp, x| {
+            exp.runs[x.0]
+                .afterscript_output_path
+                .as_ref()
+                .map_or(Ok("N/A".to_string()), |p| {
+                    std::fs::read_to_string(p).map_err(Into::into)
+                })
+        }),
+        CsvColumn::Slurm => create_column("slurm", |_, x| {
+            Ok(x.1
+                .slurm_status
+                .map_or("N/A".to_string(), |x| x.completion.to_string()))
+        }),
+        CsvColumn::FsStatus => create_column("fs status", |_, x| {
+            Ok(format!("{:-}", x.1.fs_status.completion))
+        }),
+        CsvColumn::ExitCode => ColumnGenerator {
+            header: Some("exit".to_string()),
+            body: |_, x: &(usize, Status)| {
+                Ok(match &x.1.fs_status.completion {
+                    FsState::Completed(measurement) => {
+                        format!("{:?}", measurement.exit_code)
+                    }
+                    _ => "N/A".to_string(),
+                })
             },
-        );
-        map.insert(
-            CsvColumn::WallTime,
-            create_column_full(
-                "wall time",
-                |_, x| {
-                    Ok(match &x.1.fs_status.completion {
-                        FsState::Completed(measurement) => format!("{:?}", measurement.wall_micros),
-                        _ => "N/A".to_string(),
-                    })
-                },
-                |_, runs| {
-                    let (dt, n) = runs.iter().fold((0, 0), |(sum, count), run| {
-                        match &run.1.fs_status.completion {
-                            FsState::Completed(m) => (sum + m.wall_micros.as_nanos(), count + 1),
-                            _ => (sum, count),
-                        }
-                    });
+            footer: |_, _| Ok(None),
+        },
+        CsvColumn::WallTime => create_column_full(
+            "wall time",
+            |_, x| {
+                Ok(match &x.1.fs_status.completion {
+                    FsState::Completed(measurement) => {
+                        format!("{:.5}s", measurement.wall_micros.as_secs_f32())
+                    }
+                    _ => "N/A".to_string(),
+                })
+            },
+            |_, runs| {
+                let (dt, n) = runs.iter().fold((0, 0), |(sum, count), run| {
+                    match &run.1.fs_status.completion {
+                        FsState::Completed(m) => (sum + m.wall_micros.as_nanos(), count + 1),
+                        _ => (sum, count),
+                    }
+                });
 
-                    Ok(Some(format!("{:?}", Duration::from_nanos((dt / n) as u64))))
-                },
-            ),
-        );
-        map.insert(
-            CsvColumn::UserTime,
-            create_column_full(
-                "user time",
-                |_, x| {
-                    Ok(match &x.1.fs_status.completion {
+                Ok(Some(format!(
+                    "{:.5}s",
+                    Duration::from_nanos((dt / n) as u64).as_secs_f32()
+                )))
+            },
+        ),
+        CsvColumn::UserTime => create_column_full(
+            "user time",
+            |_, x| {
+                Ok(match &x.1.fs_status.completion {
+                    FsState::Completed(Measurement {
+                        rusage: Some(r), ..
+                    }) => format!("{:.5}s", r.utime.as_secs_f32()),
+                    _ => "N/A".to_string(),
+                })
+            },
+            |_, runs| {
+                let (dt, n) = runs.iter().fold((0, 0), |(sum, count), run| {
+                    match &run.1.fs_status.completion {
                         FsState::Completed(Measurement {
                             rusage: Some(r), ..
-                        }) => format!("{:?}", r.utime),
-                        _ => "N/A".to_string(),
-                    })
-                },
-                |_, runs| {
-                    let (dt, n) = runs.iter().fold((0, 0), |(sum, count), run| {
-                        match &run.1.fs_status.completion {
-                            FsState::Completed(Measurement {
-                                rusage: Some(r), ..
-                            }) => (sum + r.utime.as_nanos(), count + 1),
-                            _ => (sum, count),
-                        }
-                    });
+                        }) => (sum + r.utime.as_nanos(), count + 1),
+                        _ => (sum, count),
+                    }
+                });
 
-                    Ok(Some(format!("{:?}", Duration::from_nanos((dt / n) as u64))))
-                },
-            ),
-        );
-        map.insert(
-            CsvColumn::SystemTime,
-            create_column_full(
-                "system time",
-                |_, x| {
-                    Ok(match &x.1.fs_status.completion {
+                Ok(Some(format!(
+                    "{:.5}s",
+                    Duration::from_nanos((dt / n) as u64).as_secs_f32()
+                )))
+            },
+        ),
+        CsvColumn::SystemTime => create_column_full(
+            "system time",
+            |_, x| {
+                Ok(match &x.1.fs_status.completion {
+                    FsState::Completed(Measurement {
+                        rusage: Some(r), ..
+                    }) => format!("{:.5}s", r.stime.as_secs_f32()),
+                    _ => "N/A".to_string(),
+                })
+            },
+            |_, runs| {
+                let (dt, n) = runs.iter().fold((0, 0), |(sum, count), run| {
+                    match &run.1.fs_status.completion {
                         FsState::Completed(Measurement {
                             rusage: Some(r), ..
-                        }) => format!("{:?}", r.stime),
-                        _ => "N/A".to_string(),
-                    })
-                },
-                |_, runs| {
-                    let (dt, n) = runs.iter().fold((0, 0), |(sum, count), run| {
-                        match &run.1.fs_status.completion {
-                            FsState::Completed(Measurement {
-                                rusage: Some(r), ..
-                            }) => (sum + r.stime.as_nanos(), count + 1),
-                            _ => (sum, count),
-                        }
-                    });
+                        }) => (sum + r.stime.as_nanos(), count + 1),
+                        _ => (sum, count),
+                    }
+                });
 
-                    Ok(Some(format!("{:?}", Duration::from_nanos((dt / n) as u64))))
-                },
-            ),
-        );
+                Ok(Some(format!(
+                    "{:.5}s",
+                    Duration::from_nanos((dt / n) as u64).as_secs_f32()
+                )))
+            },
+        ),
 
-        map.insert(
-            CsvColumn::MaxRSS,
-            rusage_metrics!("max rss", |r: &RUsage| r.maxrss),
-        );
-        map.insert(
-            CsvColumn::IxRSS,
-            rusage_metrics!("shared mem size", |r: &RUsage| r.ixrss),
-        );
-        map.insert(
-            CsvColumn::IdRSS,
-            rusage_metrics!("unshared mem size", |r: &RUsage| r.idrss),
-        );
-        map.insert(
-            CsvColumn::IsRSS,
-            rusage_metrics!("unshared stack size", |r: &RUsage| r.isrss),
-        );
-        map.insert(
-            CsvColumn::MinFlt,
-            rusage_metrics!("soft page faults", |r: &RUsage| r.minflt),
-        );
-        map.insert(
-            CsvColumn::MajFlt,
-            rusage_metrics!("hard page faults", |r: &RUsage| r.majflt),
-        );
-        map.insert(
-            CsvColumn::NSwap,
-            rusage_metrics!("swaps", |r: &RUsage| r.nswap),
-        );
-        map.insert(
-            CsvColumn::InBlock,
-            rusage_metrics!("block input operations", |r: &RUsage| r.inblock),
-        );
-        map.insert(
-            CsvColumn::OuBlock,
-            rusage_metrics!("block output operations", |r: &RUsage| r.oublock),
-        );
-        map.insert(
-            CsvColumn::MsgSent,
-            rusage_metrics!("IPC messages sent", |r: &RUsage| r.msgsnd),
-        );
-        map.insert(
-            CsvColumn::MsgRecv,
-            rusage_metrics!("IPC messages received", |r: &RUsage| r.msgrcv),
-        );
-        map.insert(
-            CsvColumn::NSignals,
-            rusage_metrics!("signals received", |r: &RUsage| r.nsignals),
-        );
-        map.insert(
-            CsvColumn::NVCsw,
-            rusage_metrics!("voluntary context switches", |r: &RUsage| r.nvcsw),
-        );
-        map.insert(
-            CsvColumn::NIvCsw,
-            rusage_metrics!("involuntary context switches", |r: &RUsage| r.nivcsw),
-        );
-
-        map
-    })
+        CsvColumn::MaxRSS => rusage_metrics!("max rss", |r: &RUsage| r.maxrss),
+        CsvColumn::IxRSS => rusage_metrics!("shared mem size", |r: &RUsage| r.ixrss),
+        CsvColumn::IdRSS => rusage_metrics!("unshared mem size", |r: &RUsage| r.idrss),
+        CsvColumn::IsRSS => rusage_metrics!("unshared stack size", |r: &RUsage| r.isrss),
+        CsvColumn::MinFlt => rusage_metrics!("soft page faults", |r: &RUsage| r.minflt),
+        CsvColumn::MajFlt => rusage_metrics!("hard page faults", |r: &RUsage| r.majflt),
+        CsvColumn::NSwap => rusage_metrics!("swaps", |r: &RUsage| r.nswap),
+        CsvColumn::InBlock => rusage_metrics!("block input operations", |r: &RUsage| r.inblock),
+        CsvColumn::OuBlock => rusage_metrics!("block output operations", |r: &RUsage| r.oublock),
+        CsvColumn::MsgSent => rusage_metrics!("IPC messages sent", |r: &RUsage| r.msgsnd),
+        CsvColumn::MsgRecv => rusage_metrics!("IPC messages received", |r: &RUsage| r.msgrcv),
+        CsvColumn::NSignals => rusage_metrics!("signals received", |r: &RUsage| r.nsignals),
+        CsvColumn::NVCsw => rusage_metrics!("voluntary context switches", |r: &RUsage| r.nvcsw),
+        CsvColumn::NIvCsw => rusage_metrics!("involuntary context switches", |r: &RUsage| r.nivcsw),
+    }
 }
 
 /// Generate a [`Table`] of metrics for this experiment.
@@ -299,11 +244,8 @@ pub fn metrics_table(
         footer: Some(vec!["average".into()]),
     };
 
-    let generators = metrics_generators();
-
     for column_name in header {
-        let col = generators[&column_name].clone();
-        let column = col.generate(experiment, &status_tuples)?;
+        let column = metrics_generators(column_name).generate(experiment, &status_tuples)?;
         metrics_table.append_column(column);
     }
 
@@ -318,16 +260,9 @@ pub fn tables_from_command(
 ) -> Result<Vec<Table>> {
     let header = fmt.format.unwrap_or(vec![
         CsvColumn::Program,
-        CsvColumn::File,
-        CsvColumn::Args,
-        CsvColumn::Group,
-        CsvColumn::Afterscript,
         CsvColumn::Slurm,
         CsvColumn::FsStatus,
-        CsvColumn::ExitCode,
         CsvColumn::WallTime,
-        CsvColumn::UserTime,
-        CsvColumn::SystemTime,
     ]);
 
     let mut groups: Vec<Vec<(usize, Status)>> = vec![statuses.clone().into_iter().collect()];

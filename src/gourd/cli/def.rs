@@ -169,8 +169,8 @@ pub struct AnalyseStruct {
     pub subcommand: AnalSubcommand,
 
     /// If you want to save to a specific file
-    #[arg(long)]
-    pub save: Option<PathBuf>,
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
 }
 
 /// Enum for subcommands of the `run` subcommand.
@@ -185,8 +185,8 @@ pub enum AnalSubcommand {
         format: PlotType,
 
         /// If you want to save to a specific file
-        #[arg(long)]
-        save: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
     },
 
     /// Generate tables for the metrics of the runs in this experiment.
@@ -208,8 +208,8 @@ pub struct CsvFormatting {
     pub format: Option<Vec<CsvColumn>>,
 
     /// If you want to save to a specific file
-    #[arg(long)]
-    pub save: Option<PathBuf>,
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
 }
 
 /// Choice of grouping together runs based on equality conditions
@@ -235,6 +235,8 @@ pub enum CsvColumn {
     /// The group that the run was in.
     Group,
     /// The afterscript that was run.
+    Label,
+    /// The afterscript output content.
     Afterscript,
     /// The slurm completion status of the run.
     Slurm,
@@ -281,8 +283,6 @@ pub enum CsvColumn {
 /// Enum for the output format of the analysis.
 #[derive(ValueEnum, Debug, Clone, Default, Copy)]
 pub enum PlotType {
-    // /// Output a CSV of a cactus plot.
-    // Csv,
     /// Output an SVG cactus plot.
     Svg,
 
@@ -295,7 +295,6 @@ impl PlotType {
     /// get the file extension for this plot type
     pub fn ext(&self) -> &str {
         match self {
-            // PlotType::Csv => "csv",
             PlotType::Svg => "svg",
             PlotType::Png => "png",
         }

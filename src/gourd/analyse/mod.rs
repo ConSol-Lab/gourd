@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::io::Write;
+use std::path::Path;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -107,7 +108,7 @@ impl Table {
         col_widths
     }
 
-    /// Write this table to a [`csv::Writer`]
+    /// Write this table to a [`Writer`]
     pub fn write_csv<W: Write>(&self, writer: &mut Writer<W>) -> Result<()> {
         if let Some(h) = &self.header {
             writer.write_record(h)?;
@@ -117,10 +118,16 @@ impl Table {
             writer.write_record(row)?;
         }
 
-        if let Some(f) = &self.footer {
-            writer.write_record(f)?;
-        }
+        // the footer is omitted in csv output to make analysis easier.
 
+        Ok(())
+    }
+
+    /// Write this table to a file at the given path.
+    pub fn write_to_path(&self, path: &Path) -> Result<()> {
+        let mut writer = Writer::from_path(path).context("Failed to open file for writing")?;
+        self.write_csv(&mut writer)?;
+        writer.flush()?;
         Ok(())
     }
 
@@ -160,37 +167,47 @@ impl Table {
 
 impl Display for Table {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f)?;
-        let col_widths = self.column_widths();
-        if let Some(header) = &self.header {
-            for (width, value) in col_widths.iter().zip(header.iter()) {
-                write!(f, "| {: <width$} ", value)?;
+        if f.sign_minus() {
+            // reduced output
+            for row in self.body.iter() {
+                writeln!(f)?;
+                for value in row.iter() {
+                    write!(f, "{}\t", value)?;
+                }
             }
-            writeln!(f, "|")?;
+        } else {
+            writeln!(f)?;
+            let col_widths = self.column_widths();
+            if let Some(header) = &self.header {
+                for (width, value) in col_widths.iter().zip(header.iter()) {
+                    write!(f, "| {: <width$} ", value)?;
+                }
+                writeln!(f, "|")?;
 
-            for width in col_widths.iter() {
-                write!(f, "*-{}-", "-".repeat(*width))?;
+                for width in col_widths.iter() {
+                    write!(f, "*-{}-", "-".repeat(*width))?;
+                }
+                writeln!(f, "*")?;
             }
-            writeln!(f, "*")?;
-        }
 
-        for row in self.body.iter() {
-            for (width, value) in col_widths.iter().zip(row.iter()) {
-                write!(f, "| {: <width$} ", value)?;
+            for row in self.body.iter() {
+                for (width, value) in col_widths.iter().zip(row.iter()) {
+                    write!(f, "| {: <width$} ", value)?;
+                }
+                writeln!(f, "|")?;
             }
-            writeln!(f, "|")?;
-        }
 
-        if let Some(footer) = &self.footer {
-            for width in col_widths.iter() {
-                write!(f, "*-{}-", "-".repeat(*width))?;
-            }
-            writeln!(f, "*")?;
+            if let Some(footer) = &self.footer {
+                for width in col_widths.iter() {
+                    write!(f, "*-{}-", "-".repeat(*width))?;
+                }
+                writeln!(f, "*")?;
 
-            for (width, value) in col_widths.iter().zip(footer.iter()) {
-                write!(f, "| {: <width$} ", value)?;
+                for (width, value) in col_widths.iter().zip(footer.iter()) {
+                    write!(f, "| {: <width$} ", value)?;
+                }
+                writeln!(f, "|")?;
             }
-            writeln!(f, "|")?;
         }
 
         Ok(())

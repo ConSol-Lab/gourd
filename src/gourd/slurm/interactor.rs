@@ -426,7 +426,7 @@ set -x
 
             if !output.status.success() {
                 bailc!("Failed to cancel runs", ;
-                    "SCancel printed: {}", String::from_utf8_lossy(&output.stderr);
+                    "\"scancel\" printed: {}", String::from_utf8_lossy(&output.stderr);
                     "",
                 );
             }
