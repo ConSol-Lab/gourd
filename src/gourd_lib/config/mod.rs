@@ -240,6 +240,7 @@ pub struct Label {
     /// The priority of the label. Higher numbers mean higher priority, and if
     /// label is present it will override lower priority labels, even if
     /// they are also present.
+    #[serde(default)]
     pub priority: u64,
 
     /// Whether using rerun failed will rerun this job- ie is this label a

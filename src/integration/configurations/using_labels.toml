@@ -4,7 +4,7 @@ metrics_path = ""
 experiments_folder = ""
 wrapper = ""
 
-warn_on_label_overlap = false
+warn_on_label_overlap = true
 
 [program.fibonacci]
 binary = "fibonacci"
@@ -35,4 +35,3 @@ arguments = ["hello"]
 
 [label.correct]
 regex = "55"
-priority = 1

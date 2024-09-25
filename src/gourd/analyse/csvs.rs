@@ -77,7 +77,6 @@ macro_rules! rusage_metrics {
     };
 }
 
-
 /// Get a [`ColumnGenerator`] for every possible column of [`CsvColumn`].
 pub fn metrics_generators(col: CsvColumn) -> ColumnGenerator<(usize, Status)> {
     match col {
