@@ -4,29 +4,34 @@ metrics_path = ""
 experiments_folder = ""
 wrapper = ""
 
-warn_on_label_overlap = true
+warn_on_label_overlap = false
+
+[program.fibonacci]
+binary = "slow_fib"
+afterscript = "./src/integration/programs/1.sh"
 
 [program.fast_fib]
 binary = "fast_fib"
-next = ["fast_fast_fib"]
 
 [program.fast_fast_fib]
 binary = "fast_fast_fib"
-
-[program.slow_fib]
-binary = "slow_fib"
-
-[program.hello]
-binary = "hello"
 
 [input.input_twelve]
 file = "./src/integration/inputs/12.in"
 arguments = ["12"]
 
+[input.input_five]
+file = "./src/integration/inputs/5.in"
+arguments = ["5"]
+
 [input.hello]
 file = "./src/integration/inputs/hello.in"
 arguments = ["hello"]
 
-[label.correct]
-regex = "144"
-priority = 1
+[label.output_was_one]
+regex = ".*1.*"
+priority = 4
+
+[label.output_was_not_one]
+regex = ".*"
+priority = 3

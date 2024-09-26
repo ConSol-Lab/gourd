@@ -9,5 +9,5 @@ binary = "slow_fib"
 arguments = []
 next = []
 
-[input.input_ten]
-file = "./src/integration/inputs/2.in"
+[input.input_twelve]
+file = "./src/integration/inputs/12.in"
