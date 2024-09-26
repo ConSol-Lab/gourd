@@ -1,4 +1,5 @@
 use std::fs;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::ExitStatus;
@@ -79,6 +80,27 @@ pub fn run_afterscript_for_run(
             "",
         ))?,
     ];
+
+    // on unix, check the file permissions and ensure the afterscript is executable.
+    #[cfg(unix)]
+    {
+        use anyhow::ensure;
+        use gourd_lib::constants::CMD_DOC_STYLE;
+
+        ensure!(
+            after_path
+                .metadata()
+                .with_context(ctx!("Could not get metadata for work_dir", ; "",))?
+                .permissions()
+                .mode()
+                & 0o111
+                != 0,
+            "The afterscript is not executable!\nTry {} chmod +x {:?} {:#}",
+            CMD_DOC_STYLE,
+            after_path,
+            CMD_DOC_STYLE,
+        );
+    }
 
     let exit_status = run_script(after_path, args, work_dir).with_context(ctx!(
         "Could not run the afterscript at {after_path:?} with job results at {res_path:?}", ;

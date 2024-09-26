@@ -6,27 +6,19 @@ wrapper = ""
 
 warn_on_label_overlap = true
 
+[program.fibonacci]
+binary = "slow_fib"
+
 [program.fast_fib]
 binary = "fast_fib"
-next = ["fast_fast_fib"]
 
 [program.fast_fast_fib]
 binary = "fast_fast_fib"
 
-[program.slow_fib]
-binary = "slow_fib"
-
-[program.hello]
-binary = "hello"
-
-[input.input_twelve]
+[input.input_twelev]
 file = "./src/integration/inputs/12.in"
 arguments = ["12"]
 
 [input.hello]
 file = "./src/integration/inputs/hello.in"
 arguments = ["hello"]
-
-[label.correct]
-regex = "144"
-priority = 1
