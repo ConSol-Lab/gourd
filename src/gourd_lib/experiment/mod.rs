@@ -83,6 +83,11 @@ pub struct InternalProgram {
 
 /// The input for a [`Run`], exactly as will be passed to the wrapper for
 /// execution.
+///
+/// `file`: [`Option`]<[`PathBuf`]> - A file whose contents to be passed into the
+/// program's `stdin`
+///
+/// `args`: [`Vec`]<[`String`]> - Command line arguments for this binary execution.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct RunInput {
     /// A file whose contents to be passed into the program's `stdin`
