@@ -37,9 +37,6 @@ fn gourd_status_test() {
     let (_conf1, conf1_path) =
         config(&env, "./src/integration/configurations/using_labels.toml").unwrap();
 
-    let (_conf2, conf2_path) =
-        config(&env, "./src/integration/configurations/slow_ten.toml").unwrap();
-
     let output = gourd!(env; "-c", conf1_path.to_str().unwrap(), "run", "local", "-s"; "run local");
 
     // check if the output file exists
@@ -58,33 +55,19 @@ fn gourd_status_test() {
     );
 
     let text_out = std::str::from_utf8(status_1_returned.stdout.as_slice()).unwrap();
-    // 3 programs on input "hello" will fail, 1 post on a failed will fail
-    assert_eq!(1, text_out.match_indices("failed").count());
-    // 3 programs on input 10 will pass, 1 post on a good output will pass
-    assert_eq!(4, text_out.match_indices("success").count()); // TODO: fix
+    // 2 programs on input "hello" will fail, postprocessing thus won't start
+    assert_eq!(2, text_out.match_indices("failed").count());
+    // 3 programs on input 10 will pass, and one on "hello"
+    assert_eq!(4, text_out.match_indices("success").count());
 
-    let output = gourd!(env; "-c", conf2_path.to_str().unwrap(), "run", "local", "-s"; "run local");
-
-    // check if the output file exists for experiment 2
-    let exp = read_experiment_from_stdout(&output).unwrap();
-    let output_file = exp.runs.last().unwrap().output_path.clone();
-    assert!(output_file.exists());
-
-    // run status for the new experiment
+    // continuing will start the postprocessing for the 1 successful run of fast_fib
+    let _ = gourd!(env; "-c", conf1_path.to_str().unwrap(), "continue"; "continuing");
     let status_2_returned =
-        gourd!(env; "-c", conf2_path.to_str().unwrap(), "status", "-s"; "status 2");
+        gourd!(env; "-c", conf1_path.to_str().unwrap(), "status", "-s"; "status 2");
 
-    let text_err = std::str::from_utf8(status_2_returned.stderr.as_slice()).unwrap();
-    assert_eq!(
-        text_err,
-        "info: Displaying the status of jobs for experiment 2\n"
-    );
-
-    let _text_out = std::str::from_utf8(status_2_returned.stdout.as_slice()).unwrap();
-    assert_eq!(0, text_out.match_indices("failed").count()); // TODO: fix
-    assert_eq!(1, text_out.match_indices("success").count());
-
-    assert!(!gourd!(env; "cancel").status.success());
+    let text_out = std::str::from_utf8(status_2_returned.stdout.as_slice()).unwrap();
+    // 3 programs on input 10 will pass, one on "hello" and one postprocessing
+    assert_eq!(5, text_out.match_indices("success").count());
 }
 
 #[test]

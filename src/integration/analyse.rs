@@ -1,38 +1,41 @@
-// use gourd_lib::config::UserInput;
-//
-// use crate::config;
-// use crate::gourd;
-// use crate::init;
-// use crate::save_gourd_toml;
+use crate::config;
+use crate::gourd;
+use crate::init;
 
-// #[test] TODO: ...
-// fn test_analyse_csv() {
-//     let env = init();
-//
-//     // Create a new experiment configuration in the tempdir.
-//     let conf = config!(&env; "fibonacci"; (
-//         "input_ten".to_string(),
-//         UserInput {
-//             file: None,
-//             glob: None,
-//             fetch: None,
-//             group: None,arguments: vec!["10".to_string()],
-//         },
-//     ));
-//
-//     // write the configuration to the tempdir
-//     let conf_path = save_gourd_toml(&conf, &env.temp_dir);
-//
-//     let _output = gourd!(env; "-c", conf_path.to_str().unwrap(),
-//         "run", "local", "-s"; "dry run local");
-//
-//     let _output = gourd!(env; "-c", conf_path.to_str().unwrap(),
-//     "analyse", "-o", "csv"; "analyse csv");
-//
-//     assert!(conf.experiments_folder.join("analysis_1.csv").exists());
-//
-//     let _output = gourd!(env; "-c", conf_path.to_str().unwrap(),
-//     "analyse", "-o", "plot-png"; "analyse png");
-//
-//     assert!(conf.experiments_folder.join("plot_1.png").exists());
-// }
+#[test]
+fn test_analyse_csv() {
+    let env = init();
+
+    // Create a new experiment configuration in the tempdir.
+    let (_, conf_path) = config(&env, "./src/integration/configurations/single_run.toml").unwrap();
+
+    let _ = gourd!(env; "-c", conf_path.to_str().unwrap(),
+        "run", "local", "-s"; "run local");
+
+    let output = gourd!(env; "-c", conf_path.to_str().unwrap(),
+        "analyse", "table", "-s", "--format=program,exit-code,afterscript"; "analyse csv");
+
+    let table = std::str::from_utf8(&output.stdout).unwrap();
+    assert!(table.contains("run 0"));
+    assert!(table.contains("fibonacci"));
+    assert!(table.contains("0"));
+    assert!(table.contains("N/A"));
+}
+
+#[test]
+fn test_analyse_csv_file() {
+    let env = init();
+
+    // Create a new experiment configuration in the tempdir.
+    let (conf, conf_path) =
+        config(&env, "./src/integration/configurations/single_run.toml").unwrap();
+
+    let _ = gourd!(env; "-c", conf_path.to_str().unwrap(),
+        "run", "local", "-s"; "run local");
+
+    let out_path = conf.experiments_folder.join("analysis_1.csv");
+    let _ = gourd!(env; "-c", conf_path.to_str().unwrap(),
+        "analyse", "table", "-s", "-o", out_path.to_str().unwrap(); "analyse csv");
+
+    assert!(out_path.exists());
+}

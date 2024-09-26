@@ -1,11 +1,8 @@
 use std::fs;
-use std::io::Read;
-use std::path::PathBuf;
 
 use tempdir::TempDir;
 
 use super::*;
-use crate::test_utils::REAL_FS;
 
 pub const PRE_PROGRAMMED_SH_SCRIPT: &str = r#"
 #!/bin/bash
@@ -32,8 +29,15 @@ fn test_get_resources() {
     assert!(tmp_dir.close().is_ok());
 }
 
+#[cfg(not(target_os = "macos"))]
+// this test fails when there's no internet connection and I work offline often
 #[test]
 fn test_downloading_from_url() {
+    use std::io::Read;
+    use std::path::PathBuf;
+
+    use crate::test_utils::REAL_FS;
+
     let output_name = "rustup-init.sh";
     let tmp_dir = TempDir::new("testing").unwrap();
     let file_path = tmp_dir.path().join(output_name);
