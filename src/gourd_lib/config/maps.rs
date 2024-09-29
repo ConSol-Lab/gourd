@@ -9,11 +9,16 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use glob::glob;
+use log::warn;
 
 use super::UserInput;
+use crate::constants::CMD_DOC_STYLE;
+use crate::constants::CMD_STYLE;
 use crate::constants::GLOB_ESCAPE;
+use crate::constants::HELP_STYLE;
 use crate::constants::INTERNAL_GLOB;
 use crate::constants::INTERNAL_PREFIX;
+use crate::constants::WARNING_STYLE;
 use crate::ctx;
 use crate::file_system::FileOperations;
 
@@ -121,6 +126,19 @@ fn explode_glob_set(
 
         Ok(true)
     } else {
+        if Path::new(arg).iter().count() > 1 {
+            warn!(
+                " \n\
+                It looks like you specified a path argument: \
+                {WARNING_STYLE}{arg}{WARNING_STYLE:#} \
+                but did not prefix it with {CMD_DOC_STYLE} {GLOB_ESCAPE} {CMD_DOC_STYLE:#}\n\
+                {HELP_STYLE}tip:{HELP_STYLE:#} Consider changing the argument to \
+                {CMD_STYLE}\"{GLOB_ESCAPE}{arg}\"{CMD_STYLE:#} \
+                in order to canonicalize the path and expand any globs.\n\n\
+                {HELP_STYLE}You can safely ignore this warning.{HELP_STYLE:#}\
+            "
+            );
+        }
         fill.insert(input.clone());
         Ok(false)
     }
