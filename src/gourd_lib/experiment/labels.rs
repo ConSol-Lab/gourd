@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use crate::config::Label;
 
-/// Label information of an [`Experiment`].
+/// Label information of an [`crate::experiment::Experiment`].
 ///
 /// (struct not complete)
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Default)]

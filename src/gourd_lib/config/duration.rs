@@ -13,7 +13,7 @@ where
     /// The default duration visitor.
     struct DurationVisitor;
 
-    impl<'de> Visitor<'de> for DurationVisitor {
+    impl Visitor<'_> for DurationVisitor {
         type Value = Duration;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
