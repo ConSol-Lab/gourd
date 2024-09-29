@@ -4,6 +4,7 @@ use anyhow::Context;
 use anyhow::Result;
 use git2::build::RepoBuilder;
 use log::debug;
+use log::info;
 
 use super::GitProgram;
 use crate::config::FetchedResource;
@@ -51,7 +52,7 @@ impl<const PERM: u32> FetchedResource<PERM> {
 
 /// Fetch a program from a git repository.
 pub fn fetch_git(program: &GitProgram) -> Result<PathBuf> {
-    debug!("Fetching git program from {}", program.git_uri);
+    info!("Fetching git program from {}", program.git_uri);
 
     let repo_base = PathBuf::from(format!("./{}", program.commit_id));
 
@@ -78,7 +79,7 @@ pub fn fetch_git(program: &GitProgram) -> Result<PathBuf> {
 
     let bc = program.build_command.clone();
 
-    debug!("Running build command {}", bc);
+    info!("Running build command {}", bc);
 
     let augumented = vec!["-c", &bc];
 

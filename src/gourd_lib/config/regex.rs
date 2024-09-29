@@ -44,7 +44,7 @@ impl<'de> Deserialize<'de> for Regex {
         /// The visitor for regex values.
         struct RegexVisitor;
 
-        impl<'de> Visitor<'de> for RegexVisitor {
+        impl Visitor<'_> for RegexVisitor {
             // see: https://serde.rs/impl-deserialize.html
             type Value = Regex;
 

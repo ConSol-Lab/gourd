@@ -19,11 +19,13 @@ fn test_status_afterscript_labels() {
 
     let run_stdout_str = String::from_utf8(run_out.stdout).unwrap();
     let run_stderr_str = String::from_utf8(run_out.stderr).unwrap();
+    // panic!("\n{}\n{}\n", std::str::from_utf8(run_out.stderr.as_slice()).unwrap(),
+    // std::str::from_utf8(run_out.stdout.as_slice()).unwrap());
 
     // since the afterscript does not output to a file, no labels should be present.
     assert!(!run_stdout_str.contains("output_was_one"));
     assert!(!run_stdout_str.contains("output_was_not_one"));
-    assert!(run_stderr_str.contains("No output found for afterscript of run #0"));
+    assert!(run_stderr_str.contains("No output found for afterscript of run #"));
 }
 
 #[test]

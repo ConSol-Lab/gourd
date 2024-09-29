@@ -35,7 +35,7 @@ pub fn canon_path(path: &Path, fs: &impl FileOperations) -> Result<PathBuf> {
 /// # Examples
 /// ```toml
 /// [inputs.test_input]
-/// arguments = [ "=glob=/test/**/*.jpg" ]
+/// arguments = [ "path|/test/**/*.jpg" ]
 /// ```
 ///
 /// May get expanded to:
