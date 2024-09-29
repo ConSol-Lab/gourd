@@ -259,7 +259,6 @@ pub struct Label {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    //
     // Basic settings.
     /// The path to a folder where the experiment output will be stored.
     pub output_path: PathBuf,
@@ -296,7 +295,10 @@ pub struct Config {
     //
     // Advanced settings.
     /// The command to execute to get to the wrapper.
-    #[serde(default = "WRAPPER_DEFAULT")]
+    #[serde(
+        default = "WRAPPER_DEFAULT",
+        skip_serializing_if = "wrapper_is_default"
+    )]
     pub wrapper: String,
 
     /// Allow custom labels to be assigned based on the afterscript output.
@@ -315,7 +317,7 @@ pub struct Config {
 
     /// If set to true, will throw an error when multiple labels are present in
     /// afterscript output.
-    #[serde(default = "LABEL_OVERLAP_DEFAULT")]
+    #[serde(default = "LABEL_OVERLAP_DEFAULT", skip_serializing_if = "is_default")]
     pub warn_on_label_overlap: bool,
 }
 
@@ -376,6 +378,18 @@ impl Config {
 
         Ok(inputs)
     }
+}
+
+/// Is a value equal to its default value.
+/// Used for skipping serialisation,
+fn is_default<T: Default + PartialEq>(t: &T) -> bool {
+    t == &T::default()
+}
+
+/// Is the wrapper at its default value.
+/// Used for skipping serialisation.
+fn wrapper_is_default(w: &String) -> bool {
+    w.eq(&WRAPPER_DEFAULT())
 }
 
 #[cfg(test)]
