@@ -92,7 +92,7 @@ pub const CMD_STYLE: Style = Style::new()
     .bg_color(Some(Ansi(AnsiColor::Green)))
     .fg_color(Some(Ansi(AnsiColor::Black)));
 
-/// Style of [`Path`]s and [`PathBuf`]s
+/// Style of [`std::path::Path`]s and [`PathBuf`]s
 pub const PATH_STYLE: Style = Style::new()
     .italic()
     .fg_color(Some(Ansi(AnsiColor::BrightBlue)));

@@ -28,7 +28,6 @@ use super::SlurmState;
 use super::Status;
 
 #[cfg(not(tarpaulin_include))] // There are no meaningful tests for an enum's Display implementation
-
 impl Display for SlurmState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

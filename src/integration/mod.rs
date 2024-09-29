@@ -30,6 +30,7 @@ mod init_interactive;
 mod rerun;
 mod run;
 mod version;
+#[cfg(target_os = "linux")]
 mod versioning;
 mod workflow;
 
@@ -92,6 +93,7 @@ macro_rules! gourd {
     };
 }
 
+// Save a gourd.toml in a tempdir
 fn save_gourd_toml(conf: &Config, temp_dir: &TempDir) -> PathBuf {
     let conf_path = temp_dir.path().join("gourd.toml");
     let conf_str = toml::to_string(&conf).unwrap();
@@ -227,6 +229,8 @@ fn init() -> TestEnv {
     }
 }
 
+/// Configure a new gourd environment from one of the gourd.toml(s) in the
+/// integration configurations folder
 pub fn config(env: &TestEnv, gourd_toml: &str) -> Result<(Config, PathBuf)> {
     let mut initial: Config = env.fs.try_read_toml(Path::new(gourd_toml))?;
 
@@ -240,6 +244,15 @@ pub fn config(env: &TestEnv, gourd_toml: &str) -> Result<(Config, PathBuf)> {
                     when writing integration tests!"
                 );
             }
+        }
+        if let Some(after) = &prog.afterscript {
+            prog.afterscript = Some(env.fs.canonicalize(after).unwrap());
+        }
+    });
+
+    initial.inputs.iter_mut().for_each(|(_, input)| {
+        if let Some(file) = &input.file {
+            input.file = Some(env.fs.canonicalize(file).unwrap())
         }
     });
 
