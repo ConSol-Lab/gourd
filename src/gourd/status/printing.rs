@@ -530,6 +530,11 @@ pub fn display_job(
                 f,
                 "{TERTIARY_STYLE}afterscript ran successfully{TERTIARY_STYLE:#}",
             )?;
+            writeln!(
+                f,
+                "output expected in: {PATH_STYLE}{:?}{PATH_STYLE:#}",
+                exp.afterscript_output_folder
+            )?;
 
             writeln!(f)?;
         }
