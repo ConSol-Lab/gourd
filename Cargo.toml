@@ -69,6 +69,7 @@ tokio = { version = "1", features = ["full"] }
 toml = "0.8.12"
 serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
+shellexpand = "=3.1.0"
 glob = "0.3.1"
 regex-lite = "0.1.5"
 

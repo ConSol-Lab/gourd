@@ -9,7 +9,6 @@ use log::warn;
 
 use super::FileSystemBasedStatus;
 use super::StatusProvider;
-use crate::post::afterscript::run_afterscript;
 use crate::post::labels::assign_label;
 use crate::status::FsState;
 
@@ -52,9 +51,8 @@ where
 
             let mut afterscript_completion = None;
 
-            if run.afterscript_output_path.is_some() && completion.has_succeeded() {
-                afterscript_completion = match Self::get_afterscript_status(run_id, experiment, fs)
-                {
+            if run.afterscript_output.is_some() && completion.has_succeeded() {
+                afterscript_completion = match Self::get_afterscript_status(run_id, experiment) {
                     Ok(status) => Some(status),
                     Err(e) => {
                         warn!(
@@ -81,19 +79,11 @@ where
 
 impl FileBasedProvider {
     /// Get the completion of an afterscript.
-    pub fn get_afterscript_status(
-        run_id: usize,
-        exp: &Experiment,
-        fs: &impl FileOperations,
-    ) -> Result<Option<String>> {
+    pub fn get_afterscript_status(run_id: usize, exp: &Experiment) -> Result<Option<String>> {
         let run = &exp.runs[run_id];
 
-        if let Some(file) = run.afterscript_output_path.clone() {
-            if !file.exists() {
-                run_afterscript(run_id, exp)?;
-            }
-
-            assign_label(exp, &file, fs)
+        if let Some(text_output) = run.afterscript_output.clone() {
+            assign_label(run_id, &text_output, exp)
         } else {
             Ok(None)
         }

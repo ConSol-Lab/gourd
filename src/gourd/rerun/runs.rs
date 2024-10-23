@@ -15,7 +15,7 @@ use crate::status::ExperimentStatus;
 /// Get the list of runs to rerun from the rerun options.
 pub fn get_runs_from_rerun_options(
     run_ids: &Option<Vec<usize>>,
-    experiment: &Experiment,
+    experiment: &mut Experiment,
     file_system: &mut impl FileOperations,
     script: bool,
 ) -> Result<Vec<usize>> {

@@ -5,6 +5,7 @@ use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 
+use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use git2::Repository;
@@ -205,10 +206,7 @@ impl FileOperations for FileSystemInteractor {
            "Ensure that you have sufficient permissions",
         ))?;
 
-        path.canonicalize().with_context(ctx!(
-          "Could not canonicalize {path:?}", ;
-          "Ensure that your path is valid",
-        ))
+        self.canonicalize(path)
     }
 
     fn set_permissions(&self, path: &Path, perms: u32) -> Result<()> {
@@ -233,9 +231,14 @@ impl FileOperations for FileSystemInteractor {
     }
 
     fn canonicalize(&self, path: &Path) -> Result<PathBuf> {
-        path.canonicalize().with_context(ctx!(
+        PathBuf::from(
+            shellexpand::full(path.to_str().ok_or(anyhow!("{path:?} is not valid utf8"))?)?
+                .to_string(),
+        )
+        .canonicalize()
+        .with_context(ctx!(
           "Could not canonicalize {path:?}", ;
-          "Ensure that your path is valid",
+          "Ensure that you provided a valid path",
         ))
     }
 
