@@ -50,6 +50,7 @@ use crate::experiments::ExperimentExt;
 use crate::init::init_experiment_setup;
 use crate::init::list_init_examples;
 use crate::local::run_local;
+use crate::post::afterscript::run_afterscripts_for_experiment;
 use crate::rerun;
 use crate::rerun::slurm::query_changing_resource_limits;
 use crate::slurm::checks::slurm_options_from_experiment;
@@ -185,7 +186,12 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 );
             } else {
                 info!(
-                    "Run {PRIMARY_STYLE}gourd status {}{PRIMARY_STYLE:#} to check on this experiment",
+                    "Run {PRIMARY_STYLE} gourd status {} {PRIMARY_STYLE:#} to check on this experiment",
+                    experiment.seq
+                );
+                info!(
+                    " or {PRIMARY_STYLE} gourd status {} -i <run number> {PRIMARY_STYLE:#}\
+                    to check on a specific run",
                     experiment.seq
                 );
             }
@@ -201,8 +207,11 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             full,
             ..
         }) => {
-            let experiment = read_experiment(experiment_id, cmd, &file_system)?;
+            let mut experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
+            // first run the afterscripts:
+            run_afterscripts_for_experiment(&mut experiment, &file_system)?;
+            // then get the statuses
             let statuses = experiment.status(&file_system)?;
 
             match run_id {
@@ -215,13 +224,15 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                         experiment.seq
                     );
 
+                    let run_count = experiment.runs.len();
+
                     if *blocking {
                         blocking_status(
                             &progress,
                             &experiment,
                             &mut file_system,
                             *full,
-                            experiment.runs.len(),
+                            run_count,
                         )?;
                     } else {
                         display_statuses(&mut stdout(), &experiment, &statuses, *full)?;
@@ -475,7 +486,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
 
             let selected_runs = rerun::runs::get_runs_from_rerun_options(
                 run_ids,
-                &experiment,
+                &mut experiment,
                 &mut file_system,
                 cmd.script,
             )?;

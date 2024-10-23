@@ -106,11 +106,9 @@ pub fn metrics_generators(col: CsvColumn) -> ColumnGenerator<(usize, Status)> {
         }),
         CsvColumn::Afterscript => create_column("afterscript", |exp, x| {
             exp.runs[x.0]
-                .afterscript_output_path
+                .afterscript_output
                 .as_ref()
-                .map_or(Ok("N/A".to_string()), |p| {
-                    std::fs::read_to_string(p).map_err(Into::into)
-                })
+                .map_or(Ok("N/A".to_string()), |p| Ok(p.trim().to_string()))
         }),
         CsvColumn::Slurm => create_column("slurm", |_, x| {
             Ok(x.1

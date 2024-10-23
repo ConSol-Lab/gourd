@@ -12,16 +12,13 @@ use serde::Serialize;
 
 use crate::config::slurm::ResourceLimits;
 use crate::config::slurm::SlurmConfig;
+use crate::config::Afterscript;
 use crate::config::Label;
 use crate::ctx;
-use crate::experiment::labels::Labels;
 use crate::file_system::FileOperations;
 
 /// Dealing with [`crate::config::UserInput`]s and [`InternalInput`]s
 pub mod inputs;
-
-/// Everything related to [`Label`]s
-pub mod labels;
 
 /// Dealing with [`crate::config::UserProgram`]s and [`InternalProgram`]s
 pub mod programs;
@@ -67,7 +64,7 @@ pub struct InternalProgram {
     pub binary: PathBuf,
 
     /// An executable afterscript to run on the output of this program
-    pub afterscript: Option<PathBuf>,
+    pub afterscript: Option<Afterscript>,
 
     /// The limits to be applied on executions of this program
     pub limits: ResourceLimits,
@@ -120,8 +117,8 @@ pub struct Run {
     /// The path to the metrics file.
     pub metrics_path: PathBuf,
 
-    /// The path to afterscript output, if there is an afterscript.
-    pub afterscript_output_path: Option<PathBuf>,
+    /// When the afterscript has been run, it's stdout is stored here.
+    pub afterscript_output: Option<String>,
 
     /// The working directory of this run.
     pub work_dir: PathBuf,
@@ -194,7 +191,7 @@ pub struct Experiment {
     pub env: Environment,
 
     /// Labels used in this experiment.
-    pub labels: Labels,
+    pub labels: BTreeMap<String, Label>,
 
     /// If running on a SLURM cluster, the job configurations.
     pub slurm: Option<SlurmConfig>,
@@ -237,7 +234,6 @@ impl Experiment {
     /// Get the label by name.
     pub fn get_label(&self, name: &String) -> Result<Label> {
         self.labels
-            .map
             .get(name)
             .cloned()
             .ok_or(anyhow!("Label not found"))

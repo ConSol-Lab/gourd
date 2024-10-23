@@ -43,6 +43,7 @@ use std::string::String;
 use anyhow::anyhow;
 use anyhow::Result;
 use gourd_lib::config::Config;
+use gourd_lib::config::UserAfterscript;
 use gourd_lib::config::UserProgram;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
@@ -245,12 +246,17 @@ pub fn config(env: &TestEnv, gourd_toml: &str) -> Result<(Config, PathBuf)> {
                 );
             }
         }
+        // we canonicalize here to ensure the paths can be specified in relation to the
+        // crate root instead of the tempdir.
         if let Some(after) = &prog.afterscript {
-            prog.afterscript = Some(env.fs.canonicalize(after).unwrap());
+            prog.afterscript = Some(UserAfterscript::Complex(
+                after.canonicalize(&env.fs).unwrap(),
+            ));
         }
     });
 
     initial.inputs.iter_mut().for_each(|(_, input)| {
+        // likewise for input files
         if let Some(file) = &input.file {
             input.file = Some(env.fs.canonicalize(file).unwrap())
         }
@@ -259,6 +265,7 @@ pub fn config(env: &TestEnv, gourd_toml: &str) -> Result<(Config, PathBuf)> {
     initial.experiments_folder = env.temp_dir.path().join("experiments");
     initial.metrics_path = env.temp_dir.path().join("metrics");
     initial.output_path = env.temp_dir.path().join("output");
+    // get the wrapper from the current build
     initial.wrapper = env.wrapper_path.to_str().unwrap().to_string();
 
     let test_config = save_gourd_toml(&initial, &env.temp_dir);

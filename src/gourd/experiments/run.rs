@@ -44,17 +44,7 @@ pub fn generate_new_run(
                 .output_folder
                 .join(format!("{}/{}/{}/", experiment.seq, program, run_id)),
         )?,
-        afterscript_output_path: match experiment.programs[program].afterscript.as_ref() {
-            None => None,
-            Some(_) => Some(
-                fs.truncate_and_canonicalize_folder(
-                    &experiment
-                        .output_folder
-                        .join(format!("{}/{}/{}/", experiment.seq, program, run_id)),
-                )?
-                .join("afterscript"),
-            ),
-        },
+        afterscript_output: None,
         limits,
         slurm_id: None,
         rerun: None,

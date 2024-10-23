@@ -9,7 +9,6 @@ use gourd_lib::bailc;
 use gourd_lib::config::Config;
 use gourd_lib::ctx;
 use gourd_lib::experiment::inputs::expand_inputs;
-use gourd_lib::experiment::labels::Labels;
 use gourd_lib::experiment::programs::expand_programs;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
@@ -105,10 +104,7 @@ impl ExperimentExt for Experiment {
 
             env,
             resource_limits: conf.resource_limits,
-            labels: Labels {
-                map: conf.labels.clone().unwrap_or_default(),
-                warn_on_label_overlap: conf.warn_on_label_overlap,
-            },
+            labels: conf.labels.clone().unwrap_or_default(),
 
             slurm,
 

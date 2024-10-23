@@ -208,7 +208,7 @@ impl Status {
         };
         let c = match &self.fs_status.afterscript_completion {
             Some(Some(label)) => {
-                if let Some(l) = &experiment.labels.map.get(label) {
+                if let Some(l) = &experiment.labels.get(label) {
                     l.rerun_by_default
                 } else {
                     false
@@ -243,6 +243,9 @@ pub trait StatusProvider<T, ST> {
 
 /// Instead of storing a possibly outdated status somewhere, every time it is
 /// needed it's fetched by the status module directly.
+///
+/// Since this will actively fetch status, it can modify the experiment to cache
+/// any potential intermediate results (eg afterscript outputs)
 pub trait DynamicStatus {
     /// Get an up-to-date [`ExperimentStatus`].
     fn status(&self, fs: &impl FileOperations) -> Result<ExperimentStatus>;

@@ -117,7 +117,7 @@ fn test_analysis_png_plot_success() {
         metrics_path: Default::default(),
         work_dir: Default::default(),
         slurm_id: None,
-        afterscript_output_path: None,
+        afterscript_output: None,
         rerun: None,
         generated_from_input: None,
         parent: None,

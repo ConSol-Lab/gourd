@@ -51,7 +51,7 @@ pub fn wrap(
 
         verify_arch(&program.binary, arch, fs)?;
 
-        let mut cmd = Command::new(&experiment.wrapper);
+        let mut cmd = Command::new(shellexpand::full(&experiment.wrapper)?.to_string());
 
         cmd.arg(experiment.file())
             .arg(format!("{}", chunk_index))

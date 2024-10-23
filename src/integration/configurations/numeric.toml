@@ -4,8 +4,6 @@ metrics_path = ""
 experiments_folder = ""
 wrapper = ""
 
-warn_on_label_overlap = false
-
 [program.fibonacci]
 binary = "slow_fib"
 afterscript = "./src/integration/programs/1.sh"
