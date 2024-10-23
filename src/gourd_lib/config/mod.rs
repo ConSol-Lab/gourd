@@ -4,15 +4,14 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::Result;
+use maps::canon_path;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::constants::AFTERSCRIPT_DEFAULT;
 use crate::constants::CMD_STYLE;
 use crate::constants::EMPTY_ARGS;
 use crate::constants::INTERNAL_PREFIX;
 use crate::constants::INTERNAL_SCHEMA_INPUTS;
-use crate::constants::LABEL_OVERLAP_DEFAULT;
 use crate::constants::RERUN_LABEL_BY_DEFAULT;
 use crate::constants::WRAPPER_DEFAULT;
 use crate::error::ctx;
@@ -63,8 +62,8 @@ pub struct UserProgram {
     pub arguments: Vec<String>,
 
     /// The path to the afterscript, if there is one.
-    #[serde(default = "AFTERSCRIPT_DEFAULT")]
-    pub afterscript: Option<PathBuf>,
+    #[serde(default)]
+    pub afterscript: Option<UserAfterscript>,
 
     /// Resource limits to optionally overwrite default resource limits.
     #[serde(default)]
@@ -74,6 +73,45 @@ pub struct UserProgram {
     #[serde(default)]
     pub next: Vec<String>,
 }
+
+/// The user-facing side of [`Afterscript`]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
+pub enum UserAfterscript {
+    /// User specifies all the fields of [`Afterscript`]
+    Complex(Afterscript),
+    /// User specifies only a path to an executable, and it's still a valid
+    /// afterscript
+    #[serde(untagged)]
+    Simple(PathBuf),
+}
+
+/// Afterscript configuration: `executable:`[`PathBuf`],
+// option to extend: /// `input:`[`IoType`].
+///
+/// Afterscripts are run after the main program has finished.
+/// It can be used for a quick postprocess of the main program's output,
+/// and the afterscript output can be used for labeling the job in `gourd
+/// status`, or serving as a custom metric in CSV exporting.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Afterscript {
+    /// The path to the afterscript shell-script/executable.
+    pub executable: PathBuf,
+    // /// How to pass the job's output to the afterscript input
+    // #[serde(default)]
+    // pub input: IoType,
+}
+
+// /// How to communicate with other programs
+// /// (`stdin`/`stdout` or through file paths that are written to / read from).
+// #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, Default,
+// Copy)] pub enum IoType {
+//     /// Communicate through stdin/stdout.
+//     #[default]
+//     Stdio,
+//     /// Communicate through a file, and exchange the path to said file.
+//     File,
+// }
 
 /// An algorithm fetched from a git repository.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
@@ -314,11 +352,6 @@ pub struct Config {
     /// ```
     #[serde(rename = "label")]
     pub labels: Option<BTreeMap<String, Label>>,
-
-    /// If set to true, will throw an error when multiple labels are present in
-    /// afterscript output.
-    #[serde(default = "LABEL_OVERLAP_DEFAULT", skip_serializing_if = "is_default")]
-    pub warn_on_label_overlap: bool,
 }
 
 // An implementation that provides a default value of `Config`,
@@ -337,7 +370,6 @@ impl Default for Config {
             slurm: None,
             resource_limits: None,
             labels: Some(BTreeMap::new()),
-            warn_on_label_overlap: true,
         }
     }
 }
@@ -380,16 +412,49 @@ impl Config {
     }
 }
 
-/// Is a value equal to its default value.
-/// Used for skipping serialisation,
-fn is_default<T: Default + PartialEq>(t: &T) -> bool {
-    t == &T::default()
-}
-
 /// Is the wrapper at its default value.
 /// Used for skipping serialisation.
 fn wrapper_is_default(w: &String) -> bool {
     w.eq(&WRAPPER_DEFAULT())
+}
+
+impl UserAfterscript {
+    /// Canonicalize the path to the afterscript executable.
+    pub fn canonicalize(&self, fs: &impl FileOperations) -> Result<Afterscript> {
+        let initial = match self {
+            Self::Complex(Afterscript { executable }) => executable,
+            Self::Simple(executable) => executable,
+        };
+        let executable = canon_path(initial, fs)?;
+        // on unix, check the file permissions and ensure the afterscript is executable.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+
+            use anyhow::ensure;
+
+            use crate::constants::CMD_DOC_STYLE;
+
+            ensure!(
+                executable
+                    .metadata()
+                    .with_context(ctx!("Could not get metadata for work_dir", ; "",))?
+                    .permissions()
+                    .mode()
+                    & 0o111
+                    != 0,
+                "The afterscript is not executable!\nTry {} chmod +x {:?} {:#}",
+                CMD_DOC_STYLE,
+                executable,
+                CMD_DOC_STYLE,
+            );
+        }
+
+        Ok(Afterscript {
+            executable,
+            // input: self.input,
+        })
+    }
 }
 
 #[cfg(test)]

@@ -41,7 +41,7 @@ pub async fn run_locally(tasks: Vec<Command>, force: bool, sequential: bool) -> 
                 }
             } else {
                 error!("Couldn't start the wrapper: {join:?}");
-                error!("Ensure that the wrapper is accesible. (see man gourd)");
+                error!("Ensure that the wrapper is accessible. (see man gourd)");
                 process::exit(1);
             }
         }
