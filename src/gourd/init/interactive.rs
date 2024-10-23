@@ -58,7 +58,6 @@ pub fn init_interactive(
         wrapper: WRAPPER_DEFAULT(),
         labels: None,
         input_schema: None,
-        warn_on_label_overlap: false,
     };
 
     let custom_paths = if script_mode {

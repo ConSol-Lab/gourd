@@ -4,8 +4,6 @@ metrics_path = ""
 experiments_folder = ""
 wrapper = ""
 
-warn_on_label_overlap = false
-
 [program.test.git]
 git_uri = "./repo/"
 commit_id = "07566620bd74d3f57dd9d0ef5a9cc8681b210659"

@@ -36,7 +36,6 @@ fn breaking_changes_config_struct() {
         slurm: None,
         resource_limits: None,
         labels: Some(BTreeMap::new()),
-        warn_on_label_overlap: false,
     };
 }
 
@@ -75,7 +74,6 @@ fn breaking_changes_config_file_all_values() {
             slurm: None,
             resource_limits: None,
             labels: None,
-            warn_on_label_overlap: false,
         },
         Config::from_file(file_pathbuf.as_path(), &REAL_FS).expect("Unexpected config read error.")
     );
@@ -112,7 +110,6 @@ fn breaking_changes_config_file_required_values() {
             slurm: None,
             resource_limits: None,
             labels: None,
-            warn_on_label_overlap: false,
         },
         Config::from_file(file_pb.as_path(), &REAL_FS).expect("Unexpected config read error.")
     );
@@ -333,7 +330,6 @@ fn parse_valid_escape_hatch_file() {
         resource_limits: None,
         wrapper: WRAPPER_DEFAULT(),
         labels: None,
-        warn_on_label_overlap: false,
     };
     assert_eq!(c1, c2);
 }

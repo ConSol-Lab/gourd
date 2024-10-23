@@ -58,8 +58,8 @@ pub fn expand_programs(
             binary: file,
             afterscript: user
                 .afterscript
-                .clone()
-                .map(|p| canon_path(&p, fs))
+                .as_ref()
+                .map(|a| a.canonicalize(fs))
                 .transpose()?,
             limits,
             arguments: user.arguments.clone(),
