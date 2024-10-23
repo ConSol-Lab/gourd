@@ -83,7 +83,7 @@ pub const HELP_STYLE: Style = style_from_fg(AnsiColor::Green).bold().underline()
 /// Style of commands in doc messages
 pub const CMD_DOC_STYLE: Style = Style::new()
     .italic()
-    .bg_color(Some(Ansi(AnsiColor::Blue)))
+    .bg_color(Some(Ansi(AnsiColor::BrightBlue)))
     .fg_color(Some(Ansi(AnsiColor::Black)));
 
 /// Style of commands in help messages
