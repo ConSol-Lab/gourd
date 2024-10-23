@@ -4,8 +4,6 @@ metrics_path = ""
 experiments_folder = ""
 wrapper = ""
 
-warn_on_label_overlap = true
-
 [program.fast_fib]
 binary = "fast_fib"
 next = ["fast_fast_fib"]
