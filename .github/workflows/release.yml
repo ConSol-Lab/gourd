@@ -242,7 +242,7 @@ jobs:
           latex2man
 
     - name: Build
-      run: cargo build --release --features="full" -vv
+      run: cargo build --release --features="documentation" -vv
 
     - name: Prepare installer
       run: target/release/generate-installer.sh

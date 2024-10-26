@@ -10,7 +10,7 @@ env:
 
 jobs:
   build:
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'draft') || github.event.pull_request.reviewers == '' }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'release') && !contains(github.event.pull_request.labels.*.name, 'ready') && (contains(github.event.pull_request.labels.*.name, 'draft') || github.event.pull_request.reviewers == '') }}
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +23,7 @@ jobs:
         run: cargo build --release --verbose
 
   test_lint:
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'draft') || github.event.pull_request.reviewers == '' }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'release') && !contains(github.event.pull_request.labels.*.name, 'ready') && (contains(github.event.pull_request.labels.*.name, 'draft') || github.event.pull_request.reviewers == '') }}
     runs-on: ubuntu-latest
 
     steps:
