@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 use std::path::PathBuf;
 
 use anyhow::Context;
+use anyhow::Result;
 use gourd_lib::bailc;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::Run;
@@ -26,7 +27,7 @@ pub(super) fn dfs(
     runs: &mut Vec<Run>,
     exp: &Experiment,
     fs: &impl FileOperations,
-) -> anyhow::Result<()> {
+) -> Result<()> {
     // Since the run amount can be in the millions I don't want to rely on tail
     // recursion, and we will just use unrolled dfs.
     let mut next: VecDeque<Step> = VecDeque::new();
@@ -61,7 +62,7 @@ pub(super) fn dfs(
                         node,
                         RunInput {
                             file: input.input.clone(),
-                            arguments: input.arguments.clone(),
+                            args: input.arguments.clone(),
                         },
                         Some(input_name.clone()),
                         input.metadata.group.clone(),
@@ -81,7 +82,7 @@ pub(super) fn dfs(
                         node,
                         RunInput {
                             file: Some(pchild.1),
-                            arguments: runs[pchild.0].input.arguments.clone(),
+                            args: runs[pchild.0].input.args.clone(),
                         },
                         None,
                         None, // no groups for children

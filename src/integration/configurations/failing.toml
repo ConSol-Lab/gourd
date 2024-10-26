@@ -1,0 +1,24 @@
+
+output_path = ""
+metrics_path = ""
+experiments_folder = ""
+wrapper = ""
+
+warn_on_label_overlap = true
+
+[program.fibonacci]
+binary = "slow_fib"
+
+[program.fast_fib]
+binary = "fast_fib"
+
+[program.fast_fast_fib]
+binary = "fast_fast_fib"
+
+[input.input_twelev]
+file = "./src/integration/inputs/12.in"
+arguments = ["12"]
+
+[input.hello]
+file = "./src/integration/inputs/hello.in"
+arguments = ["hello"]

@@ -1,11 +1,10 @@
 use std::path::PathBuf;
-use std::time::Duration;
 
-use clap::builder::PossibleValue;
 use clap::ArgAction;
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
+use clap::ValueEnum;
 
 /// Structure of the main command (gourd).
 #[allow(unused)]
@@ -27,7 +26,7 @@ pub struct Cli {
     #[arg(short, long, default_value = "./gourd.toml", global = true)]
     pub config: PathBuf,
 
-    /// Verbose mode, displays debug info. For even more try: -vv.
+    /// Verbose mode, prints debug info. For even more try: -vv.
     #[arg(short, long, global = true, action = ArgAction::Count)]
     pub verbose: u8,
 
@@ -165,47 +164,141 @@ pub struct AnalyseStruct {
     #[arg(value_name = "EXPERIMENT")]
     pub experiment_id: Option<usize>,
 
-    /// The output format of the analysis.
-    /// For all formats see the manual.
-    #[arg(long, short, default_value = "csv", value_parser = [
-        PossibleValue::new("csv"),
-        PossibleValue::new("plot-svg"),
-        PossibleValue::new("plot-png"),
-    ])]
-    pub output: String,
+    /// Plot analysis or create a table for the run metrics.
+    #[command(subcommand)]
+    pub subcommand: AnalSubcommand,
+
+    /// If you want to save to a specific file
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
 }
 
-/// Arguments supplied with the `set-limits` command.
+/// Enum for subcommands of the `run` subcommand.
+#[derive(Subcommand, Debug, Clone)]
+pub enum AnalSubcommand {
+    /// Generate a cactus plot for the runs of this experiment.
+    #[command()]
+    Plot {
+        /// What file format to make the cactus plot in.
+        /// Options are `png` (default), `svg`
+        #[arg(short, long, default_value = "png")]
+        format: PlotType,
+
+        /// If you want to save to a specific file
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
+
+    /// Generate tables for the metrics of the runs in this experiment.
+    #[command()]
+    Table(CsvFormatting),
+}
+
+/// Construct a CSV by specifying desired columns and any grouping of runs.
 #[derive(Args, Debug, Clone)]
-pub struct SetLimitsStruct {
-    /// The id of the experiment of which to change limits
-    /// [default: newest experiment]
-    #[arg(value_name = "EXPERIMENT")]
-    pub experiment_id: Option<usize>,
+pub struct CsvFormatting {
+    /// Group together the averages based on a number of conditions.
+    ///
+    /// Specifying multiple conditions means that all equalities must hold.
+    #[arg(short, long, value_delimiter = ',', num_args = 0..)]
+    pub group: Vec<GroupBy>,
 
-    /// The program for which to set resource limits.
+    /// Choose which columns to include in the table.
+    #[arg(short, long, value_delimiter = ',', num_args = 1..)]
+    pub format: Option<Vec<CsvColumn>>,
+
+    /// If you want to save to a specific file
     #[arg(short, long)]
-    pub program: Option<String>,
+    pub output: Option<PathBuf>,
+}
 
-    /// Set resource limits for all programs.
-    #[arg(
-        short,
-        long,
-        conflicts_with_all = ["program"],
-    )]
-    pub all: bool,
+/// Choice of grouping together runs based on equality conditions
+#[derive(ValueEnum, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Copy)]
+pub enum GroupBy {
+    /// Group together runs that have the same program.
+    Program,
+    /// Group together runs that have the same input.
+    Input,
+    /// Group together runs that have the same input group.
+    Group,
+}
 
-    /// Take the resource limits from a toml file.
-    #[arg(long)]
-    pub mem: Option<usize>,
+/// Enum for the columns that can be included in the CSV.
+#[derive(ValueEnum, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Copy)]
+pub enum CsvColumn {
+    /// The name of the program that was run.
+    Program,
+    /// The input file that was used.
+    File,
+    /// The arguments that were passed to the program.
+    Args,
+    /// The group that the run was in.
+    Group,
+    /// The afterscript that was run.
+    Label,
+    /// The afterscript output content.
+    Afterscript,
+    /// The slurm completion status of the run.
+    Slurm,
+    /// The metrics saved file for the run
+    FsStatus,
+    /// The run process exit code
+    ExitCode,
+    /// Process wall time
+    WallTime,
+    /// Process user time
+    UserTime,
+    /// Process system time
+    SystemTime,
+    /// Maximum resident set size
+    MaxRSS,
+    /// Integral shared memory size
+    IxRSS,
+    /// Integral unshared data size
+    IdRSS,
+    /// Integral unshared stack size
+    IsRSS,
+    /// Page reclaims (soft page faults)
+    MinFlt,
+    /// Page faults (hard page faults)
+    MajFlt,
+    /// Swaps
+    NSwap,
+    /// Block input operations
+    InBlock,
+    /// Block output operations
+    OuBlock,
+    /// IPC messages sent
+    MsgSent,
+    /// IPC messages received
+    MsgRecv,
+    /// Signals received
+    NSignals,
+    /// Voluntary context switches
+    NVCsw,
+    /// Involuntary context switches
+    NIvCsw,
+}
 
-    /// Take the resource limits from a toml file.
-    #[arg(long)]
-    pub cpu: Option<usize>,
+/// Enum for the output format of the analysis.
+#[derive(ValueEnum, Debug, Clone, Default, Copy)]
+pub enum PlotType {
+    /// Output an SVG cactus plot.
+    Svg,
 
-    /// Take the resource limits from a toml file.
-    #[arg(long, value_parser = humantime::parse_duration)]
-    pub time: Option<Duration>,
+    /// Output a PNG cactus plot.
+    #[default]
+    Png,
+}
+
+impl PlotType {
+    /// get the file extension for this plot type
+    pub fn ext(&self) -> &str {
+        match self {
+            PlotType::Svg => "svg",
+            PlotType::Png => "png",
+        }
+    }
 }
 
 /// Enum for root-level `gourd` commands.

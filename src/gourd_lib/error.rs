@@ -5,7 +5,7 @@ use crate::constants::HELP_STYLE;
 
 /// The error context structure, provides an explanation and help.
 ///
-/// The first element of the structre is the errors "context".
+/// The first element of the structure is the errors "context".
 /// The second element is the help message displayed to the user.
 ///
 /// Both have to implement [Display], and will be displayed when the error is

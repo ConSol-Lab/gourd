@@ -17,20 +17,20 @@ use crate::ctx;
 use crate::experiment::labels::Labels;
 use crate::file_system::FileOperations;
 
-/// Dealing with [`UserInput`]s and [`InternalInput`]s
+/// Dealing with [`crate::config::UserInput`]s and [`InternalInput`]s
 pub mod inputs;
 
 /// Everything related to [`Label`]s
 pub mod labels;
 
-/// Dealing with [`UserProgram`]s and [`InternalProgram`]s
+/// Dealing with [`crate::config::UserProgram`]s and [`InternalProgram`]s
 pub mod programs;
 
-/// A string referencing a [`UserProgram`], [`InternalProgram`], [`UserInput`]
-/// or [`InternalInput`].
+/// A string referencing a [`crate::config::UserProgram`], [`InternalProgram`],
+/// [`crate::config::UserInput`] or [`InternalInput`].
 pub type FieldRef = String;
 
-/// The internal representation of a [`UserInput`]
+/// The internal representation of a [`crate::config::UserInput`]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct InternalInput {
     /// A file to pass the contents into `stdin`
@@ -57,13 +57,13 @@ pub struct Metadata {
     pub group: Option<String>,
 }
 
-/// The internal representation of a [`UserProgram`]
+/// The internal representation of a [`crate::config::UserProgram`]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct InternalProgram {
     /// The name given to this program by the user.
     pub name: String,
 
-    /// The [`Executable`] of this program (absolute path to it)
+    /// The executable of this program (absolute path to it)
     pub binary: PathBuf,
 
     /// An executable afterscript to run on the output of this program
@@ -83,6 +83,12 @@ pub struct InternalProgram {
 
 /// The input for a [`Run`], exactly as will be passed to the wrapper for
 /// execution.
+///
+/// `file`: [`Option`]<[`PathBuf`]> - A file whose contents to be passed into
+/// the program's `stdin`
+///
+/// `args`: [`Vec`]<[`String`]> - Command line arguments for this binary
+/// execution.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct RunInput {
     /// A file whose contents to be passed into the program's `stdin`
@@ -90,9 +96,9 @@ pub struct RunInput {
 
     /// Command line arguments for this binary execution.
     ///
-    /// Holds the concatenation of [`UserProgram`] specified arguments and
-    /// [`UserInput`] arguments.
-    pub arguments: Vec<String>,
+    /// Holds the concatenation of [`crate::config::UserProgram`] specified
+    /// arguments and [`crate::config::UserInput`] arguments.
+    pub args: Vec<String>,
 }
 
 /// Describes a matching between an algorithm and an input.

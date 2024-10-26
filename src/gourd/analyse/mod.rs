@@ -1,150 +1,223 @@
 use std::cmp::max;
 use std::collections::BTreeMap;
+use std::fmt::Display;
+use std::fmt::Formatter;
+use std::io::Write;
 use std::path::Path;
 use std::time::Duration;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use csv::Writer;
 use gourd_lib::bailc;
-use gourd_lib::constants::PLOT_SIZE;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
-use gourd_lib::measurement::RUsage;
-use log::debug;
-use plotters::prelude::*;
-use plotters::style::register_font;
-use plotters::style::BLACK;
 
-use crate::status::FileSystemBasedStatus;
 use crate::status::FsState;
-use crate::status::SlurmBasedStatus;
 use crate::status::Status;
 
-/// Plot width, size, and data to plot.
-type PlotData = (u128, u128, BTreeMap<FieldRef, Vec<(u128, u128)>>);
+/// Export experiment data as CSV file
+pub mod csvs;
+/// Draw up plots of experiment data
+pub mod plotting;
 
-/// Collect and export metrics.
-pub fn analysis_csv(path: &Path, statuses: BTreeMap<usize, Status>) -> Result<()> {
-    let mut writer = Writer::from_path(path)?;
-
-    let header = vec![
-        "id".to_string(),
-        "file system status".to_string(),
-        "wall micros".to_string(),
-        "exit code".to_string(),
-        "RUsage".to_string(),
-        "afterscript output".to_string(),
-        "slurm completion".to_string(),
-    ];
-
-    writer.write_record(header)?;
-
-    for (id, status) in statuses {
-        let fs_status = &status.fs_status;
-        let slurm_status = status.slurm_status;
-
-        let mut record = get_fs_status_info(id, fs_status);
-        record.append(&mut get_afterscript_output_info(
-            &status.fs_status.afterscript_completion,
-        ));
-        record.append(&mut get_slurm_status_info(&slurm_status));
-
-        writer.write_record(record)?;
-    }
-
-    writer.flush()?;
-
-    Ok(())
+/// Represent a human-readable table.
+/// Universal between CSV exporting and in-line display.
+///
+/// Since tables store the display strings, their entries are in essence
+/// immutable. Cells are not meant to be read or modified, since that would
+/// likely involve parsing the number in it, which is just unhygienic.
+///
+/// You can append rows to a table with [`Table::append_column`],
+/// or create new columns using [`ColumnGenerator`]s.
+#[derive(Debug, Clone)]
+pub struct Table {
+    /// Number of columns in the table.
+    pub columns: usize,
+    /// CSV-style table header.
+    pub header: Option<Vec<String>>,
+    /// The table entries (vector of rows, each row is a vector of entries)
+    /// (`Vec<Row<Entry>>`).
+    pub body: Vec<Vec<String>>,
+    /// An optional footer, can be used to aggregate statistics, for example.
+    pub footer: Option<Vec<String>>,
 }
 
-/// Gets file system info for CSV.
-pub fn get_fs_status_info(id: usize, fs_status: &FileSystemBasedStatus) -> Vec<String> {
-    let mut completion = match fs_status.completion {
-        FsState::Pending => vec![
-            "pending".to_string(),
-            "...".to_string(),
-            "...".to_string(),
-            "...".to_string(),
-        ],
-        FsState::Running => vec![
-            "running".to_string(),
-            "...".to_string(),
-            "...".to_string(),
-            "...".to_string(),
-        ],
-        FsState::Completed(measurement) => {
-            vec![
-                "completed".to_string(),
-                format!("{:?}", measurement.wall_micros),
-                format!("{:?}", measurement.exit_code),
-                format_rusage(measurement.rusage),
-            ]
+/// A column that can be appended to the end of a [`Table`].
+///
+/// Intended to be created through a [`ColumnGenerator`].
+#[derive(Debug, Clone)]
+pub struct Column {
+    /// The text header of the column. Defaults to empty string
+    pub header: Option<String>,
+    /// The row cells of this column
+    pub body: Vec<String>,
+    /// The footer cell of this column. Defaults to empty string.
+    pub footer: Option<String>,
+}
+
+/// Create a [`Column`] from a list of entries of type `X`.
+#[derive(Debug, Clone)]
+pub struct ColumnGenerator<X> {
+    /// The text header of the column. Defaults to empty string
+    pub header: Option<String>,
+    /// A function to convert a type `X` element into the content of its
+    /// equivalent row in the column body.
+    pub body: fn(&Experiment, &X) -> Result<String>,
+    /// A footer cell that can hold info aggregated
+    /// from all the entries in the original list.
+    pub footer: fn(&Experiment, &[X]) -> Result<Option<String>>,
+}
+
+impl<X> ColumnGenerator<X> {
+    /// Generate a column from a vector of entries.
+    pub fn generate(&self, exp: &Experiment, from: &[X]) -> Result<Column> {
+        Ok(Column {
+            header: self.header.clone(),
+            body: from
+                .iter()
+                .map(|x| (self.body)(exp, x))
+                .collect::<Result<Vec<String>>>()?,
+            footer: (self.footer)(exp, from)?,
+        })
+    }
+}
+
+impl Table {
+    /// Get the width (in utf-8 characters) of the longest entry of each column
+    pub fn column_widths(&self) -> Vec<usize> {
+        let mut col_widths = vec![0; self.columns];
+
+        for row in self
+            .header
+            .iter()
+            .chain(self.body.iter())
+            .chain(self.footer.iter())
+        {
+            for (i, x) in col_widths
+                .clone()
+                .iter()
+                .zip(row.iter().map(|x| x.to_string().chars().count()))
+                .map(|(a, b)| *max(a, &b))
+                .enumerate()
+            {
+                col_widths[i] = x;
+            }
         }
-    };
 
-    let mut res = vec![id.to_string()];
-    res.append(&mut completion);
+        col_widths
+    }
 
-    res
-}
+    /// Write this table to a [`Writer`]
+    pub fn write_csv<W: Write>(&self, writer: &mut Writer<W>) -> Result<()> {
+        if let Some(h) = &self.header {
+            writer.write_record(h)?;
+        }
 
-/// Formats RUsage of a run for the CSV.
-pub fn format_rusage(rusage: Option<RUsage>) -> String {
-    if rusage.is_some() {
-        format!("{:#?}", rusage.unwrap())
-    } else {
-        String::from("none")
+        for row in &self.body {
+            writer.write_record(row)?;
+        }
+
+        // the footer is omitted in csv output to make analysis easier.
+
+        Ok(())
+    }
+
+    /// Write this table to a file at the given path.
+    pub fn write_to_path(&self, path: &Path) -> Result<()> {
+        let mut writer = Writer::from_path(path).context("Failed to open file for writing")?;
+        self.write_csv(&mut writer)?;
+        writer.flush()?;
+        Ok(())
+    }
+
+    /// Append a column to the table.
+    // Known issue: https://github.com/rust-lang/rust-clippy/issues/13185
+    #[allow(clippy::manual_inspect)]
+    pub fn append_column(&mut self, column: Column) {
+        self.columns += 1;
+        self.header = self
+            .header
+            .as_mut()
+            .map(|h| {
+                h.push(column.header.clone().unwrap_or_default());
+                h
+            })
+            .cloned();
+        debug_assert_eq!(self.body.len(), column.body.len());
+        self.body = self
+            .body
+            .iter_mut()
+            .zip(column.body.iter())
+            .map(|(a, b)| {
+                a.push(b.clone());
+                a.clone()
+            })
+            .collect();
+        self.footer = self
+            .footer
+            .as_mut()
+            .map(|f| {
+                f.push(column.footer.clone().unwrap_or_default());
+                f
+            })
+            .cloned();
     }
 }
 
-/// Gets slurm status info for CSV.
-pub fn get_slurm_status_info(slurm_status: &Option<SlurmBasedStatus>) -> Vec<String> {
-    if let Some(inner) = slurm_status {
-        vec![format!("{:#?}", inner.completion)]
-    } else {
-        vec!["...".to_string()]
-    }
-}
-
-/// Gets afterscript output info for CSV.
-pub fn get_afterscript_output_info(afterscript_completion: &Option<Option<String>>) -> Vec<String> {
-    if let Some(inner) = afterscript_completion {
-        if let Some(label) = inner {
-            vec![label.clone()]
+impl Display for Table {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if f.sign_minus() {
+            // reduced output
+            for row in self.body.iter() {
+                writeln!(f)?;
+                for value in row.iter() {
+                    write!(f, "{}\t", value)?;
+                }
+            }
         } else {
-            vec![String::from("done, no label")]
+            writeln!(f)?;
+            let col_widths = self.column_widths();
+            if let Some(header) = &self.header {
+                for (width, value) in col_widths.iter().zip(header.iter()) {
+                    write!(f, "| {: <width$} ", value)?;
+                }
+                writeln!(f, "|")?;
+
+                for width in col_widths.iter() {
+                    write!(f, "*-{}-", "-".repeat(*width))?;
+                }
+                writeln!(f, "*")?;
+            }
+
+            for row in self.body.iter() {
+                for (width, value) in col_widths.iter().zip(row.iter()) {
+                    write!(f, "| {: <width$} ", value)?;
+                }
+                writeln!(f, "|")?;
+            }
+
+            if let Some(footer) = &self.footer {
+                for width in col_widths.iter() {
+                    write!(f, "*-{}-", "-".repeat(*width))?;
+                }
+                writeln!(f, "*")?;
+
+                for (width, value) in col_widths.iter().zip(footer.iter()) {
+                    write!(f, "| {: <width$} ", value)?;
+                }
+                writeln!(f, "|")?;
+            }
         }
-    } else {
-        vec![String::from("no afterscript")]
+
+        Ok(())
     }
-}
-
-/// Get data for plotting and generate plots.
-pub fn analysis_plot(
-    path: &Path,
-    statuses: BTreeMap<usize, Status>,
-    experiment: Experiment,
-    is_png: bool,
-) -> Result<()> {
-    let completions = get_completions(statuses, experiment)?;
-
-    let data = get_data_for_plot(completions);
-
-    if is_png {
-        make_plot(data, BitMapBackend::new(&path, PLOT_SIZE))?;
-    } else {
-        make_plot(data, SVGBackend::new(&path, PLOT_SIZE))?;
-    }
-
-    Ok(())
 }
 
 /// Get completion times of jobs.
 pub fn get_completions(
     statuses: BTreeMap<usize, Status>,
-    experiment: Experiment,
+    experiment: &Experiment,
 ) -> Result<BTreeMap<FieldRef, Vec<u128>>> {
     let mut completions: BTreeMap<FieldRef, Vec<u128>> = BTreeMap::new();
 
@@ -190,102 +263,6 @@ pub fn get_completion_time(state: FsState) -> Result<Duration> {
             bailc!("Run was supposed to be completed");
         }
     }
-}
-
-/// Get wall clock data for cactus plot.
-pub fn get_data_for_plot(completions: BTreeMap<FieldRef, Vec<u128>>) -> PlotData {
-    let max_time = completions.values().flatten().max();
-    let mut data = BTreeMap::new();
-
-    if max_time.is_some() {
-        let max_time = *max_time.unwrap();
-        let mut max_count = 0;
-
-        for (name, program) in completions {
-            let mut data_per_program = vec![];
-            let mut already_finished = 0;
-
-            for end in program {
-                if end > 0 {
-                    data_per_program.push((end - 1, already_finished));
-                }
-
-                already_finished += 1;
-                data_per_program.push((end, already_finished));
-            }
-
-            data_per_program.push((max_time, already_finished));
-
-            max_count = max(max_count, already_finished);
-
-            data.insert(name, data_per_program);
-        }
-
-        (max_time, max_count, data)
-    } else {
-        (0, 0, data)
-    }
-}
-
-/// Plot the results of runs in a cactus plot.
-pub fn make_plot<T>(plot_data: PlotData, backend: T) -> Result<()>
-where
-    T: DrawingBackend,
-    <T as DrawingBackend>::ErrorType: 'static,
-{
-    debug!("Drawing a plot");
-
-    let (max_time, max_count, cactus_data) = plot_data;
-
-    register_font(
-        "sans-serif",
-        FontStyle::Normal,
-        include_bytes!("../../resources/LinLibertine_R.otf"),
-    )
-    .map_err(|_| anyhow!("Could not load the font"))?;
-
-    let style = TextStyle::from(("sans-serif", 20).into_font()).color(&BLACK);
-    let root = backend.into_drawing_area();
-
-    root.fill(&WHITE)?;
-
-    let mut chart = ChartBuilder::on(&root)
-        .margin(20)
-        .x_label_area_size(40)
-        .y_label_area_size(40)
-        .caption("Cactus plot", 40)
-        .build_cartesian_2d(0..max_time + 1, 0..max_count + 1)?;
-
-    chart
-        .configure_mesh()
-        .light_line_style(WHITE)
-        .x_label_style(style.clone())
-        .y_label_style(style.clone())
-        .label_style(style.clone())
-        .x_desc("Nanoseconds")
-        .y_desc("Runs")
-        .draw()?;
-
-    for (idx, (name, datas)) in (0..).zip(cactus_data) {
-        chart
-            .draw_series(LineSeries::new(
-                datas,
-                Into::<ShapeStyle>::into(Palette99::pick(idx)).stroke_width(3),
-            ))?
-            .label(name.to_string())
-            .legend(move |(x, y)| {
-                Rectangle::new(
-                    [(x - 5, y - 5), (x + 5, y + 5)],
-                    Palette99::pick(idx).stroke_width(5),
-                )
-            });
-    }
-
-    chart.configure_series_labels().label_font(style).draw()?;
-
-    root.present()?;
-
-    Ok(())
 }
 
 #[cfg(test)]

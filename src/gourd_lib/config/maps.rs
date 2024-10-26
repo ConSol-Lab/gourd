@@ -9,11 +9,17 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use glob::glob;
+use log::warn;
 
 use super::UserInput;
+use crate::constants::CMD_DOC_STYLE;
+use crate::constants::CMD_STYLE;
 use crate::constants::GLOB_ESCAPE;
+use crate::constants::HELP_STYLE;
 use crate::constants::INTERNAL_GLOB;
 use crate::constants::INTERNAL_PREFIX;
+use crate::constants::PRIMARY_STYLE;
+use crate::constants::WARNING_STYLE;
 use crate::ctx;
 use crate::file_system::FileOperations;
 
@@ -35,7 +41,7 @@ pub fn canon_path(path: &Path, fs: &impl FileOperations) -> Result<PathBuf> {
 /// # Examples
 /// ```toml
 /// [inputs.test_input]
-/// arguments = [ "=glob=/test/**/*.jpg" ]
+/// arguments = [ "path|/test/**/*.jpg" ]
 /// ```
 ///
 /// May get expanded to:
@@ -66,7 +72,8 @@ pub fn expand_argument_globs(
             let mut next_globset = HashSet::new();
 
             for input_instance in &globset {
-                is_glob |= explode_glob_set(input_instance, arg_index, &mut next_globset, fs)?;
+                is_glob |=
+                    explode_glob_set(input_instance, original, arg_index, &mut next_globset, fs)?;
             }
 
             swap(&mut globset, &mut next_globset);
@@ -91,6 +98,7 @@ pub fn expand_argument_globs(
 /// argument and put the results in `fill`.
 fn explode_glob_set(
     input: &UserInput,
+    input_name: &str, // only used for warnings.
     arg_index: usize,
     fill: &mut HashSet<UserInput>,
     fs: &impl FileOperations,
@@ -121,6 +129,20 @@ fn explode_glob_set(
 
         Ok(true)
     } else {
+        if Path::new(arg).iter().count() > 1 {
+            warn!(
+                " \n\
+                It looks like you specified a path argument: \
+                {WARNING_STYLE}{arg}{WARNING_STYLE:#} \
+                in input {PRIMARY_STYLE}{input_name}{PRIMARY_STYLE:#}, \
+                but did not prefix it with {CMD_DOC_STYLE} {GLOB_ESCAPE} {CMD_DOC_STYLE:#}\n\
+                {HELP_STYLE}tip:{HELP_STYLE:#} Consider changing the argument to \
+                {CMD_STYLE}\"{GLOB_ESCAPE}{arg}\"{CMD_STYLE:#} \
+                in order to canonicalize the path and expand any globs.\n\n\
+                {HELP_STYLE}You can safely ignore this warning.{HELP_STYLE:#}\
+            "
+            );
+        }
         fill.insert(input.clone());
         Ok(false)
     }

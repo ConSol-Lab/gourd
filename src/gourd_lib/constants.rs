@@ -9,7 +9,7 @@ use anstyle::Style;
 use crate::config::slurm::ResourceLimits;
 
 /// The version name for Gourd!
-pub const GOURD_VERSION: &str = "Snake Gourd";
+pub const GOURD_VERSION: &str = "Sponge Gourd";
 
 /// The default path to the wrapper, that is, we assume `gourd_wrapper` is in
 /// $PATH.
@@ -83,7 +83,7 @@ pub const HELP_STYLE: Style = style_from_fg(AnsiColor::Green).bold().underline()
 /// Style of commands in doc messages
 pub const CMD_DOC_STYLE: Style = Style::new()
     .italic()
-    .bg_color(Some(Ansi(AnsiColor::Blue)))
+    .bg_color(Some(Ansi(AnsiColor::BrightBlue)))
     .fg_color(Some(Ansi(AnsiColor::Black)));
 
 /// Style of commands in help messages
@@ -92,7 +92,7 @@ pub const CMD_STYLE: Style = Style::new()
     .bg_color(Some(Ansi(AnsiColor::Green)))
     .fg_color(Some(Ansi(AnsiColor::Black)));
 
-/// Style of [`Path`]s and [`PathBuf`]s
+/// Style of [`std::path::Path`]s and [`PathBuf`]s
 pub const PATH_STYLE: Style = Style::new()
     .italic()
     .fg_color(Some(Ansi(AnsiColor::BrightBlue)));

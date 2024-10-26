@@ -30,6 +30,7 @@ mod init_interactive;
 mod rerun;
 mod run;
 mod version;
+#[cfg(target_os = "linux")]
 mod versioning;
 mod workflow;
 
@@ -45,30 +46,19 @@ use gourd_lib::config::Config;
 use gourd_lib::config::UserProgram;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
+use gourd_lib::file_system::FileOperations;
 use gourd_lib::file_system::FileSystemInteractor;
 use tempdir::TempDir;
 
 /// The testing environment passed to individual #[test](s)
 #[allow(dead_code)]
 #[derive(Debug)]
-struct TestEnv {
+pub struct TestEnv {
     gourd_path: PathBuf,
     wrapper_path: PathBuf,
     temp_dir: TempDir,
     programs: BTreeMap<FieldRef, UserProgram>,
-    input_files: BTreeMap<String, PathBuf>,
     fs: FileSystemInteractor,
-}
-
-/// take a map and keep only the keys that are in the given list
-fn keep<K: PartialEq, V, M: FromIterator<(K, V)> + IntoIterator<Item = (K, V)> + Clone>(
-    map: &M,
-    keys: &[K],
-) -> M {
-    map.clone()
-        .into_iter()
-        .filter(|(k, _)| keys.contains(k))
-        .collect()
 }
 
 /// Disables RUST_BACKTRACE, executes `gourd` with arguments and appropriate
@@ -103,6 +93,7 @@ macro_rules! gourd {
     };
 }
 
+// Save a gourd.toml in a tempdir
 fn save_gourd_toml(conf: &Config, temp_dir: &TempDir) -> PathBuf {
     let conf_path = temp_dir.path().join("gourd.toml");
     let conf_str = toml::to_string(&conf).unwrap();
@@ -153,12 +144,6 @@ fn new_program(
     );
 }
 
-fn new_input(inputs: &mut BTreeMap<String, PathBuf>, name: &str, dir: &Path, contents: &str) {
-    let path = dir.join(name);
-    std::fs::write(dir.join(name), contents).unwrap();
-    inputs.insert(name.to_string(), path);
-}
-
 fn init() -> TestEnv {
     // 1. find gourd cli executable
     let gourd_path = PathBuf::from(env!("CARGO_BIN_EXE_gourd"));
@@ -185,16 +170,15 @@ fn init() -> TestEnv {
     // /private/var/ tempdir decided to dump
     let temp_dir = TempDir::new_in(env!("CARGO_TARGET_TMPDIR"), "resources").unwrap();
     let p = temp_dir.path().to_path_buf();
-    // initialise the programs and input files available in the testing environment.
+    // initialise the programs available in the testing environment.
     let mut programs = BTreeMap::default();
-    let mut input_files = BTreeMap::new();
 
     // compiled examples
     new_program(
         &mut programs,
         "fibonacci",
         &p,
-        include_str!("test_resources/fibonacci.rs"),
+        include_str!("programs/fibonacci.rs"),
         vec![],
         None,
     );
@@ -203,7 +187,7 @@ fn init() -> TestEnv {
         &mut programs,
         "slow_fib",
         &p,
-        include_str!("test_resources/slow_fib.rs"),
+        include_str!("programs/slow_fib.rs"),
         vec![],
         None,
     );
@@ -212,7 +196,7 @@ fn init() -> TestEnv {
         &mut programs,
         "fast_fib",
         &p,
-        include_str!("test_resources/fast_fib.rs"),
+        include_str!("programs/fast_fib.rs"),
         vec![],
         Some("fast_fast_fib"),
     );
@@ -221,7 +205,7 @@ fn init() -> TestEnv {
         &mut programs,
         "hello",
         &p,
-        include_str!("test_resources/hello.rs"),
+        include_str!("programs/hello.rs"),
         vec!["hello"],
         None,
     );
@@ -230,15 +214,10 @@ fn init() -> TestEnv {
         &mut programs,
         "fast_fast_fib",
         &p,
-        include_str!("test_resources/fast_fib.rs"),
+        include_str!("programs/fast_fib.rs"),
         vec!["-f"],
         None,
     );
-
-    // construct some inputs
-    new_input(&mut input_files, "input_ten", &p, "10");
-    new_input(&mut input_files, "input_forty_two", &p, "42");
-    new_input(&mut input_files, "input_hello", &p, "you");
 
     // finally, construct the test environment
     TestEnv {
@@ -246,56 +225,44 @@ fn init() -> TestEnv {
         wrapper_path,
         temp_dir,
         programs,
-        input_files,
         fs: FileSystemInteractor { dry_run: false },
     }
 }
 
-// A convenience macro that creates a configuration for integration testing.
-//
-// First expression: the environment (created using init())
-// Second expression (list): a list of program IDs, a subset of integration
-// testing example programs Third expression (list): a list of tuples of the
-// form (input_id, input)
-#[macro_export]
-macro_rules! config {
-    ($env:expr; $($prog:expr),*; $($inp:expr),*) => {
-        {
-            gourd_lib::config::Config {
-                output_path: $env.temp_dir.path().join("out"),
-                metrics_path: $env.temp_dir.path().join("metrics"),
-                experiments_folder: $env.temp_dir.path().join("experiments"),
-                programs: $crate::keep(&$env.programs.clone(), &[$($prog.to_string()),*]),
-                inputs: std::collections::BTreeMap::<String, gourd_lib::config::UserInput>::from([$($inp),*]).into(),
-                parameters: None,
-                wrapper: $env.wrapper_path.to_str().unwrap().to_string(),
-                input_schema: None,
-                slurm: None,
-                resource_limits: None,
-                labels: None,
-                warn_on_label_overlap: false,
-            }
-        }
-    };
+/// Configure a new gourd environment from one of the gourd.toml(s) in the
+/// integration configurations folder
+pub fn config(env: &TestEnv, gourd_toml: &str) -> Result<(Config, PathBuf)> {
+    let mut initial: Config = env.fs.try_read_toml(Path::new(gourd_toml))?;
 
-    ($env:expr; $($prog:expr),*; $($inp:expr),*; $label:expr) => {
-        {
-            gourd_lib::config::Config {
-                output_path: $env.temp_dir.path().join("out"),
-                metrics_path: $env.temp_dir.path().join("metrics"),
-                experiments_folder: $env.temp_dir.path().join("experiments"),
-                programs: $crate::keep(&$env.programs.clone(), &[$($prog.to_string()),*]),
-                inputs: std::collections::BTreeMap::<String, gourd_lib::config::UserInput>::from([$($inp),*]).into(),
-                parameters: None,
-                wrapper: $env.wrapper_path.to_str().unwrap().to_string(),
-                input_schema: None,
-                slurm: None,
-                resource_limits: None,
-                labels: $label,
-                warn_on_label_overlap: false,
+    initial.programs.iter_mut().for_each(|(_, prog)| {
+        if let Some(bin) = prog.binary.clone() {
+            if let Some(entry) = env.programs.get(bin.to_str().unwrap()) {
+                prog.binary = Some(entry.binary.clone().unwrap());
+            } else {
+                panic!(
+                    "You can only specify binaries present in ./integration/programs/ \
+                    when writing integration tests!"
+                );
             }
         }
-    };
+        if let Some(after) = &prog.afterscript {
+            prog.afterscript = Some(env.fs.canonicalize(after).unwrap());
+        }
+    });
+
+    initial.inputs.iter_mut().for_each(|(_, input)| {
+        if let Some(file) = &input.file {
+            input.file = Some(env.fs.canonicalize(file).unwrap())
+        }
+    });
+
+    initial.experiments_folder = env.temp_dir.path().join("experiments");
+    initial.metrics_path = env.temp_dir.path().join("metrics");
+    initial.output_path = env.temp_dir.path().join("output");
+    initial.wrapper = env.wrapper_path.to_str().unwrap().to_string();
+
+    let test_config = save_gourd_toml(&initial, &env.temp_dir);
+    Ok((initial, test_config))
 }
 
 fn read_experiment_from_stdout(output: &Output) -> Result<Experiment> {

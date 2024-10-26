@@ -293,7 +293,7 @@ set -x
 
         if !proc.status.success() {
             bailc!("Sbatch failed to run", ;
-                "Sbatch printed: {}", String::from_utf8(proc.stderr).unwrap();
+                "Sbatch printed: {}", String::from_utf8_lossy(&proc.stderr);
                 "Please ensure that you are running on slurm",
             );
         }
@@ -426,7 +426,7 @@ set -x
 
             if !output.status.success() {
                 bailc!("Failed to cancel runs", ;
-                    "scancel printed: {}", String::from_utf8(output.stderr).unwrap();
+                    "\"scancel\" printed: {}", String::from_utf8_lossy(&output.stderr);
                     "",
                 );
             }

@@ -1,28 +1,15 @@
-use gourd_lib::config::UserInput;
-
 use crate::config;
 use crate::gourd;
 use crate::init;
 use crate::read_experiment_from_stdout;
-use crate::save_gourd_toml;
 
 #[test]
 fn test_one_run() {
     let env = init();
 
     // Create a new experiment configuration in the tempdir.
-    let conf = config!(env; "fibonacci"; (
-        "input_ten".to_string(),
-        UserInput {
-            file: None,
-            glob: None,
-            fetch: None,
-            group: None,arguments: vec!["10".to_string()],
-        },
-    ));
-
-    // write the configuration to the tempdir
-    let conf_path = save_gourd_toml(&conf, &env.temp_dir);
+    let (_conf, conf_path) =
+        config(&env, "./src/integration/configurations/single_run.toml").unwrap();
 
     let output = gourd!(env; "-c", conf_path.to_str().unwrap(), "run", "local", "-s"; "run local");
 

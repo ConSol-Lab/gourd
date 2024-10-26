@@ -203,16 +203,16 @@ fn compile_rust_file(path: &Path) -> Result<()> {
     let canon_path =
         canonicalize(path).context(format!("Could not canonicalize the path: {:?}", &path))?;
 
-    let str_path = canon_path.to_str().unwrap();
+    let str_path = canon_path.to_str().ok_or_else(|| anyhow!(":("))?;
 
     let compiled_path = canon_path.with_extension("");
 
-    let str_compiled_path = compiled_path.to_str().unwrap();
+    let str_compiled_path = compiled_path.to_str().ok_or_else(|| anyhow!(":("))?;
 
     let output = run_command(
         "rustc",
         &vec!["-O", str_path, "-o", str_compiled_path],
-        Some(canon_path.parent().unwrap().to_owned()),
+        Some(canon_path.parent().ok_or_else(|| anyhow!(":("))?.to_owned()),
     )?;
 
 

@@ -12,8 +12,10 @@ use colog::default_builder;
 use colog::formatter;
 use gourd_lib::bailc;
 use gourd_lib::config::Config;
+use gourd_lib::constants::CMD_DOC_STYLE;
 use gourd_lib::constants::CMD_STYLE;
 use gourd_lib::constants::ERROR_STYLE;
+use gourd_lib::constants::PATH_STYLE;
 use gourd_lib::constants::PRIMARY_STYLE;
 use gourd_lib::constants::TERTIARY_STYLE;
 use gourd_lib::ctx;
@@ -32,9 +34,10 @@ use super::def::ContinueStruct;
 use super::def::RerunOptions;
 use super::log::LogTokens;
 use super::printing::get_styles;
-use crate::analyse::analysis_csv;
-use crate::analyse::analysis_plot;
+use crate::analyse::csvs::tables_from_command;
+use crate::analyse::plotting::analysis_plot;
 use crate::chunks::Chunkable;
+use crate::cli::def::AnalSubcommand;
 use crate::cli::def::AnalyseStruct;
 use crate::cli::def::CancelStruct;
 use crate::cli::def::Cli;
@@ -250,66 +253,104 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             }
         }
 
+        // handle plotting separately
         GourdCommand::Analyse(AnalyseStruct {
             experiment_id,
-            output,
+            subcommand:
+                AnalSubcommand::Plot {
+                    format,
+                    output: save_a,
+                },
+            output: save_b,
         }) => {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
 
             let statuses = experiment.status(&file_system)?;
 
-            // Checking if there are completed jobs to analyse.
-            let mut completed_runs = statuses
+            let out_path =
+                save_a
+                    .clone()
+                    .or(save_b.clone())
+                    .unwrap_or(experiment.home.join(format!(
+                        "plot_{}.{}",
+                        experiment.seq,
+                        format.ext()
+                    )));
+
+            if statuses
                 .values()
-                .filter(|x| x.fs_status.completion.is_completed());
-
-            debug!("Starting analysis...");
-
-            if cmd.dry {
-                info!("Would have analysed the experiment (dry)");
-
-                return Ok(());
-            }
-
-            let mut output_path = experiment.home.clone();
-
-            if completed_runs.next().is_some() {
-                match &output[..] {
-                    "csv" => {
-                        output_path.push(format!("analysis_{}.csv", experiment.seq));
-                        analysis_csv(&output_path, statuses).with_context(ctx!(
-                                "Could not analyse to a CSV file at {:?}",
-                                &output_path; "",
-                        ))?;
-                    }
-                    "plot-png" => {
-                        output_path.push(format!("plot_{}.png", experiment.seq));
-                        analysis_plot(&output_path, statuses, experiment, true)
-                            .with_context(ctx!(
-                                "Could not create a plot at {:?}", &output_path; "", ))?;
-                    }
-                    "plot-svg" => {
-                        output_path.push(format!("plot_{}.svg", experiment.seq));
-                        analysis_plot(&output_path, statuses, experiment, false).with_context(
-                            ctx!(
-                                    "Could not create a plot at {:?}",
-                                    &output_path; "",
-                            ),
-                        )?;
-                    }
-                    _ => bailc!("Unsupported output format {}", &output;
-                        "Use 'csv', 'plot-png', or 'plot-svg'.", ; "" ,),
-                }
-            } else {
+                .filter(|x| x.fs_status.completion.is_completed())
+                .count()
+                == 0
+            {
                 bailc!(
                     "No runs have completed yet", ;
                     "There are no results to analyse.", ;
-                    "Try later. To see job status, use {CMD_STYLE}gourd status{CMD_STYLE:#}.",
+                    "Try again later. To see job status, use {CMD_STYLE}gourd status{CMD_STYLE:#}.",
                 );
-            };
+            }
 
-            info!("Analysis successful!");
-            info!("Results have been placed in {:?}", &output_path);
+            if cmd.dry {
+                return Ok(());
+            } else {
+                let out = analysis_plot(&out_path, statuses, &experiment, *format)?;
+                info!("Plot saved to:");
+                println!("{PATH_STYLE}{}{PATH_STYLE:#}", out.display());
+                // non-info printing can let scripts easily get the path from
+                // the last line.
+            }
+        }
+
+        GourdCommand::Analyse(AnalyseStruct {
+            experiment_id,
+            subcommand: AnalSubcommand::Table(csv),
+            output: save,
+        }) => {
+            let experiment = read_experiment(experiment_id, cmd, &file_system)?;
+            let statuses = experiment.status(&file_system)?;
+
+            let tables = tables_from_command(&experiment, &statuses, csv.clone())?;
+
+            if let Some(path) = &save.clone().or(csv.output.clone()) {
+                let count = tables.len();
+                if cmd.dry {
+                    info!("Would have saved {count} table(s) to {}", path.display());
+                } else {
+                    for table in tables {
+                        table.write_to_path(path)?;
+                    }
+                    info!("{count} Table{} saved to", if count > 1 { "s" } else { "" });
+                    println!("{PATH_STYLE}{}{PATH_STYLE:#}", path.display());
+                    // non-info printing can let scripts easily get the path
+                    // from the last line.
+                }
+            } else if cmd.script {
+                for table in tables {
+                    println!("{:-}\n", table);
+                }
+            } else {
+                for table in tables {
+                    info!(
+                        "Table for {TERTIARY_STYLE}{}{TERTIARY_STYLE:#} runs",
+                        table.body.len()
+                    );
+                    info!("{}", table);
+                }
+                info!(
+                    "Run with {CMD_STYLE} --output=\"path/to/location.csv\" {CMD_STYLE:#} \
+                    to save to a csv file"
+                );
+                if csv.format.is_none() {
+                    info!(
+                        "Hint: use the {CMD_DOC_STYLE} --format {CMD_DOC_STYLE:#} \
+                        flag to customise the table columns"
+                    );
+                    info!(
+                        "Example: {CMD_STYLE} \
+                        --format=\"program,group,wall-time,n-iv-csw\" {CMD_STYLE:#}"
+                    );
+                }
+            }
         }
 
         GourdCommand::Cancel(CancelStruct {

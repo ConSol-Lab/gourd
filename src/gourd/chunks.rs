@@ -138,6 +138,7 @@ impl Chunkable for Experiment {
         }
     }
 
+    #[allow(clippy::nonminimal_bool)]
     fn unscheduled(&self, status: &ExperimentStatus) -> Vec<(usize, &Run)> {
         self.runs
             .iter()
@@ -148,6 +149,7 @@ impl Chunkable for Experiment {
                     && r.slurm_id.is_none()
             })
             .filter(|(_, r)| !r.parent.is_some_and(|d| !status[&d].is_completed()))
+            // .filter(|(_, r)| r.parent.is_none_or(|d| status[&d].is_completed()))
             .collect()
     }
 

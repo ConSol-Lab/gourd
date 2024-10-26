@@ -19,8 +19,11 @@ use tempdir::TempDir;
 
 use crate::experiments::ExperimentExt;
 
+/// a file system interactor that *will* touch files
 pub const REAL_FS: FileSystemInteractor = FileSystemInteractor { dry_run: false };
 
+/// compile the rust file provided into a binary, and place it in its own
+/// tempdir
 pub fn get_compiled_example(contents: &str, extra_args: Option<Vec<&str>>) -> (PathBuf, PathBuf) {
     let tmp = TempDir::new("match").unwrap().into_path();
 
@@ -39,6 +42,7 @@ pub fn get_compiled_example(contents: &str, extra_args: Option<Vec<&str>>) -> (P
     (out, tmp)
 }
 
+/// a template experiment
 pub fn create_sample_experiment(
     prog: BTreeMap<FieldRef, UserProgram>,
     inputs: BTreeMap<FieldRef, UserInput>,
