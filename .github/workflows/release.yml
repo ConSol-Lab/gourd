@@ -1,6 +1,7 @@
 name: release
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [synchronize, labeled]
   push:
@@ -85,7 +86,14 @@ jobs:
           target/release/install-delftblue.sh
           target/release/uninstall-delftblue.sh
         retention-days: 30
-
+    - name: Upload binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: "binaries musl"
+        path: |
+          target/x86_64-unknown-linux-musl/release/gourd
+          target/x86_64-unknown-linux-musl/release/gourd_wrapper
+        retention-days: 30
 
   nightly-ubuntu:
     name: "release-ubuntu"
@@ -151,6 +159,15 @@ jobs:
           target/release/uninstall-x86_64-unknown-linux-gnu.sh
         retention-days: 30
 
+    - name: Upload binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: "binaries linux"
+        path: |
+          target/release/gourd
+          target/release/gourd_wrapper
+        retention-days: 30
+
   nightly-windows:
     name: "release-windows"
     runs-on: "windows-latest"
@@ -175,7 +192,6 @@ jobs:
           target/release/gourd.exe
           target/release/gourd_wrapper.exe
         retention-days: 30
-
 
   nightly-macos:
     name: "release-macos"
@@ -238,4 +254,13 @@ jobs:
         path: |
           target/release/install-aarch64-apple-darwin.sh
           target/release/uninstall-aarch64-apple-darwin.sh
+        retention-days: 30
+
+    - name: Upload binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: "binaries macos"
+        path: |
+          target/release/gourd
+          target/release/gourd_wrapper
         retention-days: 30
