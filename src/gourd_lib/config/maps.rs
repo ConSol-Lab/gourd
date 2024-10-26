@@ -9,6 +9,7 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use glob::glob;
+use log::debug;
 use log::warn;
 
 use super::UserInput;
@@ -26,7 +27,8 @@ use crate::file_system::FileOperations;
 /// This will take a path and canonicalize it.
 pub fn canon_path(path: &Path, fs: &impl FileOperations) -> Result<PathBuf> {
     fs.canonicalize(path)
-        .map_err(|_| {
+        .map_err(|e| {
+            debug!("Canonicalize error: {e:?}");
             anyhow!(
                 "failed to find {:?} with workdir {:?}",
                 path,

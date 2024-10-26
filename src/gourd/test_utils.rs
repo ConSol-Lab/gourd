@@ -59,7 +59,6 @@ pub fn create_sample_experiment(
         slurm: None,
         resource_limits: None,
         labels: Some(BTreeMap::new()),
-        warn_on_label_overlap: false,
     };
 
     (

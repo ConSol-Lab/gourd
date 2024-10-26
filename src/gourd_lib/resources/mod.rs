@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 use std::path::Path;
 use std::process::Command;
-use std::process::ExitStatus;
+use std::process::Output;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -10,7 +10,7 @@ use log::trace;
 use crate::ctx;
 
 /// Runs a shell script.
-pub fn run_script<T>(cmd: T, arguments: Vec<&str>, work_dir: &Path) -> Result<ExitStatus>
+pub fn run_script<T>(cmd: T, arguments: Vec<&str>, work_dir: &Path) -> Result<Output>
 where
     T: AsRef<OsStr>,
 {
@@ -22,7 +22,7 @@ where
     trace!("Running script: {:?}", command);
 
     command
-        .status()
+        .output()
         .with_context(ctx!("Could not spawn child {command:?}", ; "",))
 }
 

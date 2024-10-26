@@ -380,7 +380,7 @@ fn display_runs(
         writeln!(f)?;
 
         if let Some(Some(label_text)) = &status.fs_status.afterscript_completion {
-            let display_style = if experiment.labels.map[label_text].rerun_by_default {
+            let display_style = if experiment.labels[label_text].rerun_by_default {
                 ERROR_STYLE
             } else {
                 PRIMARY_STYLE
@@ -413,7 +413,7 @@ fn display_runs(
     Ok(())
 }
 
-/// Display the status of an experiment in a human readable from.
+/// Display the status of an experiment in a human-readable from.
 #[cfg(not(tarpaulin_include))] // We can't test stdout
 pub fn display_job(
     f: &mut impl Write,
@@ -512,7 +512,7 @@ pub fn display_job(
         writeln!(f, "{status:#}")?;
 
         if let Some(Some(label_text)) = &status.fs_status.afterscript_completion {
-            let display_style = if exp.labels.map[label_text].rerun_by_default {
+            let display_style = if exp.labels[label_text].rerun_by_default {
                 ERROR_STYLE
             } else {
                 PRIMARY_STYLE
