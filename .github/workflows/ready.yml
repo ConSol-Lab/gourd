@@ -2,14 +2,14 @@ name: ready
 
 on:
   pull_request:
-    types: [synchronize, labeled, unlabeled]
+    types: [synchronize, review_requested, labeled]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'ready') }}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'ready') || github.event.pull_request.requested_reviewers != ''}}
     runs-on: ubuntu-latest
 
     steps:
@@ -29,9 +29,10 @@ jobs:
             target/release/gourd
             target/release/gourd_wrapper
           retention-days: 2
+        continue-on-error: true
 
   test_lint:
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'ready') }}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'ready') || github.event.pull_request.requested_reviewers != ''}}
     runs-on: ubuntu-latest
 
     steps:
@@ -73,9 +74,10 @@ jobs:
             results.xml
             cobertura.xml
           retention-days: 7
+        continue-on-error: true
 
   documentation:
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'ready') }}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'ready') || github.event.pull_request.requested_reviewers != ''}}
     runs-on: ubuntu-latest
 
     steps:
@@ -93,6 +95,7 @@ jobs:
           name: rustdoc
           path: |
             target/doc/
+        continue-on-error: true
 
       - name: Prepare fonts
         uses: ConorMacBride/install-package@v1
@@ -139,3 +142,4 @@ jobs:
           path: |
             target/release/manpages/
           retention-days: 5
+        continue-on-error: true

@@ -2,14 +2,14 @@ name: draft
 
 on:
   pull_request:
-    types: [synchronize, labeled, unlabeled]
+    types: [opened, synchronize, labeled]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'draft') }}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'draft') || github.event.pull_request.requested_reviewers == '' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +22,7 @@ jobs:
         run: cargo build --release --verbose
 
   test_lint:
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'draft') }}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'draft') || github.event.pull_request.requested_reviewers == '' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -56,3 +56,4 @@ jobs:
             results.xml
             cobertura.xml
           retention-days: 4
+        continue-on-error: true
