@@ -28,13 +28,16 @@ There are 3 pipelines in the project:
 \subsubsection{Draft}
 Build, test \& lint draft pull requests.
 Quick and short pipeline with no artifacts.
+
 This pipeline triggers on every push to a pull request with no reviewers requested, or when the \texttt{draft} label is explicitly assigned.
 \subsubsection{Ready}
 A longer pipeline than draft that includes documentation that is also published as an artifact.
 Use this pipeline when the pull request is ready for review.
+
 This pipeline triggers on every push to a pull request with reviewers requested, or when the \texttt{ready} label is explicitly assigned.
 \subsubsection{Release}
 Generates install scripts and documentation for the project.
+
 Runs automatically on pushes to main, but can also be manually triggered by assigning the \texttt{release} label to a pull request.
 
 \subsection{Releasing a new version}
