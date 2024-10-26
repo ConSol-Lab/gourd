@@ -86,7 +86,7 @@ pub enum UserAfterscript {
 }
 
 /// Afterscript configuration: `executable:`[`PathBuf`],
-// option to extend: /// `input:`[`IoType`].
+/// this struct serves clarity and possible future extensions.
 ///
 /// Afterscripts are run after the main program has finished.
 /// It can be used for a quick postprocess of the main program's output,
@@ -97,21 +97,7 @@ pub enum UserAfterscript {
 pub struct Afterscript {
     /// The path to the afterscript shell-script/executable.
     pub executable: PathBuf,
-    // /// How to pass the job's output to the afterscript input
-    // #[serde(default)]
-    // pub input: IoType,
 }
-
-// /// How to communicate with other programs
-// /// (`stdin`/`stdout` or through file paths that are written to / read from).
-// #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, Default,
-// Copy)] pub enum IoType {
-//     /// Communicate through stdin/stdout.
-//     #[default]
-//     Stdio,
-//     /// Communicate through a file, and exchange the path to said file.
-//     File,
-// }
 
 /// An algorithm fetched from a git repository.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
@@ -452,7 +438,7 @@ impl UserAfterscript {
 
         Ok(Afterscript {
             executable,
-            // input: self.input,
+            // ...
         })
     }
 }
