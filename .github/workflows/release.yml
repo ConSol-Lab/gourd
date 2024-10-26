@@ -1,8 +1,8 @@
-name: nightly
+name: release
 
 on:
   pull_request:
-    types: [milestoned]
+    types: [synchronize, labeled, unlabeled]
   push:
     branches:
       - "main"
@@ -11,10 +11,86 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  nightly-delftblue:
+    name: "nightly-ubuntu"
+    runs-on: "ubuntu-latest" # fix
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'release') || (github.event_name == 'push')}}
+
+    steps:
+    - name: Prepare
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+
+    - name: Gather rust nightly
+      uses: dtolnay/rust-toolchain@nightly
+
+    - name: Prepare fonts
+      uses: ConorMacBride/install-package@v1
+      with:
+          apt: fonts-linuxlibertine mandoc
+
+    - name: Prepare texlive
+      uses: teatimeguest/setup-texlive-action@v3
+      with:
+        packages: |
+          cleveref
+          hyperref
+          xetex
+          amsmath
+          a4wide
+          ntgclass
+          verbatim
+          changepage
+          amsfonts
+          mathspec
+          pgf
+          framed
+          caption
+          geometry
+          listings
+          isodate
+          parskip
+          tools
+          titlesec
+          etoolbox
+          fancyhdr
+          fontspec
+          xkeyval
+          substr
+          latex2man
+
+    - name: Install musl-gcc
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y musl-tools
+
+    - name: Install musl target for static linking
+      run: rustup target add x86_64-unknown-linux-musl
+
+    - name: Build gourd with musl
+      run: cargo build --release --no-default-features --features "builtin-examples documentation" --target x86_64-unknown-linux-musl -vv
+
+    - name: Run delftblue installer
+      run: INSTALL_PATH="\$HOME/.local/bin" MANINSTALL_PATH="\$HOME/.local/share/man" target/x86_64-unknown-linux-musl/release/generate-installer.sh
+
+    - name: Rename installers
+      run: mv target/x86_64-unknown-linux-musl/release/install-x86_64-unknown-linux-musl.sh target/release/install-delftblue.sh && mv target/x86_64-unknown-linux-musl/release/uninstall-x86_64-unknown-linux-musl.sh target/release/uninstall-delftblue.sh
+
+    - name: Upload installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: "installer delftblue"
+        path: |
+          target/release/install-delftblue.sh
+          target/release/uninstall-delftblue.sh
+        retention-days: 180
+
+
   nightly-ubuntu:
     name: "nightly-ubuntu"
     runs-on: "ubuntu-latest"
-    if: ${{ (github.event.milestone.title == 'prepare') || (github.event_name == 'push')}}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'release') || (github.event_name == 'push')}}
 
     steps:
     - name: Prepare
@@ -60,14 +136,8 @@ jobs:
           substr
           latex2man
 
-    - name: Documentation
-      run: cargo build --release --no-default-features --features "builtin-examples documentation" -vv
-
-    - name: Prepare blue installer
-      run: INSTALL_PATH="\$HOME/.local/bin" MANINSTALL_PATH="\$HOME/.local/share/man" target/release/generate-installer.sh
-
-    - name: Delft blue
-      run: mv target/release/install-x86_64-unknown-linux-gnu.sh target/release/install-delftblue.sh && mv target/release/uninstall-x86_64-unknown-linux-gnu.sh target/release/uninstall-delftblue.sh
+    - name: Build
+      run: cargo build --release --features "full" -vv
 
     - name: Prepare installer
       run: target/release/generate-installer.sh
@@ -79,13 +149,12 @@ jobs:
         path: |
           target/release/install-x86_64-unknown-linux-gnu.sh
           target/release/uninstall-x86_64-unknown-linux-gnu.sh
-          target/release/install-delftblue.sh
-          target/release/uninstall-delftblue.sh
+        retention-days: 180
 
   nightly-windows:
     name: "nightly-windows"
     runs-on: "windows-latest"
-    if: ${{ (github.event.milestone.title == 'prepare') || (github.event_name == 'push')}}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'release') || (github.event_name == 'push')}}
 
     steps:
     - name: Prepare
@@ -105,12 +174,13 @@ jobs:
         path: |
           target/release/gourd.exe
           target/release/gourd_wrapper.exe
+        retention-days: 180
 
 
   nightly-macos:
     name: "nightly-macos"
     runs-on: "macos-latest"
-    if: ${{ (github.event.milestone.title == 'prepare') || (github.event_name == 'push')}}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'release') || (github.event_name == 'push')}}
 
     steps:
     - name: Prepare
@@ -168,3 +238,4 @@ jobs:
         path: |
           target/release/install-aarch64-apple-darwin.sh
           target/release/uninstall-aarch64-apple-darwin.sh
+        retention-days: 180

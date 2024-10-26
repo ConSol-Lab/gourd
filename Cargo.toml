@@ -31,6 +31,8 @@ fetching = ["dep:ureq", "git2/default"]
 
 default = ["fetching", "builtin-examples"]
 
+full = ["fetching", "builtin-examples", "documentation", "documentation-latex"]
+
 # The Gourd command-line application.
 [[bin]]
 name = "gourd"

@@ -1,0 +1,143 @@
+name: ready
+
+on:
+  pull_request:
+    types: [synchronize, labeled, unlabeled]
+    branches:
+      - main
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'ready') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare
+        uses: actions/checkout@v4
+      - name: Gather rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release --verbose
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: |
+            target/release/gourd
+            target/release/gourd_wrapper
+          retention-days: 2
+
+  test_lint:
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'ready') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare
+        uses: actions/checkout@v4
+      - name: Gather rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy, rustfmt
+
+      - name: Prepare tarpaulin
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-tarpaulin
+          locked: false
+
+      - name: Prepare cargo2junit
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo2junit
+          locked: false
+
+      - name: Formatting
+        run: cargo fmt -- --check
+      - name: Le clippy
+        run: cargo clippy --release --no-deps --all-targets -- -D warnings
+
+      - name: Count coverage
+        run: cargo tarpaulin --engine llvm --out Xml --root . --manifest-path Cargo.toml
+
+      - name: Report
+        run: cargo test --release -- -Z unstable-options --format json --report-time | cargo2junit > results.xml
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            results.xml
+            cobertura.xml
+          retention-days: 7
+
+  documentation:
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'ready') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare
+        uses: actions/checkout@v4
+      - name: Gather rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Rustdoc
+        run: cargo doc --no-deps --release --document-private-items
+
+      - name: Upload rustdoc
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdoc
+          path: |
+            target/doc/
+
+      - name: Prepare fonts
+        uses: ConorMacBride/install-package@v1
+        with:
+          apt: fonts-linuxlibertine mandoc
+
+      - name: Prepare texlive
+        uses: teatimeguest/setup-texlive-action@v3
+        with:
+          packages: |
+            cleveref
+            hyperref
+            xetex
+            amsmath
+            a4wide
+            ntgclass
+            verbatim
+            changepage
+            amsfonts
+            mathspec
+            pgf
+            framed
+            caption
+            geometry
+            listings
+            isodate
+            parskip
+            tools
+            titlesec
+            etoolbox
+            fancyhdr
+            fontspec
+            xkeyval
+            substr
+            latex2man
+
+      - name: Documentation
+        run: cargo build --release --features "documentation documentation-latex" -vv
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: |
+            target/release/manpages/
+          retention-days: 5
