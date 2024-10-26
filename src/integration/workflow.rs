@@ -9,7 +9,7 @@ use crate::read_experiment_from_stdout;
 fn gourd_run_test() {
     let env = init();
 
-    let (_conf, conf_path) =
+    let (_, conf_path) =
         config(&env, "./src/integration/configurations/using_labels.toml").unwrap();
 
     let output =
@@ -95,8 +95,7 @@ fn gourd_rerun_test() {
 
     let rerun_output_2 = gourd!(env; "-c", conf_path.to_str().unwrap(), "rerun", "-s"; "rerun");
     let text_err = std::str::from_utf8(rerun_output_2.stderr.as_slice()).unwrap();
-    assert!(text_err.contains("3 new runs have been created")); // TODO: confirm
-                                                                // that "4" is correct
+    assert!(text_err.contains("3 new runs have been created"));
 
     assert!(!gourd!(env; "cancel").status.success());
 }
