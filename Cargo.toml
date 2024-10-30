@@ -63,13 +63,13 @@ elf = "0.7.4"
 [dependencies]
 
 # To execute threads locally using a thread-pool executor.
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 # To encode/decode data in gourd.toml and other Gourd files.
 toml = "0.8.12"
 serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
-shellexpand = "=3.1.0"
+shellexpand = { version = "3.1.0", default-features = false, features = ["base-0", "tilde"] }
 glob = "0.3.1"
 regex-lite = "0.1.5"
 

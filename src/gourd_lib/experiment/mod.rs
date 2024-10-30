@@ -12,7 +12,6 @@ use serde::Serialize;
 
 use crate::config::slurm::ResourceLimits;
 use crate::config::slurm::SlurmConfig;
-use crate::config::Afterscript;
 use crate::config::Label;
 use crate::ctx;
 use crate::file_system::FileOperations;
@@ -64,7 +63,7 @@ pub struct InternalProgram {
     pub binary: PathBuf,
 
     /// An executable afterscript to run on the output of this program
-    pub afterscript: Option<Afterscript>,
+    pub afterscript: Option<PathBuf>,
 
     /// The limits to be applied on executions of this program
     pub limits: ResourceLimits,

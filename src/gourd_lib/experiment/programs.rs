@@ -52,6 +52,34 @@ pub fn expand_programs(
             }
         }
 
+        // on unix, check the file permissions and ensure the afterscript is executable.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+
+            use crate::constants::CMD_DOC_STYLE;
+            use crate::ctx;
+            if let Some(executable) = user.afterscript.as_ref() {
+                if executable
+                    .metadata()
+                    .with_context(ctx!("Could not get metadata for work_dir", ; "",))?
+                    .permissions()
+                    .mode()
+                    & 0o111
+                    != 0
+                {
+                    log::warn!(
+                        "The afterscript is not executable!\nTry {} chmod +x {:?} {:#}",
+                        CMD_DOC_STYLE,
+                        executable,
+                        CMD_DOC_STYLE,
+                    );
+                } else {
+                    log::trace!("Afterscript {:?} is executable", executable);
+                }
+            }
+        }
+
         mapper.insert(name, out.len());
         out.push(InternalProgram {
             name: name.to_string(),
@@ -59,7 +87,7 @@ pub fn expand_programs(
             afterscript: user
                 .afterscript
                 .as_ref()
-                .map(|a| a.canonicalize(fs))
+                .map(|a| canon_path(a, fs))
                 .transpose()?,
             limits,
             arguments: user.arguments.clone(),
