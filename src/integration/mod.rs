@@ -42,8 +42,8 @@ use std::string::String;
 
 use anyhow::anyhow;
 use anyhow::Result;
+use gourd_lib::config::maps::canon_path;
 use gourd_lib::config::Config;
-use gourd_lib::config::UserAfterscript;
 use gourd_lib::config::UserProgram;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::experiment::FieldRef;
@@ -249,9 +249,7 @@ pub fn config(env: &TestEnv, gourd_toml: &str) -> Result<(Config, PathBuf)> {
         // we canonicalize here to ensure the paths can be specified in relation to the
         // crate root instead of the tempdir.
         if let Some(after) = &prog.afterscript {
-            prog.afterscript = Some(UserAfterscript::Complex(
-                after.canonicalize(&env.fs).unwrap(),
-            ));
+            prog.afterscript = Some(canon_path(after, &env.fs).unwrap());
         }
     });
 

@@ -153,7 +153,8 @@
     \end{Description}
 
     Each program links to a \Arg{binary} -- the executable file that runs our
-    algorithm. In this case, our Fibonacci algorithms are compiled in Rust.
+    algorithm.
+    In this case, our Fibonacci algorithms are compiled in Rust.
     If you are following this tutorial with
     \Prog{gourd}~\Arg{init}
     \Arg{--example}~\Arg{fibonacci-comparison},
@@ -199,24 +200,28 @@
     a valid number - let's see how this will crash the programs.
 
     Inputs are combined with programs in a \textbf{cross product} to create
-    \emph{runs}. Each program-input combination is exactly one \emph{run}.
+    \emph{runs}.
+    Each program-input combination is exactly one \emph{run}.
     In this example, 3 programs * 4 inputs results in 12 \emph{runs}.
 
     \subsection{Running the evaluation}
 
     Our \File{gourd.toml} is complete - now it is time to run the evaluation
-    using \Prog{gourd}~\Arg{run}. Typing \Prog{gourd}~\Arg{run} in a terminal
+    using \Prog{gourd}~\Arg{run}.
+    Typing \Prog{gourd}~\Arg{run} in a terminal
     will tell you that it has two subcommands:
 
     \begin{Description}[subcommands]\setlength{\itemsep}{0cm}
-    \item[\Arg{local}] Run locally on your computer. If connected via SSH to a
+    \item[\Arg{local}] Run locally on your computer.
+    If connected via SSH to a
       cluster computer, \Arg{local} uses the very limited computing power of
       the login node.
     \item[\Arg{slurm}] Send to the SLURM cluster scheduler on a supercomputer.
     \end{Description}
 
     The \Arg{slurm} subcommand needs some extra configuration, so let's go with
-    \Arg{local} for now. Type \Prog{gourd}~\Arg{run}~\Arg{local}.
+    \Arg{local} for now.
+    Type \Prog{gourd}~\Arg{run}~\Arg{local}.
 
     \begin{verbatim}
 
@@ -250,19 +255,17 @@
 
     \end{verbatim}
 
-    If you are seeing similar output, you have successfully reproduced a Gourd
-    experiment!
+    If you are seeing similar output, you have successfully reproduced a Gourd experiment!
 
     \subsection{Displaying status}
 
-    The \Arg{run} command has created an experiment from the experimental
-    setup and executed it on your computer. Each of the twelve runs are shown
-    here, grouped by program, alongside with their completion status. In fact,
-    you can show this view at any time by typing \Prog{gourd}~\Arg{status}.
+    The \Arg{run} command has created an experiment from the experimental setup and executed it on your computer.
+    Each of the twelve runs are shown here, grouped by program, alongside with their completion status.
+    In fact, you can show this view at any time by typing \Prog{gourd}~\Arg{status}.
 
-    We can see that runs 0,~4,~and~8 have failed. Let's take a closer look at
-    why that is! Type \Prog{gourd}~\Arg{status}~\Opt{-i}~\Arg{4} to check on
-    run number 4.
+    We can see that runs 0,~4,~and~8 have failed.
+    Let's take a closer look at why that is!
+    Type \Prog{gourd}~\Arg{status}~\Opt{-i}~\Arg{4} to check on run number 4.
 
     \begin{verbatim}
 
@@ -296,8 +299,7 @@
 
     These files reveal that \File{bad\_test} fails because the Fibonacci
     programs are expecting a number, but the input is "some text" instead!
-    Let's fix the problem and replace it with 10, a decidedly more valid
-    number.
+    Let's fix the problem and replace it with 10, a decidedly more valid number.
 
     \begin{verbatim}
 
@@ -315,9 +317,8 @@
     Now we have fixed the problem, and the input called \File{bad\_test} is not
     so bad after all.
 
-    You can imagine that running the whole experiment again when only 1/4 of
-    the results are invalid would be a waste. We are going to use
-    \Prog{gourd}~\Arg{rerun} to repeat only the runs that failed.
+    You can imagine that running the whole experiment again when only 1/4 of the results are invalid would be a waste.
+    We are going to use \Prog{gourd}~\Arg{rerun} to repeat only the runs that failed.
 
     \begin{verbatim}
 
@@ -333,12 +334,11 @@
 
     \end{verbatim}
 
-    The \Prog{gourd}~\Arg{rerun} command suggests rerunning the failed runs
-    only! Another option supported by \Arg{rerun} is to specify a list of IDs
-    for it to reschedule.
+    The \Prog{gourd}~\Arg{rerun} command suggests rerunning the failed runs only!
+    Another option supported by \Arg{rerun} is to specify a list of IDs for it to reschedule.
 
-    After \Arg{rerun}, it is necessary to use \Prog{gourd}~\Arg{continue} to
-    actually execute the newly created runs. Try this in your terminal.
+    After \Arg{rerun}, it is necessary to use \Prog{gourd}~\Arg{continue} to actually execute the newly created runs.
+    Try this in your terminal.
 
     \subsection{Collecting data}
 
@@ -347,14 +347,14 @@
     \Prog{gourd} also provides a simple way to process the numerous metrics
     files that our runs have generated.
 
-    By running \Prog{gourd}~\Arg{analyse}, you can create a CSV file that
-    collects all metrics from the application's run. On UNIX-like operating
-    systems, RUsage provides a large array of useful data such as context
-    switches and page faults in addition to basic timing.
+    By running \Prog{gourd}~\Arg{analyse}~\Arg{table}, you can create a CSV
+    file that collects all metrics from the application's run.
+    On UNIX-like operating systems, RUsage provides a large array of useful
+    data such as context switches and page faults in addition to basic timing.
 
-    Furthermore, \Prog{gourd}~\Arg{analyse}~\OptArg{-o }{ output-type} supports
-    other ways of collecting and visualising the experiment's output.
-    Try the \File{plot-png} output type, which produces a cactus-plot summary
+    Furthermore, \Prog{gourd}~\Arg{analyse} supports
+    ways of collecting and visualising the experiment's output.
+    Try the \Prog{gourd}~\Arg{analyse}~\Arg{plot}, which produces a cactus-plot summary
     of the programs' runtimes.
 
     \section{SEE ALSO}

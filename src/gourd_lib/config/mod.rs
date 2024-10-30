@@ -4,7 +4,6 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::Result;
-use maps::canon_path;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -62,8 +61,13 @@ pub struct UserProgram {
     pub arguments: Vec<String>,
 
     /// The path to the afterscript, if there is one.
+    ///
+    /// Afterscripts are run after the main program has finished.
+    /// It can be used for a quick postprocess of the main program's output,
+    /// and the afterscript output can be used for labeling the job in `gourd
+    /// status`, or serving as a custom metric in CSV exporting.
     #[serde(default)]
-    pub afterscript: Option<UserAfterscript>,
+    pub afterscript: Option<PathBuf>,
 
     /// Resource limits to optionally overwrite default resource limits.
     #[serde(default)]
@@ -72,31 +76,6 @@ pub struct UserProgram {
     /// The programs to postprocess this one.
     #[serde(default)]
     pub next: Vec<String>,
-}
-
-/// The user-facing side of [`Afterscript`]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
-pub enum UserAfterscript {
-    /// User specifies all the fields of [`Afterscript`]
-    Complex(Afterscript),
-    /// User specifies only a path to an executable, and it's still a valid
-    /// afterscript
-    #[serde(untagged)]
-    Simple(PathBuf),
-}
-
-/// Afterscript configuration: `executable:`[`PathBuf`],
-/// this struct serves clarity and possible future extensions.
-///
-/// Afterscripts are run after the main program has finished.
-/// It can be used for a quick postprocess of the main program's output,
-/// and the afterscript output can be used for labeling the job in `gourd
-/// status`, or serving as a custom metric in CSV exporting.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct Afterscript {
-    /// The path to the afterscript shell-script/executable.
-    pub executable: PathBuf,
 }
 
 /// An algorithm fetched from a git repository.
@@ -383,9 +362,9 @@ impl Config {
     pub fn parse_schema_inputs(
         path_buf: &Path,
         mut inputs: BTreeMap<String, UserInput>,
-        fso: &impl FileOperations,
+        fs: &impl FileOperations,
     ) -> Result<BTreeMap<String, UserInput>> {
-        let hi = fso.try_read_toml::<InputSchema>(path_buf)?;
+        let hi = fs.try_read_toml::<InputSchema>(path_buf)?;
 
         for (idx, input) in hi.inputs.iter().enumerate() {
             inputs.insert(
@@ -402,45 +381,6 @@ impl Config {
 /// Used for skipping serialisation.
 fn wrapper_is_default(w: &String) -> bool {
     w.eq(&WRAPPER_DEFAULT())
-}
-
-impl UserAfterscript {
-    /// Canonicalize the path to the afterscript executable.
-    pub fn canonicalize(&self, fs: &impl FileOperations) -> Result<Afterscript> {
-        let initial = match self {
-            Self::Complex(Afterscript { executable }) => executable,
-            Self::Simple(executable) => executable,
-        };
-        let executable = canon_path(initial, fs)?;
-        // on unix, check the file permissions and ensure the afterscript is executable.
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-
-            use anyhow::ensure;
-
-            use crate::constants::CMD_DOC_STYLE;
-
-            ensure!(
-                executable
-                    .metadata()
-                    .with_context(ctx!("Could not get metadata for work_dir", ; "",))?
-                    .permissions()
-                    .mode()
-                    & 0o111
-                    != 0,
-                "The afterscript is not executable!\nTry {} chmod +x {:?} {:#}",
-                CMD_DOC_STYLE,
-                executable,
-                CMD_DOC_STYLE,
-            );
-        }
-
-        Ok(Afterscript {
-            executable,
-            // ...
-        })
-    }
 }
 
 #[cfg(test)]

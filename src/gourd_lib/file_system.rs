@@ -232,7 +232,7 @@ impl FileOperations for FileSystemInteractor {
 
     fn canonicalize(&self, path: &Path) -> Result<PathBuf> {
         PathBuf::from(
-            shellexpand::full(path.to_str().ok_or(anyhow!("{path:?} is not valid utf8"))?)?
+            shellexpand::tilde(path.to_str().ok_or(anyhow!("{path:?} is not valid utf8"))?)
                 .to_string(),
         )
         .canonicalize()
