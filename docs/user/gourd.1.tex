@@ -73,7 +73,7 @@
     \section{GLOBAL OPTIONS}
 
         The following options apply to all \Prog{gourd} commands.
-        These will be reffered to as \emph{GLOBAL OPTIONS} throught the manual.
+        These will be referred to as \emph{GLOBAL OPTIONS} throughout the manual.
 
         \begin{Description}[Options]
             \item[\OptArg{-c}{ filename}, \OptArg{\ddash config}{ filename}]
@@ -85,7 +85,7 @@
             without executing them.
             \item[\Opt{-h}, \Opt{\ddash help}]
             Display usage instructions for the \Prog{gourd} utility or any of its commands.
-            This option extends to all of the subcommands of \Prog{gourd}: for example, running
+            This option extends to all the subcommands of \Prog{gourd}: for example, running
             \Prog{gourd} \Arg{status} \Arg{-h} will display help about the \Arg{status} subcommand.
             \item[\Opt{-s}, \Opt{\ddash script}]
             Tell \Prog{gourd} to use a script-friendly interface, that is, one that does not use
@@ -140,7 +140,7 @@
                 Because most options are specified in this file, it is usually sufficient to type
                 \Prog{gourd} \Arg{run} \Arg{slurm}|\Arg{local} to run an experiment.
 
-                See the manual page for \Prog{gourd-tutorial(7)} for a step-by-step guide on
+                See the manual page \Prog{gourd-tutorial(7)} for a step-by-step guide on
                 designing experiments to run.
 
 
@@ -220,8 +220,8 @@
                         of this manual.
 
                         Running on Slurm has many configurable options.
-                        Please refer to the manual for \Prog{gourd-tutorial}(1) for example setups
-                        and the manual for \Prog{gourd.toml}(5) for complete reference.
+                        Please refer to the manual \Prog{gourd-tutorial}(1) for example setups
+                        and the manual \Prog{gourd.toml}(5) for complete reference.
                         The implementation of the Slurm API used by \Prog{gourd} is discussed
                         in depth in the \Prog{gourd} maintainer documentation.
                 \end{Description}
@@ -236,7 +236,7 @@
                 Unless run with the \oOpt{-s} flag, this command will ask using interactive prompts
                 to refine the template to your needs.
 
-                If the command is ran with the \oOpt{-s} flag these choices will not be offered and
+                If the command is run with the \oOpt{-s} flag these choices will not be offered and
                 the default options will be picked for all queries.
 
             \subsubsection{Synopsis}
@@ -253,15 +253,16 @@
                       Initializes the given directory with an example configuration from \Prog{gourd-tutorial(7)}
                       (rather than a custom template for \File{gourd.toml}).
                     \item[\Opt{\ddash list-examples}]
-                      Instead of initializing a folder, this will make \Prog{gourd} list all of the available
+                      Instead of initializing a folder, this will make \Prog{gourd} list all the available
                       examples for the \emph{-e} option.
                     \item[\OptArg{\ddash git}{=true|false}]
-                      Whether or not to initialize an empty git repository in the newly created folder.
+                      Whether to initialize an empty git repository in the newly created folder.
                 \end{Description}
 
             \subsubsection{Listing Examples}
                 If \Opt{\ddash list-examples} is used, \Prog{gourd} \Arg{init} will not initialize a new folder with
-                a configuration. The \Arg{directory} argument will be ignored.
+                a configuration.
+                The \Arg{directory} argument will be ignored.
 
                 A list of available examples and their descriptions will be printed to the output and
                 the program will exit.
@@ -315,24 +316,35 @@
                 succeeded or failed.
 
             \subsubsection{Afterscripts}
-                To postprocess the output of the runs, there are two options available: afterscipts and Slurm
-                postprocessing jobs. Afterscripts are scripts that run locally (so for DelftBlue they do not
-                get scheduled as separate jobs) and are thus meant for quick and computationally inexpensive postprocessing
-                (such as getting the first line of the output file). For long or complicated postprocessing
-                with a significant computational cost, we support Slurm postprocessing jobs. A program being
-                evaluated can have both an afterscript and a postprocessing Slurm job, one of them, or neither.
+                To postprocess the output of the runs, there are two options available: \emph{afterscipts} and \emph{pipelining}.
+                Afterscripts are scripts that run locally (so for DelftBlue they do
+                \emph{not} get scheduled as separate jobs).
 
-                An afterscript is optional and specified per program. To indicate the use of an afterscript,
-                the path to the script file needs to be specified in the \File{gourd.toml} under the chosen program.
-                Multiple programs can use the same script. Furthermore, if at least one program has an
-                afterscript, a path to a folder that will store the afterscript output needs to be specified
-                (once for the entire experiment, analogous to metrics and output paths). The afterscript can
-                be used to assign labels to runs as a means of specifying custom status.
+                Afterscripts are meant for quick and computationally inexpensive postprocessing 
+                (such as getting the first line of the output file).
+                For long or complicated postprocessing with a significant computational cost, look at \emph{Pipelining}.
 
-                An afterscript should take as arguments the path to the input file and the path to a folder
-                for output. The output folder has been created and is empty. It is the responsibility of the
-                afterscript to create and write to any files in that directory.
+                \begin{itemize}
+                    \item An afterscript is optional and specified per program. 
+                    \item To indicate the use of an afterscript, the path to the script file needs to be specified in the \File{gourd.toml} under the chosen program.
+                    \item Multiple programs can use the same script. 
+                    \item The afterscript can be used to assign labels to runs as a means of specifying custom status.
+                \end{itemize}
 
+                \emph{How to design an afterscript:}
+
+                \Prog{gourd} will pass to the afterscript the path to a file containing the main program's output.
+                The afterscript can then print any output to \texttt{stdout} 
+                (via \texttt{print}, \texttt{printf}, \texttt{println}, \texttt{echo} or your preferred language's method),
+                and \Prog{gourd} will collect that and display it in 
+                \Prog{gourd}~\Arg{status}~\Arg{-i}~\Arg{<specific run id>}
+                
+                \emph{What can you do with afterscript output}
+
+                \begin{itemize}
+                    \item use \Prog{labels}, check out the corresponding chapter for more details.
+                    \item create custom metrics: read in \Prog{gourd}~\Arg{analyse} for how to do this.
+                \end{itemize}
         \subsection{GOURD CONTINUE}
 
             \subsubsection{Summary}

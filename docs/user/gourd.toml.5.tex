@@ -66,7 +66,7 @@
               \item[boolean] Either \emph{true} or \emph{false}.
               \item[number] Zero or a positive number.
               \item[regex] A regular expression.
-              \item[duration] An human readable amount of time, for example: "2d 4h".
+              \item[duration] A human-readable amount of time, for example: "2d 4h".
               \item[list of T] A list of values of type T surrounded by [].
           \end{Description}
 
@@ -82,32 +82,25 @@
         \item[\Opt{metrics\_path} = path]
         Where to store the metrics for \Prog{gourd(1)} \Arg{status}.
         These metrics contain information such as: Wall clock time,
-        User time, System time, The amount of context switches etc.
+        User time, System time, the amount of context switches etc.
 
         \item[\Opt{experiments\_folder} = path]
         Where to store state of previously ran experiments.
 
-        Essentially this folder specifies where \Prog{gourd} will store
-        all of its information about experiments. If this folder is removed
-        \Prog{gourd} looses all information about past experiments.
+        Essentially this folder specifies where \Prog{gourd} will store all of its information about experiments.
+        If this folder is removed \Prog{gourd} looses all information about past experiments.
 
         \item[\Opt{wrapper?} = path]
         Defines the path to the \File{gourd\_wrapper} binary. \\ \\
-        The default value is \emph{gourd\_wrapper}. (That is \Prog{gourd}
-        will look for it in the \texttt{\$PATH}) \\ \\
-        If you installed \Prog{gourd} correctly this values should not be
-        changed.
+        The default value is \emph{gourd\_wrapper}.
+        (That is, \Prog{gourd} will look for it in the \texttt{\$PATH}) \\ \\
+        If you installed \Prog{gourd} correctly this values should not be changed.
 
         \item[\Opt{input\_schema?} = path]
-        Defines the path to a optional machine generated input schema. \\ \\
+        Defines the path to an optional machine generated input schema. \\ \\
         For more information about this continue to the \textbf{INPUT SCHEMA}
         section. \\ \\
         The default values is no input schema.
-
-        \item[\Opt{warn\_on\_label\_overlap?} = bool]
-        Information about this can be found in the \textbf{LABELS}
-        section. \\ \\
-        The default value is \emph{false}.
     \end{Description}
 
     \section{SLURM}
@@ -127,12 +120,12 @@
                 The name under which runs for this experiment will be scheduled
                 on Slurm.
               \item[\Opt{output\_folder} = path]
-                The folder where the raw slurm outputs will be stored. This can be useful
-                for debugging.
+                The folder where the raw slurm outputs will be stored.
+                This can be useful for debugging.
               \item[\Opt{partition} = string]
-                The partition on which this should be ran on the supercomputer.
+                The partition on which this should be run on the supercomputer.
                 Running \Prog{gourd} \Arg{run} \Arg{slurm} with an invalid partition
-                will display all of the valid partitions.
+                will display all the valid partitions.
               \item[\Opt{array\_size\_limit?} = number]
                 This specifies the limit of runs that can be put in one Slurm batch.
                 \Prog{gourd} will work to split the workload such that this limit
@@ -145,6 +138,8 @@
               \item[\Opt{account} = string]
                 Which account to use for running jobs on Slurm.
                 For example one account available on DelftBlue is "Education-EEMCS-MSc-CS".
+                To get a list of available accounts on your cluster,
+                you can use Slurm's \Prog{sacctmgr}~\Arg{show}~\Arg{account} command
               \item[\Opt{additional\_args?} = list of string]
                 Custom arguments for Slurm. \\ \\
                 By default there are no additional arguments.
@@ -155,7 +150,7 @@
 
               \begin{verbatim}
 [slurm]
-experiment_name = "test experiment"
+experiment_name = "my test experiment"
 output_folder = "./slurmout/"
 partition = "compute"
 account = "Education-EEMCS-MSc-CS"
@@ -187,13 +182,6 @@ cpus = 1
 mem_per_cpu = 512
               \end{verbatim}
 
-          \subsubsection{Postprocessing Resource Limit}
-
-              If \Prog{gourd} is using postprocessing jobs a separate section
-              (with the same fields) called \\
-              \texttt{[postprocess\_resource\_limits]} must be specified.
-              It holds the same fields.
-
     \section{PROGRAMS}
 
         Multiple programs can be specified.
@@ -223,7 +211,7 @@ mem_per_cpu = 512
               By default, use the global resource limits.
         \end{Description}
 
-        Only one of \Opt{binary}, \Opt{fetch} must be specified.
+        Only one of \Opt{binary}, \Opt{fetch}, \Opt{git} must be specified.
 
         \subsection{EXAMPLE}
 
@@ -454,7 +442,7 @@ arguments = []
         \begin{itemize}
             \item Be executable.
             \item Will receive the path to the jobs output as the first CLI parameter.
-            \item Write its output to the path received as the second CLI parameter.
+            \item Print its output to the standard output \texttt{stdout}.
         \end{itemize}
 
         \subsection{EXAMPLE}
@@ -469,14 +457,14 @@ afterscript = "./script.sh"
             After running the job the after script will be called as:
 
             \begin{verbatim}
-script.sh path/to/job/stdout path/to/afterscript/output
+script.sh path/to/job/stdout
             \end{verbatim}
 
             And for example if:
 
             in \textbf{script.sh}:
             \begin{verbatim}
-cat $1 > $2
+cat $1
             \end{verbatim}
 
             The afterscripts output will be the jobs output (ie. No postprocessing happened).

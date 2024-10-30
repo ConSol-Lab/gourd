@@ -1,5 +1,7 @@
 use anyhow::anyhow;
+use anyhow::Context;
 use anyhow::Result;
+use gourd_lib::ctx;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
 use gourd_lib::resources::run_script;
@@ -25,10 +27,15 @@ pub fn run_afterscript(run_id: usize, experiment: &mut Experiment) -> Result<()>
 
     debug!("Running afterscript for {run_id}");
     let afterscript_output = run_script(
-        &afterscript.executable,
+        afterscript,
         vec![&run_output_path.display().to_string()],
         &run.work_dir,
-    )?;
+    )
+    .with_context(ctx!(
+        "Tried running afterscript at {}",
+        &afterscript.display();
+        "Check section ",
+    ))?;
 
     let afterscript_result = String::from_utf8_lossy(&afterscript_output.stdout)
         .trim()

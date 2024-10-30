@@ -2,8 +2,6 @@ use std::fs;
 use std::fs::Permissions;
 use std::os::unix::fs::PermissionsExt;
 
-use gourd_lib::config::Afterscript;
-use gourd_lib::config::UserAfterscript;
 use gourd_lib::config::UserInput;
 use gourd_lib::config::UserProgram;
 use tempdir::TempDir;
@@ -33,9 +31,7 @@ fn test_run_afterscript_for_run_good_weather() {
                 fetch: None,
                 git: None,
                 arguments: vec![],
-                afterscript: Some(UserAfterscript::Complex(Afterscript {
-                    executable: script_path.clone(),
-                })),
+                afterscript: Some(script_path.clone()),
                 resource_limits: None,
                 next: vec![],
             },
