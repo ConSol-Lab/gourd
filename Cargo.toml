@@ -180,7 +180,10 @@ missing_copy_implementations = "warn"
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
 
 [lints.clippy]
+renamed_and_removed_lints = "allow"
+unknown_lints = "allow"
 redundant_static_lifetimes = "allow"
 missing_docs_in_private_items = "warn"
 missing_safety_doc = "warn"
 undocumented_unsafe_blocks = "warn"
+literal_string_with_formatting_args = "allow"

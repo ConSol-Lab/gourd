@@ -7,6 +7,7 @@ use std::io::Write;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use gourd_lib::constants::CMD_DOC_STYLE;
 use gourd_lib::constants::ERROR_STYLE;
 use gourd_lib::constants::NAME_STYLE;
 use gourd_lib::constants::PARAGRAPH_STYLE;
@@ -421,6 +422,9 @@ pub fn display_job(
     statuses: &ExperimentStatus,
     id: usize,
 ) -> Result<()> {
+    use gourd_lib::constants::TRUNCATE_AFTERSCRIPT_OUTPUT;
+    use log::debug;
+
     info!(
         "Displaying the status of job {} in experiment {}",
         id, exp.seq
@@ -526,17 +530,52 @@ pub fn display_job(
 
             writeln!(f)?;
         } else if let Some(None) = &status.fs_status.afterscript_completion {
-            writeln!(
-                f,
-                "{TERTIARY_STYLE}afterscript ran successfully{TERTIARY_STYLE:#}",
-            )?;
-            writeln!(
-                f,
-                "output expected in: {PATH_STYLE}{:?}{PATH_STYLE:#}",
-                exp.afterscript_output_folder
-            )?;
+            if let Some(mut out) = exp.runs[id].afterscript_output.clone() {
+                writeln!(
+                    f,
+                    "{TERTIARY_STYLE}afterscript ran successfully{TERTIARY_STYLE:#}",
+                )?;
 
-            writeln!(f)?;
+                let truncate_output = |x: &mut String| {
+                    let mut touch = false;
+                    if x.len() > TRUNCATE_AFTERSCRIPT_OUTPUT.0 {
+                        touch = true;
+                        x.truncate(TRUNCATE_AFTERSCRIPT_OUTPUT.0);
+                    }
+                    if x.lines().count() > TRUNCATE_AFTERSCRIPT_OUTPUT.1 {
+                        *x = x.lines().take(TRUNCATE_AFTERSCRIPT_OUTPUT.1).collect();
+                        touch = true;
+                    }
+                    touch
+                };
+
+                if truncate_output(&mut out) {
+                    debug!("truncating afterscript output for gourd status -i {id}");
+                    writeln!(
+                        f,
+                        "afterscript output was too long, run {CMD_DOC_STYLE} gourd status {} -i {id} --after-out {CMD_DOC_STYLE:#} to view entire output
+
+shortened output:\n{PARAGRAPH_STYLE}{}[truncated]{PARAGRAPH_STYLE:#}",
+                        exp.seq,
+                        out
+                    )?;
+                } else {
+                    writeln!(
+                        f,
+                        "afterscript output:\n{PARAGRAPH_STYLE}{}{PARAGRAPH_STYLE:#}",
+                        out
+                    )?;
+                }
+
+                writeln!(f)?;
+            } else {
+                unreachable!(
+                    "this is not supposed to happen, \
+                    please contact the developers on \
+                    https://github.com/ConSol-Lab/gourd/issues/new \
+                    with screenshots (AFT_COMPL_OUT_IS_NONE)"
+                );
+            }
         }
 
         if let Some(new_id) = run.rerun {

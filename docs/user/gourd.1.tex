@@ -281,6 +281,7 @@
                 \oOptArg{-i}{ run-id}
                 \oOpt{\ddash follow}
                 \oOpt{\ddash full}
+                \oOpt{\ddash after-out}
                 \oArg{experiment-id}
 
             \subsubsection{Options}
@@ -299,6 +300,8 @@
                     The status will be continually displayed until all of the runs have finished.
                     This is useful when it is known that the jobs will finish
                     in a matter of minutes.
+                  \item[\Opt{\ddash after-out}]
+                      Use only with \OptArg{-i}{ run-id}, displays the raw afterscript output for that run.
                 \end{Description}
 
             \subsubsection{Experiment status}
@@ -333,7 +336,9 @@
 
                 \emph{How to design an afterscript:}
 
-                \Prog{gourd} will pass to the afterscript the path to a file containing the main program's output.
+                The afterscript should be an \underline{executable} file. This can be a normal compiled executable, or possibly a shell/python script if you use the appropriate \emph{shebang} at the start of the file (check out https://en.wikipedia.org/wiki/Shebang\_(Unix) for details).
+
+                \Prog{gourd} will pass the path to a file containing the main program's output to the afterscript as a command line argument.
                 The afterscript can then print any output to \texttt{stdout} 
                 (via \texttt{print}, \texttt{printf}, \texttt{println}, \texttt{echo} or your preferred language's method),
                 and \Prog{gourd} will collect that and display it in 
@@ -374,9 +379,9 @@
                 we support Slurm postprocessing jobs. A program being evaluated can have both an afterscript
                 and a postprocessing Slurm job, one of them, or neither.
 
-                A postprocesing Slurm job (further called "postprocessing job") is optional and specified per
+                A postprocesing Slurm job (further called ``postprocessing job'') is optional and specified per
                 program. To indicate the use of a postprocessing job, a program needs to be specified under
-                "postprocessing programs" in gourd.toml. That program will have the path to the postprocessing
+                ``postprocessing programs'' in gourd.toml. That program will have the path to the postprocessing
                 binary file. In addition, the name of this new postprocesing program needs to be specified in
                 the gourd.toml under the chosen regular program to indicate that this is the postprocessing
                 used. Multiple programs can use the same postprocessing program. Furthermore, if at least one
@@ -434,7 +439,7 @@
 
             \subsubsection{Summary}
                 The \Prog{gourd} \Arg{analyse} command collects and processes metrics generated
-                when an experiment was run. It can produce a CSV data file or a "cactus plot"
+                when an experiment was run. It can produce a CSV data file or a ``cactus plot''
                 to compare how quickly different algorithms run.
 
             \subsubsection{Synopsis}
