@@ -34,7 +34,7 @@ pub fn run_afterscript(run_id: usize, experiment: &mut Experiment) -> Result<()>
     .with_context(ctx!(
         "Tried running afterscript at {}",
         &afterscript.display();
-        "Check section ",
+        "Ensure that the afterscript file is executable, otherwise check section GOURD STATUS > Afterscripts in `man gourd` for troubleshooting.",
     ))?;
 
     let afterscript_result = String::from_utf8_lossy(&afterscript_output.stdout)

@@ -95,6 +95,10 @@ pub struct StatusStruct {
     /// Do not shorten output even if there is a lot of runs.
     #[arg(long)]
     pub full: bool,
+
+    /// Display full afterscript output for a run. Use with -i <run_id>
+    #[arg(long, requires = "run_id")]
+    pub after_out: bool,
 }
 
 /// Arguments supplied with the `continue` command.

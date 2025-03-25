@@ -76,8 +76,7 @@
 
     \begin{Description}[Options]\setlength{\itemsep}{0cm}
         \item[\Opt{output\_path} = path]
-        This path specifies where to store the stdout, stderr, and afterscript
-        outputs for \emph{programs}.
+        This path specifies where to store the stdout and stderr outputs for \emph{programs}.
 
         \item[\Opt{metrics\_path} = path]
         Where to store the metrics for \Prog{gourd(1)} \Arg{status}.
@@ -451,23 +450,24 @@ arguments = []
 [program.test_program]
 binary = "./algorithm"
 arguments = []
-afterscript = "./script.sh"
+afterscript = "./script"
             \end{verbatim}
 
             After running the job the after script will be called as:
 
             \begin{verbatim}
-script.sh path/to/job/stdout
+script path/to/job/stdout
             \end{verbatim}
 
             And for example if:
 
-            in \textbf{script.sh}:
+            in \textbf{script}:
             \begin{verbatim}
+#!/bin/sh
 cat $1
             \end{verbatim}
 
-            The afterscripts output will be the jobs output (ie. No postprocessing happened).
+            The afterscript's output will be exactly the jobs output (ie. No postprocessing happened).
             But these scripts may be more complex if the use case requires it.
 
     \section{LABELS}

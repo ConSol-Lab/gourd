@@ -137,7 +137,6 @@ fn test_analysis_png_plot_success() {
         seq: 0,
         env: Environment::Local,
         labels: Default::default(),
-        afterscript_output_folder: Default::default(),
         slurm: None,
         chunks: vec![],
         groups: vec![],
