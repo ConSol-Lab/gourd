@@ -135,6 +135,10 @@ pub const MAIL_TYPE_VALID_OPTIONS: [&str; 13] = [
 /// The maximal amount of runs before status only shows a short summary.
 pub const SHORTEN_STATUS_CUTOFF: usize = 40;
 
+/// The max (bytes, lines) of afterscript output that will be displayed in gourd
+/// status of a run
+pub const TRUNCATE_AFTERSCRIPT_OUTPUT: (usize, usize) = (500, 20);
+
 /// Maximal number of individual prompts that the user can be asked when trying
 /// to rerun
 pub const RERUN_LIST_PROMPT_CUTOFF: usize = 15;

@@ -180,9 +180,6 @@ pub struct Experiment {
     /// The path to a folder where the metrics output will be stored.
     pub metrics_folder: PathBuf,
 
-    /// The path to a folder where the afterscript output will be stored.
-    pub afterscript_output_folder: PathBuf,
-
     /// Global resource limits that will apply to _newly created chunks_.
     pub resource_limits: Option<ResourceLimits>,
 

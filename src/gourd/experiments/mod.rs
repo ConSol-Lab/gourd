@@ -99,8 +99,6 @@ impl ExperimentExt for Experiment {
 
             output_folder: fs.truncate_and_canonicalize_folder(&conf.output_path)?,
             metrics_folder: fs.truncate_and_canonicalize_folder(&conf.metrics_path)?,
-            afterscript_output_folder: fs
-                .truncate_and_canonicalize_folder(&conf.output_path.join("afterscripts"))?,
 
             env,
             resource_limits: conf.resource_limits,

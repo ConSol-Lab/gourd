@@ -205,6 +205,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
             run_id,
             follow: blocking,
             full,
+            after_out,
             ..
         }) => {
             let mut experiment = read_experiment(experiment_id, cmd, &file_system)?;
@@ -216,7 +217,25 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
 
             match run_id {
                 Some(id) => {
-                    display_job(&mut stdout(), &experiment, &statuses, *id)?;
+                    // only print the afterscript output,
+                    // in a script-readable format (nothing fancy)
+                    if *after_out {
+                        if let Some(out) = &experiment.runs[*id].afterscript_output {
+                            println!("{out}");
+                        } else {
+                            // INFO: here we can detect if the run is supposed to have an
+                            // afterscript ourselves. but for now the user can do it instead.
+                            bailc!(
+                                "could not print afterscript output",;
+                                "there is no afterscript output for this run",;
+                                "please make sure
+1. this run is supposed to have an afterscript, and
+2. that the afterscript prints its output correctly.",
+                            );
+                        }
+                    } else {
+                        display_job(&mut stdout(), &experiment, &statuses, *id)?;
+                    }
                 }
                 None => {
                     info!(

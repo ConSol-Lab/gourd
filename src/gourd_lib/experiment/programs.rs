@@ -66,10 +66,10 @@ pub fn expand_programs(
                     .permissions()
                     .mode()
                     & 0o111
-                    != 0
+                    == 0
                 {
                     log::warn!(
-                        "The afterscript is not executable!\nTry {} chmod +x {:?} {:#}",
+                        "The afterscript for program {name} is not executable!\nTry {} chmod +x {:?} {:#}",
                         CMD_DOC_STYLE,
                         executable,
                         CMD_DOC_STYLE,
