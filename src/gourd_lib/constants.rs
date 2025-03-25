@@ -9,6 +9,12 @@ use anstyle::Style;
 use crate::config::slurm::ResourceLimits;
 
 /// The version name for Gourd!
+/// Ensure it matches:
+/// - Cargo.toml
+/// - docs/maintainer/version-history/section.tex
+/// - docs/user/gourd-tutorial.7.tex
+/// - docs/user/gourd.1.tex
+/// - docs/user/gourd.toml.5.tex
 pub const GOURD_VERSION: &str = "Sponge Gourd";
 
 /// The default path to the wrapper, that is, we assume `gourd_wrapper` is in
@@ -31,12 +37,18 @@ pub const LABEL_OVERLAP_DEFAULT: fn() -> bool = || false;
 pub const EMPTY_ARGS: fn() -> Vec<String> = Vec::new;
 
 /// The prefix which will cause an argument to be interpreted as a glob.
+/// Ensure matches:
+/// - docs/user/gourd.toml.5
 pub const GLOB_ESCAPE: &str = "path|";
 
 /// The prefix which will cause an argument to be interpreted as a parameter.
+/// Ensure matches:
+/// - docs/user/gourd.toml.5
 pub const PARAMETER_ESCAPE: &str = "param|";
 
 /// The prefix which will cause an argument to be interpreted as a subparameter.
+/// Ensure matches:
+/// - docs/user/gourd.toml.5
 pub const SUB_PARAMETER_ESCAPE: &str = "subparam|";
 
 /// The internal representation of inputs generated from a schema
