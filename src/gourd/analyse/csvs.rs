@@ -152,7 +152,8 @@ pub fn metrics_generators(col: CsvColumn) -> ColumnGenerator<(usize, Status)> {
 
                 Ok(Some(format!(
                     "{:.5}s",
-                    Duration::from_nanos((dt / n) as u64).as_secs_f32()
+                    Duration::from_nanos((dt.checked_div(n).unwrap_or_default()) as u64)
+                        .as_secs_f32()
                 )))
             },
         ),
@@ -178,7 +179,8 @@ pub fn metrics_generators(col: CsvColumn) -> ColumnGenerator<(usize, Status)> {
 
                 Ok(Some(format!(
                     "{:.5}s",
-                    Duration::from_nanos((dt / n) as u64).as_secs_f32()
+                    Duration::from_nanos((dt.checked_div(n).unwrap_or_default()) as u64)
+                        .as_secs_f32()
                 )))
             },
         ),
@@ -204,7 +206,8 @@ pub fn metrics_generators(col: CsvColumn) -> ColumnGenerator<(usize, Status)> {
 
                 Ok(Some(format!(
                     "{:.5}s",
-                    Duration::from_nanos((dt / n) as u64).as_secs_f32()
+                    Duration::from_nanos((dt.checked_div(n).unwrap_or_default()) as u64)
+                        .as_secs_f32()
                 )))
             },
         ),
