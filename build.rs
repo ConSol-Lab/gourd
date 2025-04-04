@@ -232,7 +232,7 @@ fn generate_html(man_path: PathBuf, out_folder: &Path) -> Result<PathBuf> {
     let out_path = out_folder.join(man_path.with_extension("html").file_name().unwrap());
     let style_path = out_folder.join("manpage.css");
 
-    fs::write(&out_path, format!("{}{}{}", PREAMBLE, html, POSTAMBLE))?;
+    fs::write(&out_path, format!("{PREAMBLE}{html}{POSTAMBLE}"))?;
     fs::write(style_path, STYLE)?;
 
     Ok(out_path)

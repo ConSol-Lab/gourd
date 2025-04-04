@@ -69,13 +69,10 @@ pub fn expand_programs(
                     == 0
                 {
                     log::warn!(
-                        "The afterscript for program {name} is not executable!\nTry {} chmod +x {:?} {:#}",
-                        CMD_DOC_STYLE,
-                        executable,
-                        CMD_DOC_STYLE,
+                        "The afterscript for program {name} is not executable!\nTry {CMD_DOC_STYLE} chmod +x {executable:?} {CMD_DOC_STYLE:#}"
                     );
                 } else {
-                    log::trace!("Afterscript {:?} is executable", executable);
+                    log::trace!("Afterscript {executable:?} is executable");
                 }
             }
         }

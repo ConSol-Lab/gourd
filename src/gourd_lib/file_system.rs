@@ -131,8 +131,7 @@ impl FileOperations for FileSystemInteractor {
                 let mut copied_path = canonical_path.to_path_buf();
                 copied_path.push(&archive_path);
                 debug!(
-                    "Would have written archived file {:?} to {:?} (dry)",
-                    archive_path, copied_path
+                    "Would have written archived file {archive_path:?} to {copied_path:?} (dry)"
                 );
             }
             Ok(())
@@ -176,7 +175,7 @@ impl FileOperations for FileSystemInteractor {
 
         if let Some(parent) = path.parent() {
             if !parent.exists() {
-                debug!("Creating directories for {:?}", parent);
+                debug!("Creating directories for {parent:?}");
             }
 
             fs::create_dir_all(parent).with_context(ctx!(
@@ -185,7 +184,7 @@ impl FileOperations for FileSystemInteractor {
             ))?;
         }
 
-        debug!("Creating a file at {:?}", path);
+        debug!("Creating a file at {path:?}");
         File::create(path).with_context(ctx!(
            "Could not create {path:?}", ;
            "Ensure that you have sufficient permissions",
@@ -200,7 +199,7 @@ impl FileOperations for FileSystemInteractor {
             return Ok(path.to_path_buf());
         }
 
-        debug!("Creating directories for {:?}", path);
+        debug!("Creating directories for {path:?}");
         fs::create_dir_all(path).with_context(ctx!(
            "Could not create {path:?}", ;
            "Ensure that you have sufficient permissions",

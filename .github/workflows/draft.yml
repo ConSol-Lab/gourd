@@ -46,8 +46,8 @@ jobs:
       - name: Clippy
         run: cargo clippy --release --no-deps --all-targets -- -D warnings
 
-      - name: Report
-        run: cargo test --release -vv -- -Z unstable-options --format json --report-time | cargo2junit > results.xml
+      - name: Cargo Test
+        run: cargo test --release -- -Z unstable-options --format json --report-time | cargo2junit > results.xml
 
       - name: Upload reports
         uses: actions/upload-artifact@v4
@@ -55,6 +55,5 @@ jobs:
           name: coverage
           path: |
             results.xml
-            cobertura.xml
           retention-days: 4
         continue-on-error: true

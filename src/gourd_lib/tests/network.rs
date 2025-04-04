@@ -43,7 +43,7 @@ fn test_downloading_from_url() {
     let file_path = tmp_dir.path().join(output_name);
 
     let tmp_dir_path = PathBuf::from(tmp_dir.path());
-    println!("{:?}", tmp_dir_path);
+    println!("{tmp_dir_path:?}");
 
     download_file(
         "https://sh.rustup.rs",

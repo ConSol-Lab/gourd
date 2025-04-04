@@ -19,7 +19,7 @@ where
     command.args(&arguments);
     command.current_dir(work_dir);
 
-    trace!("Running script: {:?}", command);
+    trace!("Running script: {command:?}");
 
     command
         .output()
