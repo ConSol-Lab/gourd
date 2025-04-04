@@ -368,7 +368,7 @@ impl Config {
 
         for (idx, input) in hi.inputs.iter().enumerate() {
             inputs.insert(
-                format!("{}{}{}", idx, INTERNAL_PREFIX, INTERNAL_SCHEMA_INPUTS),
+                format!("{idx}{INTERNAL_PREFIX}{INTERNAL_SCHEMA_INPUTS}"),
                 input.clone(),
             );
         }

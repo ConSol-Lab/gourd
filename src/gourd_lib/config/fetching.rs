@@ -79,7 +79,7 @@ pub fn fetch_git(program: &GitProgram) -> Result<PathBuf> {
 
     let bc = program.build_command.clone();
 
-    info!("Running build command {}", bc);
+    info!("Running build command {bc}");
 
     let augumented = vec!["-c", &bc];
 

@@ -220,7 +220,11 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                     // only print the afterscript output,
                     // in a script-readable format (nothing fancy)
                     if *after_out {
-                        if let Some(out) = &experiment.runs[*id].afterscript_output {
+                        if let Some(Some(out)) = &experiment
+                            .runs
+                            .get(*id)
+                            .map(|x| x.afterscript_output.clone())
+                        {
                             println!("{out}");
                         } else {
                             // INFO: here we can detect if the run is supposed to have an

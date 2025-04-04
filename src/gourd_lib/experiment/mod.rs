@@ -249,7 +249,7 @@ impl Experiment {
         let run = self
             .runs
             .get(run_id)
-            .ok_or_else(|| anyhow!("Could not find run {}", run_id))
+            .ok_or_else(|| anyhow!("Could not find run {run_id}"))
             .with_context(ctx!("",;"",))?;
 
         self.programs
@@ -263,13 +263,13 @@ impl Experiment {
     pub fn slurm_out(&self, slurm_id: &str) -> Option<PathBuf> {
         self.slurm
             .as_ref()
-            .map(|opt| opt.output_folder.join(format!("gourd_{}.out", slurm_id)))
+            .map(|opt| opt.output_folder.join(format!("gourd_{slurm_id}.out")))
     }
 
     /// Get the slurm stderr file path for a given run.
     pub fn slurm_err(&self, slurm_id: &str) -> Option<PathBuf> {
         self.slurm
             .as_ref()
-            .map(|opt| opt.output_folder.join(format!("gourd_{}.err", slurm_id)))
+            .map(|opt| opt.output_folder.join(format!("gourd_{slurm_id}.err")))
     }
 }
