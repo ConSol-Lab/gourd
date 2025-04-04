@@ -84,7 +84,7 @@ pub fn expand_argument_globs(
         if is_glob {
             for (idx, glob) in globset.iter().enumerate() {
                 result.insert(
-                    format!("{}{}{}{}", original, INTERNAL_PREFIX, INTERNAL_GLOB, idx),
+                    format!("{original}{INTERNAL_PREFIX}{INTERNAL_GLOB}{idx}"),
                     glob.clone(),
                 );
             }

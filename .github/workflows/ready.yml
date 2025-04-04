@@ -44,12 +44,6 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      - name: Prepare tarpaulin
-        uses: baptiste0928/cargo-install@v3
-        with:
-          crate: cargo-tarpaulin
-          locked: false
-
       - name: Prepare cargo2junit
         uses: baptiste0928/cargo-install@v3
         with:
@@ -58,13 +52,10 @@ jobs:
 
       - name: Formatting
         run: cargo fmt -- --check
-      - name: Le clippy
+      - name: Clippy
         run: cargo clippy --release --no-deps --all-targets -- -D warnings
 
-      - name: Count coverage
-        run: cargo tarpaulin --engine llvm --out Xml --root . --manifest-path Cargo.toml
-
-      - name: Report
+      - name: Cargo Test
         run: cargo test --release -- -Z unstable-options --format json --report-time | cargo2junit > results.xml
 
       - name: Upload reports
@@ -73,7 +64,6 @@ jobs:
           name: coverage
           path: |
             results.xml
-            cobertura.xml
           retention-days: 7
         continue-on-error: true
 

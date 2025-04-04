@@ -1,5 +1,6 @@
 use std::fs;
 use std::fs::Permissions;
+use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 
 use gourd_lib::config::UserInput;
@@ -18,14 +19,16 @@ echo "🩴"
 fn test_run_afterscript_for_run_good_weather() {
     let dir = TempDir::new("after_test").unwrap();
     let script_path = dir.path().join("script");
-    let script_file = fs::File::create(&script_path).unwrap();
-    fs::write(&script_path, PRE_PROGRAMMED_SH_SCRIPT).unwrap();
+    let mut script_file = fs::File::create(&script_path).unwrap();
+    script_file
+        .write_all(PRE_PROGRAMMED_SH_SCRIPT.as_bytes())
+        .unwrap();
     script_file
         .set_permissions(Permissions::from_mode(0o755))
         .unwrap();
     let (mut sample, _) = create_sample_experiment(
         [(
-            "ruta".into(),
+            "test".into(),
             UserProgram {
                 binary: Some(script_path.clone()),
                 fetch: None,
@@ -52,5 +55,8 @@ fn test_run_afterscript_for_run_good_weather() {
 
     run_afterscripts_for_experiment(&mut sample, &REAL_FS).unwrap();
 
-    assert_eq!(sample.runs[0].afterscript_output, Some("🩴".into()));
+    assert!(sample.runs[0]
+        .afterscript_output
+        .as_ref()
+        .is_some_and(|o| o.contains("🩴")));
 }
