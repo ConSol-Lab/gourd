@@ -62,14 +62,16 @@ pub fn expand_programs(
             if let Some(executable) = user.afterscript.as_ref() {
                 if executable
                     .metadata()
-                    .with_context(ctx!("Could not get metadata for work_dir", ; "",))?
+                    .with_context(ctx!("Could not get metadata for work_dir", ;
+        "",))?
                     .permissions()
                     .mode()
                     & 0o111
                     == 0
                 {
                     log::warn!(
-                        "The afterscript for program {name} is not executable!\nTry {CMD_DOC_STYLE} chmod +x {executable:?} {CMD_DOC_STYLE:#}"
+                        "The afterscript for program {name} is not executable!\nTry
+        {CMD_DOC_STYLE} chmod +x {executable:?} {CMD_DOC_STYLE:#}"
                     );
                 } else {
                     log::trace!("Afterscript {executable:?} is executable");
