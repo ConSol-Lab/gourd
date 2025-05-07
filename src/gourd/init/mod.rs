@@ -65,7 +65,7 @@ pub fn init_experiment_setup(
 ) -> Result<()> {
     check_init_directory(directory)?;
 
-    info!("Creating an experimental setup at {directory:?}." );
+    info!("Creating an experimental setup at {directory:?}.");
 
     match template {
         None => init_interactive(directory, script_mode, fs)?,
