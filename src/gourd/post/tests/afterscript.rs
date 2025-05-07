@@ -19,13 +19,15 @@ echo "🩴"
 fn test_run_afterscript_for_run_good_weather() {
     let dir = TempDir::new("after_test").unwrap();
     let script_path = dir.path().join("script");
-    let mut script_file = fs::File::create(&script_path).unwrap();
-    script_file
-        .write_all(PRE_PROGRAMMED_SH_SCRIPT.as_bytes())
-        .unwrap();
-    script_file
-        .set_permissions(Permissions::from_mode(0o755))
-        .unwrap();
+    {
+        let mut script_file = fs::File::create(&script_path).unwrap();
+        script_file
+            .write_all(PRE_PROGRAMMED_SH_SCRIPT.as_bytes())
+            .unwrap();
+        script_file
+            .set_permissions(Permissions::from_mode(0o755))
+            .unwrap();
+    } // drop script_file
     let (mut sample, _) = create_sample_experiment(
         [(
             "test".into(),
