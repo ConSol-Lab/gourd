@@ -389,9 +389,8 @@
                 output needs to be specified (once for the entire experiment, analogous to metrics and output
                 paths).
 
-                As input the postprocessing binary will get the output of a run of a regular program that has
-                been specified to have this postprocessing. It will write its results to a file the way that
-                regular programs do.
+                As input, the postprocessing binary will get the output of a run of the regular program it is
+                postprocessing. The postprocess results will be written to a file, the same as regular programs.
 
         \subsection{GOURD CANCEL}
 
@@ -444,29 +443,68 @@
 
             \subsubsection{Synopsis}
                 \Prog{gourd} \Arg{analyse}
-                \oOpt{GLOBAL OPTIONS}
-                \oOptArg{-o}{ format}
                 \oArg{experiment-id}
+                \Arg{table}|\Arg{plot}
+                \oOpt{GLOBAL OPTIONS}
+                \oOptArg{-o}{ path/to/file}
+                \oOptArg{-f}{ format options}
 
             \subsubsection{Options}
                 \begin{Description}[Options]
-                  \item[\Arg{experiment-id}]
-                    The ID of an experiment to analyse.
-                    By default, this is the most recent experiment.
-                  \item[\OptArg{-o}{ format}, \OptArg{\ddash output}{ format}]
-                    The format of the desired analysis output. There are three available:
-                    \emph{csv} (the default), \emph{plot-png}, \emph{plot-svg}. They are described below.
+                    \item[\Arg{experiment-id}]
+                        The ID of an experiment to analyse.
+                        By default, this is the most recent experiment.
+                    \item[\OptArg{-o}{ path/to/file}, \OptArg{\ddash output}{ path/to/file}]
+                        Pass the command's output to a file.
+                    \item[\OptArg{-f}{ format options}, \OptArg{\ddash format}{ format options}]
+                        Formatting options for the \Arg{table} and \Arg{plot} subcommands.
                 \end{Description}
 
             \subsubsection{Metrics CSV}
-                Running \Prog{gourd} \Arg{analyse} \OptArg{-o}{ csv} will create a CSV file with
+                Running \Prog{gourd} \Arg{analyse} \Arg{table} will create a table with
                 data about the status of the runs, metrics, and afterscript completion, unless there
-                are no runs that have completed already.
+                are no completed runs.
+                If the \Arg{-o} option is not passed, the table will be pretty-printed in the 
+                command line, otherwise a CSV file will be saved to the specified path.
                 The CSV generation will take into account all runs of the experiment. If \Prog{gourd}
                 \Arg{analyse} is rerun, the CSV will be updated with the newest status of the runs.
 
+                The option \texttt{--format} takes a comma-separated list of columns to use
+                in the table. Without specifying this option, \Prog{gourd} will default to
+                \texttt{--format="program,slurm,fs-status,wall-time"}. The first column will 
+                always contain the \texttt{run id}.
+                The possible options are:
+                \begin{description}
+                    \item[\texttt{program}] program name
+                    \item[\texttt{file}] the input file this run was executed with, if there was one
+                    \item[\texttt{args}] command-line arguments passed to the program
+                    \item[\texttt{group}] the input group, if there is one
+                    \item[\texttt{label}] any label-associated status
+                    \item[\texttt{afterscript}] afterscript status string
+                    \item[\texttt{slurm}] run status retrieved from the slurm daemon
+                    \item[\texttt{fs-status}] run status retrieved from the file system
+                    \item[\texttt{exit-code}] program's exit code
+                    \item[\texttt{wall-time}] total elapsed real (wall-clock) time
+                    \item[\texttt{user-time}] CPU time spent in user mode
+                    \item[\texttt{system-time}] CPU time spent in kernel (system-call) mode
+                    \item[\texttt{max-rss}] peak resident set size (maximum RAM used)
+                    \item[\texttt{ix-rss}] integral of shared memory size over the run (ru\_ixrss)
+                    \item[\texttt{id-rss}] integral of unshared data segment size (ru\_idrss)
+                    \item[\texttt{is-rss}] integral of unshared stack size (ru\_isrss)
+                    \item[\texttt{min-flt}] number of minor page faults
+                    \item[\texttt{maj-flt}] number of major page faults
+                    \item[\texttt{n-swap}] total swap operations performed
+                    \item[\texttt{in-block}] number of block input operations (disk reads)
+                    \item[\texttt{ou-block}] number of block output operations (disk writes)
+                    \item[\texttt{msg-sent}] number of inter-process messages sent
+                    \item[\texttt{msg-recv}] number of inter-process messages received
+                    \item[\texttt{n-signals}] number of signals delivered to the process
+                    \item[\texttt{nv-csw}] voluntary context switches count
+                    \item[\texttt{n-iv-csw}] involuntary context switches count
+                \end{description}
+
             \subsubsection{Cactus plots}
-                Running \Prog{gourd} \Arg{analyse} \OptArg{-o}{ plot-png} will create a PNG picture of
+                Running \Prog{gourd} \Arg{analyse} \Arg{plot} will create a PNG picture of
                 a cactus plot.
                 The cactus plot is used to showcase the comparison of how many inputs each algorithm
                 can finish running with in a given amount of time.
@@ -475,54 +513,11 @@
                 This allows to see a visual comparison of the time each program takes - the more runs
                 there are, the more informative the plot will result to be.
                 The plot will take into account only the runs that have completed and have valid
-                RUsage data. If \Prog{gourd} \Arg{analyse} is rerun, the graph will be updated
+                RUsage data. If \Prog{gourd} \Arg{analyse} \Arg{plot} is rerun, the graph will be updated
                 according to the newest available data.
 
-                Running \Prog{gourd} \Arg{analyse} \OptArg{-o}{ plot-svg} will create exactly the same
-                plot but in a \emph{svg} conformant format.
-
-        \subsection{GOURD SET-LIMITS}
-
-            \subsubsection{Summary}
-                The \Prog{gourd} \Arg{set-limits} command allows to update resource limits for programs.
-                The new resource limits will affect future runs that have these programs.
-
-            \subsubsection{Synopsis}
-                \Prog{gourd} \Arg{set-limits}
-                \oOpt{GLOBAL OPTIONS}
-                \oOptArg{-p}{ program-name}
-                \oOpt{-a}
-                \oOptArg{--mem}{ memory-limit}
-                \oOptArg{--cpu}{ cpu-limit}
-                \oOptArg{--time}{ time-limit}
-                \oArg{experiment-id}
-
-            \subsubsection{Options}
-                \begin{Description}[Options]
-                    \item[\Arg{experiment-id}]
-                    The ID of an experiment to modify limits of.
-                    By default, this is the most recent experiment.
-                    \item[\Opt{-a, \ddash all}]
-                    Changes resource limits for all available programs, including postprocessing programs.
-                    \item[\OptArg{-p, \ddash program}{ program-name}]
-                    Changes resource limits for the specified program (simple or postprocesing).
-                    \item[\OptArg{\ddash mem}{ memory-limit}]
-                    Allows to specify the new memory limit (a number) instead of asking for it interactively.
-                    \item[\OptArg{\ddash cpu}{ cpu-limit}]
-                    Allows to specify the new cpu limit (a number) instead of asking for it interactively.
-                    \item[\OptArg{\ddash time}{ time-limit}]
-                    Allows to specify the new time limit (in humantime format) instead of asking for it
-                    interactively.
-                \end{Description}
-
-            \subsubsection{Programs}
-                Specifying a program to modify the limits for is required.
-                One can either specify the \Opt{-p} flag with a specific program
-                or \Opt{-a} to modify limits for all programs
-
-            \subsubsection{Scripting}
-                When ran with \Opt{-s}, \Arg{set-limits} will not ask for the properties
-                not specified by command line options, instead it will exit with an error.
+                The option \texttt{--format} can be used to specify whether the plot output
+                should be in PNG or SVG format.
 
         \subsection{GOURD VERSION}
 
