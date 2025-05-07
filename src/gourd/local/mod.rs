@@ -24,7 +24,7 @@ pub async fn run_local(
 
     let cmds = wrap(experiment, &status, env::consts::ARCH, fs)?;
 
-    trace!("About to run: {:#?}", cmds);
+    trace!("About to run: {cmds:#?}");
 
     experiment.save(fs)?;
 

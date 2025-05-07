@@ -82,8 +82,8 @@ pub async fn parse_command() {
     if backtrace_enabled {
         eprintln!("{:?}", process_command(&command).await);
     } else if let Err(e) = process_command(&command).await {
-        eprintln!("{}error:{:#} {}", ERROR_STYLE, ERROR_STYLE, e.root_cause());
-        eprint!("{}", e);
+        eprintln!("{ERROR_STYLE}error:{ERROR_STYLE:#} {}", e.root_cause());
+        eprint!("{e}");
         exit(1);
     }
 }
@@ -360,7 +360,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 }
             } else if cmd.script {
                 for table in tables {
-                    println!("{:-}\n", table);
+                    println!("{table:-}\n");
                 }
             } else {
                 for table in tables {
@@ -368,7 +368,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                         "Table for {TERTIARY_STYLE}{}{TERTIARY_STYLE:#} runs",
                         table.body.len()
                     );
-                    info!("{}", table);
+                    info!("{table}");
                 }
                 info!(
                     "Run with {CMD_STYLE} --output=\"path/to/location.csv\" {CMD_STYLE:#} \
@@ -416,7 +416,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                             .and_then(|x| {
                                 x.slurm_id
                                     .clone()
-                                    .ok_or(anyhow!("Could not find run {} on Slurm", id))
+                                    .ok_or(anyhow!("Could not find run {id} on Slurm"))
                                     .with_context(ctx!(
                                         "You can only cancel runs that have been scheduled on Slurm.", ;
                                         "Run {CMD_STYLE}gourd status {}{CMD_STYLE:#} \
@@ -514,7 +514,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                 cmd.script,
             )?;
 
-            trace!("Selected runs: {:?}", selected_runs);
+            trace!("Selected runs: {selected_runs:?}");
 
             // NOTE: when rerunning we should only update the limits of the new runs,
             // and not of the whole experiment.

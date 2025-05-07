@@ -45,19 +45,14 @@ pub fn print_version(script: bool) {
     let mut to_print = LOGO.replace(
         "{LINE1}",
         &format!(
-            "  at version {}{}{:#} {GOURD_VERSION:?}",
-            PRIMARY_STYLE,
-            crate_version!(),
-            PRIMARY_STYLE
+            "  at version {PRIMARY_STYLE}{}{PRIMARY_STYLE:#} {GOURD_VERSION:?}",
+            crate_version!()
         ),
     );
 
     to_print = to_print.replace(
         "{LINE2}",
-        &format!(
-            "{}Technische Universiteit Delft 2024{:#}",
-            NAME_STYLE, NAME_STYLE,
-        ),
+        &format!("{NAME_STYLE}Technische Universiteit Delft 2024{NAME_STYLE:#}"),
     );
 
     to_print = to_print.replace("{LINE3}", "Authored by:");
@@ -89,7 +84,7 @@ pub fn format_table(data: Vec<Vec<String>>) -> String {
         let formatted_row: Vec<String> = row
             .into_iter()
             .enumerate()
-            .map(|(i, item)| format!("{:width$}", item, width = max_widths[i]))
+            .map(|(i, item)| format!("{item:width$}", width = max_widths[i]))
             .collect();
         if !result.is_empty() {
             result.push('\n');

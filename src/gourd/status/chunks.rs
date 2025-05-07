@@ -69,13 +69,13 @@ pub fn print_scheduling(exp: &Experiment, starting: bool) -> Result<()> {
         " these ones are already sent to slurm{PRIMARY_STYLE:#}"
     ));
 
-    info!("{}", bar);
+    info!("{bar}");
 
     if total_scheduled > 0 {
-        info!("{}", bar_lower);
+        info!("{bar_lower}" );
     }
 
-    info!("");
+    info!("")
     info!("To schedule the rest when this part finishes run {PRIMARY_STYLE}gourd continue{PRIMARY_STYLE:#}");
 
     Ok(())

@@ -88,7 +88,7 @@ pub fn metrics_generators(col: CsvColumn) -> ColumnGenerator<(usize, Status)> {
                 .input
                 .file
                 .as_ref()
-                .map_or("None".to_string(), |p| format!("{:?}", p)))
+                .map_or("None".to_string(), |p| format!("{p:?}")))
         }),
         CsvColumn::Args => create_column("input args", |exp, x: &(usize, Status)| {
             Ok(format!("{:?}", &exp.runs[x.0].input.args))

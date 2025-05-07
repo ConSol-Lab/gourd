@@ -28,15 +28,15 @@ where
 
         for (run_id, run) in experiment.runs.iter().enumerate() {
             trace!(
-                "Reading status for run {} from {:?}",
-                run_id,
+                "Reading status for run {run_id} from {:?}",
                 run.metrics_path
             );
 
             let metrics = match fs.try_read_toml::<Metrics>(&run.metrics_path) {
                 Ok(x) => Some(x),
                 Err(e) => {
-                    trace!("Failed to read metrics: {:?}", e);
+                    trace!("Failed to read metrics: {e:?}");
+
                     None
                 }
             };
@@ -56,9 +56,8 @@ where
                     Ok(status) => Some(status),
                     Err(e) => {
                         warn!(
-                            "No output found for afterscript of run #{}: {e}\n\
+                            "No output found for afterscript of run #{run_id}: {e}\n\
                             Check that the afterscript correctly places the output in a file.",
-                            run_id
                         );
                         None
                     }

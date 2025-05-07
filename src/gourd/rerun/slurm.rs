@@ -49,9 +49,8 @@ pub fn query_changing_resource_limits(
                 });
 
         if query_yes_no(&format!(
-            "{} runs ran out of memory and {} runs ran out of time. \
+            "{out_of_memory} runs ran out of memory and {out_of_time} runs ran out of time. \
                      Do you want to change the resource limits for their programs?",
-            out_of_memory, out_of_time
         ))? {
             query_changing_limits_for_programs(selected_runs, experiment)?;
         }
@@ -101,18 +100,12 @@ pub(super) fn check_single_run_failed(
         }
 
         RerunStatus::FailedExitCode(c) => {
-            debug!(
-                "Scheduling rerun for run #{} that failed with exit code {}",
-                specific_run, c
-            );
+            debug!("Scheduling rerun for run #{specific_run} that failed with exit code {c}");
             Ok(*specific_run)
         }
 
         RerunStatus::FailedErrorLabel(l) => {
-            debug!(
-                "Scheduling rerun for run #{} that failed with label {}",
-                specific_run, l
-            );
+            debug!("Scheduling rerun for run #{specific_run} that failed with label {l}");
             Ok(*specific_run)
         }
     }
@@ -201,9 +194,9 @@ pub fn query_changing_limits_for_programs(
                             None,
                         )?;
 
-                        debug!("Updating resource limits for run {}", run_id);
+                        debug!("Updating resource limits for run {run_id}");
                         trace!("Old resource limits: {:?}", program.limits);
-                        trace!("New resource limits: {:?}", new_rss);
+                        trace!("New resource limits: {new_rss:?}");
 
                         update_program_resource_limits(*run_id, experiment, new_rss)?;
                         changed.push(program);

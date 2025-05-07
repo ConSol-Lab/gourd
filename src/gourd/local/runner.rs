@@ -48,14 +48,14 @@ pub async fn run_locally(tasks: Vec<Command>, force: bool, sequential: bool) -> 
 
         if sequential {
             for mut task in tasks {
-                trace!("Running task: {:?}", task);
+                trace!("Running task: {task:?}");
                 handle_output(task.output());
             }
         } else {
             let mut set = JoinSet::new();
 
             for mut task in tasks {
-                trace!("Queueing task: {:?}", task);
+                trace!("Queueing task: {task:?}");
                 set.spawn_blocking(move || task.output());
             }
 

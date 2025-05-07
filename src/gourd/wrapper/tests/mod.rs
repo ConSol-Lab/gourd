@@ -79,12 +79,7 @@ fn non_matching_arch() {
             assert!(format!("{}", err.root_cause()).contains("not match the expected architecture"))
         }
 
-        e => {
-            panic!(
-                "Did not return the correct architecture mismatch, was: {:?}",
-                e
-            );
-        }
+        e => panic!("Did not return the correct architecture mismatch, was: {e:?}"),
     }
 }
 

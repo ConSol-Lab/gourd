@@ -65,7 +65,7 @@ pub fn init_experiment_setup(
 ) -> Result<()> {
     check_init_directory(directory)?;
 
-    info!("Creating an experimental setup at {:?}.", directory);
+    info!("Creating an experimental setup at {directory:?}." );
 
     match template {
         None => init_interactive(directory, script_mode, fs)?,
@@ -82,15 +82,12 @@ pub fn init_experiment_setup(
     }
 
     if dry_run {
-        info!(
-            "The experimental setup would be ready in {:?} (dry)",
-            directory
-        );
+        info!("The experimental setup would be ready in {directory:?} (dry)");
     } else {
         info!("");
-        info!("The experimental setup is ready in {:?}!", directory);
+        info!("The experimental setup is ready in {directory:?}!");
         info!("To create an experiment, use these commands:");
-        info!(" >  {CMD_STYLE}cd {:?}{CMD_STYLE:#}", directory);
+        info!(" >  {CMD_STYLE}cd {directory:?}{CMD_STYLE:#}");
         info!(" >  {CMD_STYLE}gourd run{CMD_STYLE:#}");
     }
 
@@ -103,32 +100,32 @@ pub fn init_experiment_setup(
 /// valid (even for relative paths such as "foo" that have "" as parent),
 /// and checking that the directory path itself does not yet exist.
 fn check_init_directory(directory: &Path) -> Result<()> {
-    debug!("Checking the init directory at {:?}", directory);
+    debug!("Checking the init directory at {directory:?}");
 
     match directory.parent() {
         // The directory is "/", the next check will fail (already exists)
         None => {}
         // Check that the parent exists
         Some(parent) => {
-            debug!("Checking the parent directory at {:?}", parent);
+            debug!("Checking the parent directory at {parent:?}");
 
             if !(parent.exists() || parent == Path::new("")) {
                 bailc!(
-                  "The parent directory, {:?}, does not exist.", parent;
+                  "The parent directory, {parent:?}, does not exist.", ;
                   "", ;
                   "Ensure that you are asking 'gourd init' to \
                   initialize the directory at a valid path.",
                 )
             }
 
-            debug!("The parent directory, {:?}, is valid", parent)
+            debug!("The parent directory, {parent:?}, is valid",)
         }
     }
 
     if directory.exists() {
         bailc!(
           "The path exists.", ;
-          "A file or directory exists at {:?}.", directory;
+          "A file or directory exists at {directory:?}.", ;
           "Run 'gourd init' for a directory that does not yet exist.",
         )
     }
@@ -157,7 +154,7 @@ fn init_from_example(
         match get_example(id) {
             None => bailc!(
                 "Invalid example name.", ;
-                "An example called \"{}\" does not exist.", id ;
+                "An example called \"{id}\" does not exist.",  ;
                 "Try a valid example, such as \"{}\". \
                 Use {CMD_STYLE}gourd init --list-examples{CMD_STYLE:#} for all options.",
                 get_examples().iter().next().unwrap().0,

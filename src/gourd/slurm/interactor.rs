@@ -36,29 +36,26 @@ pub fn format_slurm_duration(duration: Duration) -> String {
     let secs_rem = secs % 60;
 
     if secs == secs_rem {
-        return format!("{:0>2}", secs);
+        return format!("{secs:0>2}");
     }
 
     let mins = secs / 60;
     let mins_rem = mins % 60;
 
     if mins == mins_rem {
-        return format!("{:0>2}:{:0>2}", mins, secs_rem);
+        return format!("{mins:0>2}:{secs_rem:0>2}");
     }
 
     let hours = mins / 60;
     let hours_rem = hours % 24;
 
     if hours == hours_rem {
-        return format!("{:0>2}:{:0>2}:{:0>2}", hours, mins_rem, secs_rem);
+        return format!("{hours:0>2}:{mins_rem:0>2}:{secs_rem:0>2}");
     }
 
     let days = hours / 24;
 
-    format!(
-        "{}-{:0>2}:{:0>2}:{:0>2}",
-        days, hours_rem, mins_rem, secs_rem
-    )
+    format!("{days}-{hours_rem:0>2}:{mins_rem:0>2}:{secs_rem:0>2}")
 }
 
 /// An implementation of the SlurmInteractor trait for interacting with SLURM
@@ -85,12 +82,12 @@ fn sacctmgr_limit(field: &str) -> Result<String> {
         .arg("withassoc")
         .arg("where")
         .arg(format!("name={}", std::env::var("USER")?))
-        .arg(format!("format={}", field))
+        .arg(format!("format={field}"))
         .arg("--parsable2")
         .arg("--noheader");
 
     let out = cmd.output()?;
-    debug!("Running {:?} gave {:?}", cmd, &out);
+    debug!("Running {cmd:?} gave {:?}", &out);
 
     Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
@@ -161,7 +158,7 @@ impl SlurmInteractor for SlurmCli {
                 debug!("Could not parse max array size from slurm: {e}");
                 bailc!(
                     "Could not parse max array size from slurm", ;
-                    "Slurm gave output for MaxArraySize: {}", out;
+                    "Slurm gave output for MaxArraySize: {out}", ;
                     "If this persists, you can manually add the limit to the slurm config as \
                     {CMD_DOC_STYLE}array_size_limit{CMD_DOC_STYLE:#}",
                 )
@@ -261,7 +258,7 @@ set -x
             chunk_index
         );
 
-        debug!("Sbatch file: {}", contents);
+        debug!("Sbatch file: {contents}");
 
         let mut cmd = Command::new("sbatch")
             .arg("--parsable")
@@ -417,7 +414,7 @@ set -x
             let mut cancel = Command::new("scancel");
             cancel.args(chunk);
 
-            debug!("Running cancel: {:?}", cancel);
+            debug!("Running cancel: {cancel:?}");
 
             let output = cancel.output().with_context(ctx!(
               "Failed to cancel runs",;
