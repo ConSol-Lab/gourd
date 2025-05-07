@@ -21,28 +21,29 @@ pub fn generate_new_run(
     experiment: &Experiment,
     fs: &impl FileOperations,
 ) -> Result<Run> {
+    let seq = experiment.seq;
     Ok(Run {
         program,
         input: run_input,
         err_path: fs.truncate_and_canonicalize(
             &experiment
                 .output_folder
-                .join(format!("{}/{}/{}/stderr", experiment.seq, program, run_id)),
+                .join(format!("{seq}/{program}/{run_id}/stderr")),
         )?,
         metrics_path: fs.truncate_and_canonicalize(
             &experiment
                 .metrics_folder
-                .join(format!("{}/{}/{}/metrics", experiment.seq, program, run_id)),
+                .join(format!("{seq}/{program}/{run_id}/metrics")),
         )?,
         output_path: fs.truncate_and_canonicalize(
             &experiment
                 .output_folder
-                .join(format!("{}/{}/{}/stdout", experiment.seq, program, run_id)),
+                .join(format!("{seq}/{program}/{run_id}/stdout")),
         )?,
         work_dir: fs.truncate_and_canonicalize_folder(
             &experiment
                 .output_folder
-                .join(format!("{}/{}/{}/", experiment.seq, program, run_id)),
+                .join(format!("{seq}/{program}/{run_id}/")),
         )?,
         afterscript_output: None,
         limits,

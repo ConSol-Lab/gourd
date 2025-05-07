@@ -30,8 +30,7 @@ pub fn canon_path(path: &Path, fs: &impl FileOperations) -> Result<PathBuf> {
         .map_err(|e| {
             debug!("Canonicalize error: {e:?}");
             anyhow!(
-                "failed to find {:?} with workdir {:?}",
-                path,
+                "failed to find {path:?} with workdir {:?}",
                 current_dir().unwrap()
             )
         })

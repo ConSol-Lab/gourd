@@ -152,8 +152,7 @@ fn init() -> TestEnv {
         &gourd_path.exists(),
         "\nTest setup couldn't find the gourd executable.
     Please ensure that both `gourd` and `gourd_wrapper` are built before running integration tests.
-    [Expected to find the wrapper at: {:?}]\n",
-        gourd_path
+    [Expected to find the wrapper at: {gourd_path:?}]\n",
     );
 
     // 2. find gourd_wrapper executable
@@ -162,8 +161,7 @@ fn init() -> TestEnv {
         Path::new(&wrapper_path).exists(),
         "\nTest setup couldn't find the wrapper executable.
     Please ensure that both `gourd` and `gourd_wrapper` are built before running integration tests.
-    [Expected to find the wrapper at: {:?}]\n",
-        wrapper_path
+    [Expected to find the wrapper at: {wrapper_path:?}]\n",
     );
 
     // Create a temporary directory to run experiments in. CARGO_TARGET_TMPDIR means

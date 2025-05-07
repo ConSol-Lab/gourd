@@ -97,11 +97,7 @@ where
 
         let mut counter = 0;
         for (chunk_id, chunk) in chunks_to_schedule.iter().enumerate() {
-            debug!(
-                "Scheduling chunk {} with {} runs",
-                chunk_id,
-                chunk.runs.len()
-            );
+            debug!("Scheduling chunk {chunk_id} with {} runs", chunk.runs.len());
 
             if let Err(e) = self.internal.schedule_chunk(
                 &slurm_config,
@@ -109,7 +105,7 @@ where
                 experiment,
                 &fs.canonicalize(&exp_path)?,
             ) {
-                error!("Could not schedule chunk #{}: {:?}", chunk_id, e);
+                error!("Could not schedule chunk #{chunk_id}: {e:?}");
                 break;
             }
 
@@ -126,16 +122,16 @@ pub fn parse_optional_args(slurm_config: &SlurmConfig) -> String {
     let mut result = "".to_string();
 
     if let Some(val) = &slurm_config.begin {
-        result.push_str(&format!("#SBATCH --begin={}\n", val));
+        result.push_str(&format!("#SBATCH --begin={val}\n"));
     }
 
     if let Some(val) = &slurm_config.mail_type {
         assert!(MAIL_TYPE_VALID_OPTIONS.contains(&val.as_str()));
-        result.push_str(&format!("#SBATCH --mail-type={}\n", val))
+        result.push_str(&format!("#SBATCH --mail-type={val}\n"))
     }
 
     if let Some(val) = &slurm_config.mail_user {
-        result.push_str(&format!("#SBATCH --mail-user={}\n", val))
+        result.push_str(&format!("#SBATCH --mail-user={val}\n"))
     }
 
     if let Some(args) = &slurm_config.additional_args {

@@ -134,7 +134,7 @@ impl Chunkable for Experiment {
         for (task_id, run_id) in chunk.runs.iter().enumerate() {
             // because we schedule an array by specifying the run_id(s) in a list,
             // the sub id should be == run_id.
-            self.runs[*run_id].slurm_id = Some(format!("{}_{}", batch_id, task_id));
+            self.runs[*run_id].slurm_id = Some(format!("{batch_id}_{task_id}"));
         }
     }
 

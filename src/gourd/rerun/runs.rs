@@ -79,7 +79,7 @@ pub(super) fn get_what_runs_to_rerun_from_experiment(
     match ask(Select::new("What would you like to do?", choices.clone()).prompt())?.as_str() {
         x if x == choices[1] => Ok::<Vec<usize>, anyhow::Error>(all_not_rerun),
         x if x == choices[0] => Ok::<Vec<usize>, anyhow::Error>(failed_runs),
-        x => unreachable!("got: {:?}", x),
+        x => unreachable!("got: {x:?}"),
     }
 }
 

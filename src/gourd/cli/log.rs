@@ -32,6 +32,6 @@ impl CologStyle for LogTokens {
             Level::Trace => style_from_fg(AnsiColor::Magenta),
         };
 
-        format!("{}{}{:#}", style, msg, style)
+        format!("{style}{msg}{style:#}")
     }
 }

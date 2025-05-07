@@ -185,7 +185,7 @@ fn is_a_rust_file(path: &Path) -> bool {
 /// Returns the path of the file after it has been compiled with `rustc`.
 fn compile_rust_file(path: &Path) -> Result<()> {
     let canon_path =
-        canonicalize(path).context(format!("Could not canonicalize the path: {:?}", &path))?;
+        canonicalize(path).context(format!("Could not canonicalize the path: {path:?}"))?;
 
     let str_path = canon_path.to_str().ok_or_else(|| anyhow!(":("))?;
 
@@ -200,8 +200,8 @@ fn compile_rust_file(path: &Path) -> Result<()> {
     )?;
 
     if !compiled_path.is_file() {
-        Err(anyhow!("Rustc output: {}", output)
-            .context(format!("No rust file generated at {compiled_path:?}",)))
+        Err(anyhow!("Rustc output: {output}")
+            .context(format!("No rust file generated at {compiled_path:?}")))
     } else {
         Ok(())
     }

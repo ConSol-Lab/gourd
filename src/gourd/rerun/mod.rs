@@ -39,9 +39,9 @@ impl Display for RerunStatus {
         match self {
             RerunStatus::NotFinished => write!(f, "Not finished"),
             RerunStatus::FinishedExitZero => write!(f, "Finished with exit code 0"),
-            RerunStatus::FinishedSuccessLabel(l) => write!(f, "Finished with label {}", l),
-            RerunStatus::FailedErrorLabel(l) => write!(f, "Failed with label {}", l),
-            RerunStatus::FailedExitCode(c) => write!(f, "Failed with exit code {}", c),
+            RerunStatus::FinishedSuccessLabel(l) => write!(f, "Finished with label {l}"),
+            RerunStatus::FailedErrorLabel(l) => write!(f, "Failed with label {l}"),
+            RerunStatus::FailedExitCode(c) => write!(f, "Failed with exit code {c}"),
         }
     }
 }
