@@ -239,7 +239,7 @@ pub fn metrics_table(
         header: Some(vec!["run id".into()]),
         body: status_tuples
             .iter()
-            .map(|(id, _)| vec![format!("run {id}")])
+            .map(|(id, _)| vec![format!("{id}")])
             .collect(),
         footer: Some(vec!["average".into()]),
     };
