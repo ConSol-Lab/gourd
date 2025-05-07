@@ -72,10 +72,10 @@ pub fn print_scheduling(exp: &Experiment, starting: bool) -> Result<()> {
     info!("{bar}");
 
     if total_scheduled > 0 {
-        info!("{bar_lower}" );
+        info!("{bar_lower}");
     }
 
-    info!("")
+    info!("");
     info!("To schedule the rest when this part finishes run {PRIMARY_STYLE}gourd continue{PRIMARY_STYLE:#}");
 
     Ok(())
