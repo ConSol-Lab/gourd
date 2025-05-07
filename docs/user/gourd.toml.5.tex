@@ -184,7 +184,7 @@ mem_per_cpu = 512
     \section{PROGRAMS}
 
         Multiple programs can be specified.
-        A program represents a compiled algorithm and is a combination of a binary file and parameters.
+        A program represents a compiled executable and is a combination of a binary file and parameters.
         Each program begins with \Arg{[programs.program-name]}, where \Arg{program-name} can be any unique name.
 
         \begin{Description}[Options]\setlength{\itemsep}{0cm}
@@ -193,7 +193,7 @@ mem_per_cpu = 512
             \item[\Opt{fetch} = fetched\_path]
               URL to the program executable.
             \item[\Opt{git} = git\_object]
-              See the \textbf{ALGORITHM VERSIONS} section for more information. \\ \\
+              See the \textbf{PROGRAM VERSIONS} section for more information. \\ \\
             \item[\Opt{arguments?} = list of string]
               Arguments to be passed to the executable. \\ \\
               By default an empty list.
@@ -587,9 +587,9 @@ arguments = [“any”, “program”, “arguments”]
             inside, then when there is a need for cleaning the cache this amounts
             to deleting the folder
 
-    \section{ALGORITHM VERSIONS}
+    \section{PROGRAM VERSIONS}
 
-        Algorithms may be fetched and compiled straight from a git repository.
+        Programs may be fetched and compiled straight from a git repository.
 
         The user in this case has to provide the commit ID of the desired HEAD,
         the build command and the path to the output binary.

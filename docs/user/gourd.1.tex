@@ -370,27 +370,45 @@
                     By default, this is the most recent experiment.
                 \end{Description}
 
-            \subsubsection{Postprocessing Slurm jobs}
-                As discussed when describing \Prog{gourd} \Arg{status}, to postprocess the output of the runs,
-                there are two options available: afterscipts and Slurm postprocessing jobs. Afterscripts are
-                scripts that run locally (so for DelftBlue they do not get scheduled as separate jobs) and are
-                thus meant for quick and non-complicated postprocessing (such as getting the first line of the
-                output file). For long and complicated postprocessing with a significant computational cost,
-                we support Slurm postprocessing jobs. A program being evaluated can have both an afterscript
-                and a postprocessing Slurm job, one of them, or neither.
+            \subsubsection{Pipelining}
+                Programs may be pipelined by specifying the \texttt{next} programs in the sequence:
+                \begin{verbatim}
+[program.your_first_progarm]
+binary = "./executable"
+next = ["a_second_program", "another_second_prog"]
 
-                A postprocesing Slurm job (further called ``postprocessing job'') is optional and specified per
-                program. To indicate the use of a postprocessing job, a program needs to be specified under
-                ``postprocessing programs'' in gourd.toml. That program will have the path to the postprocessing
-                binary file. In addition, the name of this new postprocesing program needs to be specified in
-                the gourd.toml under the chosen regular program to indicate that this is the postprocessing
-                used. Multiple programs can use the same postprocessing program. Furthermore, if at least one
-                program has a postprocessing job, a path to a folder that will store the postprocesing job
-                output needs to be specified (once for the entire experiment, analogous to metrics and output
-                paths).
+[program.a_second_program]
+binary = "./executable2"
 
-                As input, the postprocessing binary will get the output of a run of the regular program it is
-                postprocessing. The postprocess results will be written to a file, the same as regular programs.
+[program.another_second_prog]
+binary = "./executable3"
+                \end{verbatim}
+                See the manual for \texttt{gourd.toml} for more details on configuration.
+
+                In the example above, when the runs for \texttt{your\_first\_progarm} finish, running
+                \Prog{gourd} \Arg{continue} will start one run for \texttt{a\_second\_program} and one for
+                \texttt{another\_second\_prog}, both of which will receive as input (to \texttt{stdin}) the
+                output (\texttt{stdout}) of \texttt{your\_first\_progarm}.
+                % As discussed when describing \Prog{gourd} \Arg{status}, to postprocess the output of the runs,
+                % there are two options available: afterscipts and Slurm postprocessing jobs. Afterscripts are
+                % scripts that run locally (so for DelftBlue they do not get scheduled as separate jobs) and are
+                % thus meant for quick and non-complicated postprocessing (such as getting the first line of the
+                % output file). For long and complicated postprocessing with a significant computational cost,
+                % we support Slurm postprocessing jobs. A program being evaluated can have both an afterscript
+                % and a postprocessing Slurm job, one of them, or neither.
+                %
+                % A postprocesing Slurm job (further called ``postprocessing job'') is optional and specified per
+                % program. To indicate the use of a postprocessing job, a program needs to be specified under
+                % ``postprocessing programs'' in gourd.toml. That program will have the path to the postprocessing
+                % binary file. In addition, the name of this new postprocesing program needs to be specified in
+                % the gourd.toml under the chosen regular program to indicate that this is the postprocessing
+                % used. Multiple programs can use the same postprocessing program. Furthermore, if at least one
+                % program has a postprocessing job, a path to a folder that will store the postprocesing job
+                % output needs to be specified (once for the entire experiment, analogous to metrics and output
+                % paths).
+                %
+                % As input, the postprocessing binary will get the output of a run of the regular program it is
+                % postprocessing. The postprocess results will be written to a file, the same as regular programs.
 
         \subsection{GOURD CANCEL}
 
