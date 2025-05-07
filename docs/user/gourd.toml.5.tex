@@ -139,6 +139,18 @@
                 For example one account available on DelftBlue is "Education-EEMCS-MSc-CS".
                 To get a list of available accounts on your cluster,
                 you can use Slurm's \Prog{sacctmgr}~\Arg{show}~\Arg{account} command
+              \item[\Opt{mail\_type} = string]        
+                Choose one of Slurm's options for sending emails when a run's status changes.
+                Default is "NONE". Valid options are: 
+                \texttt{"NONE", "BEGIN", "END", "FAIL", "REQUEUE", "ALL", "INVALID\_DEPEND", "STAGE\_OUT", "TIME\_LIMIT", "TIME\_LIMIT\_90", "TIME\_LIMIT\_80", "TIME\_LIMIT\_50", "ARRAY\_TASKS"}
+              \item[\Opt{mail\_user} = string]        
+                Your email address, if you want to receive email updates from Slurm.
+              \item[\Opt{begin} = string]        
+                Submit runs to the Slurm controller immediately, like normal, but tell the 
+                controller to defer the allocation of the job until the specified time.
+
+                Time may be of the form \texttt{HH:MM:SS} or \texttt{HH:MM} to run a job at a specific time of day,
+                or in the \texttt{now+} format (for example, \texttt{now+1hour}, or \texttt{now+32min})
               \item[\Opt{additional\_args?} = list of string]
                 Custom arguments for Slurm. \\ \\
                 By default there are no additional arguments.
