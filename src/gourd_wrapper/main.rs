@@ -64,14 +64,12 @@ struct RunConf {
 
 fn main() {
     if let Err(err) = process() {
-        eprintln!("{}error:{:#} {}", ERROR_STYLE, ERROR_STYLE, err);
+        eprintln!("{ERROR_STYLE}error:{ERROR_STYLE:#} {err}");
         eprintln!(
-            "{}caused by:{:#} {}",
-            ERROR_STYLE,
-            ERROR_STYLE,
+            "{ERROR_STYLE}caused by:{ERROR_STYLE:#} {}",
             err.root_cause()
         );
-        eprintln!("{}help:{:#} The gourd_wrapper program is internal. You should not be invoking it manually", HELP_STYLE, HELP_STYLE);
+        eprintln!("{HELP_STYLE}help:{HELP_STYLE:#} The gourd_wrapper program is internal. You should not be invoking it manually" );
         exit(1);
     }
 }
@@ -108,7 +106,7 @@ fn process() -> Result<()> {
         .stdin(if let Some(actual_input) = rc.input_path.clone() {
             Stdio::from(
                 File::open(actual_input.clone())
-                    .context(format!("Could not open the input {:?}", actual_input))?,
+                    .context(format!("Could not open the input {actual_input:?}"))?,
             )
         } else {
             Stdio::null()
@@ -165,12 +163,12 @@ fn process_args(args: &[String], fs: &impl FileOperations) -> Result<RunConf> {
     }
 
     let chunk_id: usize = args[2].parse().with_context(ctx!(
-        "Could not parse the run id from the arguments {:?}", args;
+        "Could not parse the run id from the arguments {args:?}", ;
         "Ensure that Slurm is configured correctly",
     ))?;
 
     let task_id: usize = args[3].parse().with_context(ctx!(
-        "Could not parse the run id from the arguments {:?}", args;
+        "Could not parse the run id from the arguments {args:?}", ;
         "Ensure that Slurm is configured correctly",
     ))?;
 

@@ -11,5 +11,5 @@ fn main() {
 
     let num: i32 = inpt.trim().parse().unwrap();
 
-    println!("{}", num);
+    println!("{num}");
 }

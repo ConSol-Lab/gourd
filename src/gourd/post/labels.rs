@@ -10,7 +10,7 @@ pub fn assign_label(
     source_text: &str,
     experiment: &Experiment,
 ) -> Result<Option<String>> {
-    debug!("Assigning label for text {:?}", source_text);
+    debug!("Assigning label for text {source_text:?}");
 
     let mut result_label: Option<String> = None;
 
@@ -22,10 +22,7 @@ pub fn assign_label(
         let label = &label_map[l];
         if label.regex.is_match(source_text) {
             if let Some(ref r) = result_label {
-                warn!(
-                    "The afterscript for run {:?} matches multiple labels: {} and {}",
-                    run_id, r, l
-                );
+                warn!("The afterscript for run {run_id:?} matches multiple labels: {r} and {l}");
             } else {
                 trace!("{source_text} matches {l}");
                 result_label = Some(l.clone());

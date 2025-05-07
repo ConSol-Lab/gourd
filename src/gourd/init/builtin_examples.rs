@@ -44,13 +44,13 @@ impl InitExample<'_> {
         file_system.write_archive(directory, archive)?;
 
         if !file_system.dry_run {
-            debug!("Entering the directory {:?}", directory);
+            debug!("Entering the directory {directory:?}");
             let previous_dir = std::env::current_dir()?;
             std::env::set_current_dir(directory)?;
 
             let config_path = PathBuf::from("gourd.toml");
 
-            debug!("Checking for a \"gourd.toml\" at {:?}.", config_path);
+            debug!("Checking for a \"gourd.toml\" at {config_path:?}.");
             match Config::from_file(Path::new("gourd.toml"), file_system) {
                 Err(e) => {
                     debug!("Configuration check failed: {}", e.root_cause());
@@ -105,6 +105,6 @@ pub fn get_examples() -> BTreeMap<&'static str, InitExample<'static>> {
 /// Retrieves a named example experiment, or [None].
 pub fn get_example(id_input: &str) -> Option<InitExample<'static>> {
     let id = id_input.to_string().replace(['.', '_', ' '], "-");
-    debug!("Translating the example-id: {} to {}", id_input, id);
+    debug!("Translating the example-id: {id_input} to {id}");
     get_examples().get(&id as &str).cloned()
 }

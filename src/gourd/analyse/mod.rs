@@ -172,7 +172,7 @@ impl Display for Table {
             for row in self.body.iter() {
                 writeln!(f)?;
                 for value in row.iter() {
-                    write!(f, "{}\t", value)?;
+                    write!(f, "{value}\t")?;
                 }
             }
         } else {
@@ -180,7 +180,7 @@ impl Display for Table {
             let col_widths = self.column_widths();
             if let Some(header) = &self.header {
                 for (width, value) in col_widths.iter().zip(header.iter()) {
-                    write!(f, "| {: <width$} ", value)?;
+                    write!(f, "| {value: <width$} ")?;
                 }
                 writeln!(f, "|")?;
 
@@ -192,7 +192,7 @@ impl Display for Table {
 
             for row in self.body.iter() {
                 for (width, value) in col_widths.iter().zip(row.iter()) {
-                    write!(f, "| {: <width$} ", value)?;
+                    write!(f, "| {value: <width$} ")?;
                 }
                 writeln!(f, "|")?;
             }
@@ -204,7 +204,7 @@ impl Display for Table {
                 writeln!(f, "*")?;
 
                 for (width, value) in col_widths.iter().zip(footer.iter()) {
-                    write!(f, "| {: <width$} ", value)?;
+                    write!(f, "| {value: <width$} ")?;
                 }
                 writeln!(f, "|")?;
             }

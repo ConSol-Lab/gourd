@@ -22,13 +22,13 @@ pub fn validate_parameters(parameters: &BTreeMap<String, Parameter>) -> Result<(
             bailc!(
               "Parameter specified incorrectly", ;
               "Parameter can have either values or subparameters, not both", ;
-              "Parameter name {}", p_name
+              "Parameter name {p_name}",
             );
         } else if p.sub.is_none() && p.values.is_none() {
             bailc!(
               "Parameter specified incorrectly", ;
               "Parameter must have either values or subparameters, currently has none", ;
-              "Parameter name {}", p_name
+              "Parameter name {p_name}",
             );
         }
     }

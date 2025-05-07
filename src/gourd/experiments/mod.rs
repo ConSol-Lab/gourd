@@ -203,7 +203,7 @@ impl ExperimentExt for Experiment {
         folder: &Path,
         fs: &impl FileOperations,
     ) -> Result<Experiment> {
-        fs.try_read_toml(&folder.join(format!("{}.lock", seq)))
+        fs.try_read_toml(&folder.join(format!("{seq}.lock")))
     }
 }
 

@@ -54,8 +54,8 @@ pub fn wrap(
         let mut cmd = Command::new(shellexpand::tilde(&experiment.wrapper).to_string());
 
         cmd.arg(experiment.file())
-            .arg(format!("{}", chunk_index))
-            .arg(format!("{}", task_id));
+            .arg(format!("{chunk_index}"))
+            .arg(format!("{task_id}"));
 
         result.push(cmd);
     }

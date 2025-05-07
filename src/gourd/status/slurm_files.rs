@@ -42,7 +42,7 @@ where
                 ) {
                     Ok(slurm_output) => slurm_output,
                     Err(e) => {
-                        debug!("Failed to read slurm output for run {}: {}", run_id, e);
+                        debug!("Failed to read slurm output for run {run_id}: {e}");
                         "File not created yet".to_string()
                     }
                 };
@@ -53,7 +53,7 @@ where
                 ) {
                     Ok(slurm_output) => slurm_output,
                     Err(e) => {
-                        debug!("Failed to read slurm output for run {}: {}", run_id, e);
+                        debug!("Failed to read slurm output for run {run_id}: {e}");
                         "File not created yet".to_string()
                     }
                 };

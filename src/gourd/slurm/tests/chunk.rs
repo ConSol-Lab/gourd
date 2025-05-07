@@ -165,10 +165,10 @@ fn create_chunks_greedy_test() {
         {
             let mut inputs = BTreeMap::new();
             for i in 0..5 {
-                _ = inputs.insert(format!("Input_A_{}", i), input_a.clone())
+                _ = inputs.insert(format!("Input_A_{i}"), input_a.clone())
             }
             for i in 0..5 {
-                _ = inputs.insert(format!("Input_B_{}", i), input_b.clone())
+                _ = inputs.insert(format!("Input_B_{i}"), input_b.clone())
             }
             inputs.into()
         },

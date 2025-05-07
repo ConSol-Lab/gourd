@@ -172,11 +172,11 @@ pub fn flatten_slurm_id(id: String) -> Result<Vec<String>> {
                 let end: usize = over_separators[1].parse()?;
 
                 for run_id in begin..=end {
-                    result.push(format!("{}_{}", batch_id, run_id))
+                    result.push(format!("{batch_id}_{run_id}"))
                 }
             } else if over_separators.len() == 1 {
                 let run_id: usize = over_separators[0].parse()?;
-                result.push(format!("{}_{}", batch_id, run_id))
+                result.push(format!("{batch_id}_{run_id}"))
             }
         }
     }
@@ -185,7 +185,7 @@ pub fn flatten_slurm_id(id: String) -> Result<Vec<String>> {
         let batch_id = &captures[1];
         let run_id = captures[2].parse::<usize>()?;
 
-        result.push(format!("{}_{}", batch_id, run_id))
+        result.push(format!("{batch_id}_{run_id}"))
     }
 
     Ok(result)

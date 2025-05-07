@@ -67,25 +67,21 @@ impl Display for FsState {
                     if f.alternate() {
                         write!(
                             f,
-                            "{}success{:#} {NAME_STYLE}wall clock time{NAME_STYLE:#}: {}",
-                            PRIMARY_STYLE,
-                            PRIMARY_STYLE,
+                            "{PRIMARY_STYLE}success{PRIMARY_STYLE:#} {NAME_STYLE}wall clock time{NAME_STYLE:#}: {}",
                             humantime::Duration::from(metrics.wall_micros)
                         )
                     } else {
                         write!(
                             f,
-                            "{}success{:#}, took: {}",
-                            PRIMARY_STYLE,
-                            PRIMARY_STYLE,
+                            "{PRIMARY_STYLE}success{PRIMARY_STYLE:#}, took: {}",
                             humantime::Duration::from(metrics.wall_micros)
                         )
                     }
                 } else {
                     write!(
                         f,
-                        "{}failed, code: {}{:#}",
-                        ERROR_STYLE, metrics.exit_code, ERROR_STYLE
+                        "{ERROR_STYLE}failed, code: {}{ERROR_STYLE:#}",
+                        metrics.exit_code,
                     )
                 }
             }
@@ -207,22 +203,20 @@ fn short_status(
     for (prog, (completed, failed, sched, total)) in by_program {
         writeln!(f)?;
 
-        writeln!(f, "For program {}:", prog)?;
+        writeln!(f, "For program {prog}:")?;
 
         if experiment.env == Environment::Slurm {
-            writeln!(f, "  {} jobs have been scheduled", sched)?;
+            writeln!(f, "  {sched} jobs have been scheduled",)?;
         } else {
-            writeln!(f, "  {} runs have been created", total)?;
+            writeln!(f, "  {total} runs have been created",)?;
         }
         writeln!(
             f,
-            "  ... {} of which have {TERTIARY_STYLE}completed{TERTIARY_STYLE:#}",
-            completed
+            "  ... {completed} of which have {TERTIARY_STYLE}completed{TERTIARY_STYLE:#}",
         )?;
         writeln!(
             f,
-            "  ... {} of which have {ERROR_STYLE}failed{ERROR_STYLE:#}",
-            failed
+            "  ... {failed} of which have {ERROR_STYLE}failed{ERROR_STYLE:#}",
         )?;
         writeln!(
             f,
@@ -243,12 +237,12 @@ fn format_input_name(exp: &Experiment, run: &Run, grouped: bool) -> String {
         if let Some(input_name) = &run.generated_from_input {
             input_name.clone()
         } else if let Some(parent_id) = run.parent {
-            format!("postprocessing of {}", parent_id)
+            format!("postprocessing of {parent_id}",)
         } else {
             unreachable!("A run cannot spawn out of thin air!");
         }
     } else if let Some(input_name) = &run.generated_from_input {
-        format!("{} ({})", exp.programs[run.program].name, input_name)
+        format!("{} ({input_name})", exp.programs[run.program].name,)
     } else {
         // when this function was implemented this branch was unreachable,
         // but it is reasonable that this will change in the future, and not
@@ -303,7 +297,7 @@ fn long_status(
     for (prog, prog_runs) in by_program {
         writeln!(f)?;
 
-        writeln!(f, "For program {}:", prog)?;
+        writeln!(f, "For program {prog}:")?;
 
         display_runs(
             false,
@@ -319,7 +313,7 @@ fn long_status(
     for (prog, prog_runs) in grouped_runs {
         writeln!(f)?;
 
-        writeln!(f, "For group {}:", prog)?;
+        writeln!(f, "For group {prog}:")?;
 
         display_runs(
             true,
@@ -353,13 +347,12 @@ fn display_runs(
 
         write!(
             f,
-            "  {: >numw$}. {NAME_STYLE}{:.<width$}{NAME_STYLE:#}.... {}",
-            run_id,
+            "  {run_id: >numw$}. {NAME_STYLE}{:.<width$}{NAME_STYLE:#}.... {}",
             format_input_name(experiment, run, group),
             if let Some(r) = run.rerun {
                 format!("reran as {NAME_STYLE}{r}{NAME_STYLE:#}")
             } else {
-                format!("{}", status)
+                format!("{status}")
             },
             width = longest_input,
             numw = longest_index
@@ -389,9 +382,8 @@ fn display_runs(
 
             write!(
                 f,
-                "  {: >numw$}a {:.<width$}.... \
+                "  {run_id: >numw$}a {:.<width$}.... \
                             label: {display_style}{label_text}{display_style:#}",
-                run_id,
                 "afterscript",
                 numw = longest_index,
                 width = longest_input,
@@ -401,10 +393,8 @@ fn display_runs(
         } else if let Some(None) = &status.fs_status.afterscript_completion {
             write!(
                 f,
-                "  {: >numw$}a {TERTIARY_STYLE}afterscript ran \
-                            successfully{TERTIARY_STYLE:#}",
-                run_id,
-                numw = longest_index,
+                "  {run_id: >longest_index$}a {TERTIARY_STYLE}afterscript ran \
+                            successfully{TERTIARY_STYLE:#}"
             )?;
 
             writeln!(f)?;
@@ -426,8 +416,8 @@ pub fn display_job(
     use log::debug;
 
     info!(
-        "Displaying the status of job {} in experiment {}",
-        id, exp.seq
+        "Displaying the status of job {id} in experiment {}",
+        exp.seq
     );
 
     writeln!(f)?;
@@ -461,7 +451,7 @@ pub fn display_job(
         )?;
 
         if let Some(group) = &run.group {
-            writeln!(f, "{NAME_STYLE}group{NAME_STYLE:#}: {}", group)?;
+            writeln!(f, "{NAME_STYLE}group{NAME_STYLE:#}: {group}")?;
         }
 
         writeln!(
@@ -483,8 +473,8 @@ pub fn display_job(
         if let Some(slurm_id) = &run.slurm_id {
             writeln!(
                 f,
-                "scheduled on slurm as {TERTIARY_STYLE}{}{TERTIARY_STYLE:#}\nwith limits\n{}",
-                slurm_id, run.limits
+                "scheduled on slurm as {TERTIARY_STYLE}{slurm_id}{TERTIARY_STYLE:#}\nwith limits\n{}",
+                 run.limits
             )?;
 
             if let Some(slurm_file) = &statuses[&id].slurm_file_text {
@@ -555,15 +545,13 @@ pub fn display_job(
                         f,
                         "afterscript output was too long, run {CMD_DOC_STYLE} gourd status {} -i {id} --after-out {CMD_DOC_STYLE:#} to view entire output
 
-shortened output:\n{PARAGRAPH_STYLE}{}[truncated]{PARAGRAPH_STYLE:#}",
+shortened output:\n{PARAGRAPH_STYLE}{out}[truncated]{PARAGRAPH_STYLE:#}",
                         exp.seq,
-                        out
                     )?;
                 } else {
                     writeln!(
                         f,
-                        "afterscript output:\n{PARAGRAPH_STYLE}{}{PARAGRAPH_STYLE:#}",
-                        out
+                        "afterscript output:\n{PARAGRAPH_STYLE}{out}{PARAGRAPH_STYLE:#}",
                     )?;
                 }
 
