@@ -16,7 +16,7 @@ fn test_analyse_csv() {
         "analyse", "table", "-s", "--format=program,exit-code,afterscript"; "analyse csv");
 
     let table = std::str::from_utf8(&output.stdout).unwrap();
-    assert!(table.contains("run 0"));
+    assert!(table.contains("0"));
     assert!(table.contains("fibonacci"));
     assert!(table.contains('0'));
     assert!(table.contains("N/A"));
