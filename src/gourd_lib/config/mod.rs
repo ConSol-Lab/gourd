@@ -232,6 +232,15 @@ pub struct SubParameter {
     pub values: Vec<String>,
 }
 
+/// Options for configuring the execution of
+/// `gourd run local`
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct LocalOptions {
+    /// The number of threads to use for parallel execution of jobs locally.
+    pub num_threads: usize,
+}
+
 /// A label that can be assigned to a job based on the afterscript output.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 #[serde(deny_unknown_fields)]
@@ -304,6 +313,10 @@ pub struct Config {
     )]
     pub wrapper: String,
 
+    /// Options for configuring the execution of
+    /// `gourd run local`
+    pub local: Option<LocalOptions>,
+
     /// Allow custom labels to be assigned based on the afterscript output.
     ///
     /// syntax is:
@@ -334,6 +347,7 @@ impl Default for Config {
             parameters: None,
             slurm: None,
             resource_limits: None,
+            local: None,
             labels: Some(BTreeMap::new()),
         }
     }

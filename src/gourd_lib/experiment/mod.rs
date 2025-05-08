@@ -186,6 +186,9 @@ pub struct Experiment {
     /// Environment of the experiment
     pub env: Environment,
 
+    /// How many threads to use for local execution
+    pub num_threads: usize,
+
     /// Labels used in this experiment.
     pub labels: BTreeMap<String, Label>,
 

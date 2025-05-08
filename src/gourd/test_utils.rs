@@ -58,6 +58,7 @@ pub fn create_sample_experiment(
         parameters: None,
         slurm: None,
         resource_limits: None,
+        local: None,
         labels: Some(BTreeMap::new()),
     };
 

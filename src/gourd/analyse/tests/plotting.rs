@@ -138,6 +138,7 @@ fn test_analysis_png_plot_success() {
         env: Environment::Local,
         labels: Default::default(),
         slurm: None,
+        num_threads: 0,
         chunks: vec![],
         groups: vec![],
     };
