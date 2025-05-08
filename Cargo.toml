@@ -2,7 +2,7 @@
 
 [package]
 name = "gourd"
-version = "1.2.0"
+version = "1.2.1"
 edition = "2021"
 default-run = "gourd"
 authors = [
@@ -64,6 +64,9 @@ elf = "0.7.4"
 
 # To execute threads locally using a thread-pool executor.
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio-stream = { version = "0.1.17", default-features = false }
+futures = { version = "0.3.31", default-features = false, features = ["std"] }
+num_cpus = "1.16.0"
 
 # To encode/decode data in gourd.toml and other Gourd files.
 toml = "0.8.12"

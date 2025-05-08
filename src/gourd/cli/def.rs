@@ -11,7 +11,8 @@ use clap::ValueEnum;
 #[derive(Parser, Debug)]
 #[command(
     about = "Gourd, an empirical evaluator",
-    disable_help_subcommand = true
+    disable_help_subcommand = true,
+    version
 )]
 pub struct Cli {
     /// The main command issued.

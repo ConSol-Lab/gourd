@@ -57,6 +57,7 @@ pub fn init_interactive(
         resource_limits: None,
         wrapper: WRAPPER_DEFAULT(),
         labels: None,
+        local: None,
         input_schema: None,
     };
 

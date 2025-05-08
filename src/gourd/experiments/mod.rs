@@ -101,6 +101,7 @@ impl ExperimentExt for Experiment {
             metrics_folder: fs.truncate_and_canonicalize_folder(&conf.metrics_path)?,
 
             env,
+            num_threads: conf.local.map_or_else(num_cpus::get, |l| l.num_threads),
             resource_limits: conf.resource_limits,
             labels: conf.labels.clone().unwrap_or_default(),
 

@@ -22,7 +22,7 @@ async fn runner_fibonacci_test() {
         commands.push(cmd);
     }
 
-    let results = run_locally(commands, false, false).await;
+    let results = run_locally(commands, false, false, 0).await;
 
     assert!(results.is_ok(), "Executing children processes failed");
 }
@@ -37,7 +37,7 @@ async fn runner_sleep_test() {
         commands.push(cmd);
     }
 
-    let results = run_locally(commands, false, false).await;
+    let results = run_locally(commands, false, false, 0).await;
 
     assert!(results.is_ok(), "Executing children processes failed");
 }
@@ -51,7 +51,7 @@ async fn test_limit() {
         commands.push(cmd);
     }
 
-    let results = run_locally(commands, false, false).await;
+    let results = run_locally(commands, false, false, 0).await;
 
     assert!(results.is_err(), "Executing children processes failed");
 }

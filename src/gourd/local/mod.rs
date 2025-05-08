@@ -29,7 +29,7 @@ pub async fn run_local(
     experiment.save(fs)?;
 
     let len = cmds.len();
-    run_locally(cmds, force, sequential).await?;
+    run_locally(cmds, force, sequential, experiment.num_threads).await?;
 
     Ok(len + pre_fin)
 }

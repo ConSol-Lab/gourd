@@ -35,6 +35,7 @@ fn breaking_changes_config_struct() {
         input_schema: None,
         slurm: None,
         resource_limits: None,
+        local: None,
         labels: Some(BTreeMap::new()),
     };
 }
@@ -73,6 +74,7 @@ fn breaking_changes_config_file_all_values() {
             input_schema: None,
             slurm: None,
             resource_limits: None,
+            local: None,
             labels: None,
         },
         Config::from_file(file_pathbuf.as_path(), &REAL_FS).expect("Unexpected config read error.")
@@ -109,6 +111,7 @@ fn breaking_changes_config_file_required_values() {
             input_schema: None,
             slurm: None,
             resource_limits: None,
+            local: None,
             labels: None,
         },
         Config::from_file(file_pb.as_path(), &REAL_FS).expect("Unexpected config read error.")
@@ -279,6 +282,7 @@ fn parse_valid_escape_hatch_file() {
         metrics_path: dir.path().join("43"),
         experiments_folder: dir.path().join("44"),
         parameters: None,
+        local: None,
         programs: vec![(
             "x".to_string(),
             UserProgram {

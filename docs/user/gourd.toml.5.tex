@@ -193,6 +193,23 @@ cpus = 1
 mem_per_cpu = 512
               \end{verbatim}
 
+    \section{LOCAL}
+        \begin{Description}[Options]\setlength{\itemsep}{0cm}
+            \item[\Opt{num\_threads?} = number]
+                How many threads should \Prog{gourd} \Arg{run} \Arg{local} use.
+        \end{Description}
+
+        \subsection{NUM\_THREADS}
+            For the parallel execution of \Prog{gourd} \Arg{run} \Arg{local} you can
+            limit the number of threads that will be used by specifying:
+            \begin{verbatim}
+[local]
+num_threads = 8
+            \end{verbatim}
+            If this option is not specified, the program will try to detect the number 
+            of CPUs present on the system, and use that number of threads. Setting a 
+            value of 0 will result in a number of threads equal to the number of runs in
+            the program (and the OS will limit the resource use thereafter).
     \section{PROGRAMS}
 
         Multiple programs can be specified.
