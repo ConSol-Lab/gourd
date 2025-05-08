@@ -170,7 +170,7 @@ pub struct AnalyseStruct {
 
     /// Plot analysis or create a table for the run metrics.
     #[command(subcommand)]
-    pub subcommand: AnalSubcommand,
+    pub subcommand: AnalyseSubcommand,
 
     /// If you want to save to a specific file
     #[arg(short, long)]
@@ -179,7 +179,7 @@ pub struct AnalyseStruct {
 
 /// Enum for subcommands of the `run` subcommand.
 #[derive(Subcommand, Debug, Clone)]
-pub enum AnalSubcommand {
+pub enum AnalyseSubcommand {
     /// Generate a cactus plot for the runs of this experiment.
     #[command()]
     Plot {

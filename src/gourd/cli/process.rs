@@ -37,8 +37,8 @@ use super::printing::get_styles;
 use crate::analyse::csvs::tables_from_command;
 use crate::analyse::plotting::analysis_plot;
 use crate::chunks::Chunkable;
-use crate::cli::def::AnalSubcommand;
 use crate::cli::def::AnalyseStruct;
+use crate::cli::def::AnalyseSubcommand;
 use crate::cli::def::CancelStruct;
 use crate::cli::def::Cli;
 use crate::cli::def::GourdCommand;
@@ -232,9 +232,9 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
                             bailc!(
                                 "could not print afterscript output",;
                                 "there is no afterscript output for this run",;
-                                "please make sure
-1. this run is supposed to have an afterscript, and
-2. that the afterscript prints its output correctly.",
+                                "please make sure\n\
+                                 1. this run is supposed to have an afterscript, and\n\
+                                 2. that the afterscript prints its output correctly.\n",
                             );
                         }
                     } else {
@@ -291,7 +291,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
         GourdCommand::Analyse(AnalyseStruct {
             experiment_id,
             subcommand:
-                AnalSubcommand::Plot {
+                AnalyseSubcommand::Plot {
                     format,
                     output: save_a,
                 },
@@ -337,7 +337,7 @@ pub async fn process_command(cmd: &Cli) -> Result<()> {
 
         GourdCommand::Analyse(AnalyseStruct {
             experiment_id,
-            subcommand: AnalSubcommand::Table(csv),
+            subcommand: AnalyseSubcommand::Table(csv),
             output: save,
         }) => {
             let experiment = read_experiment(experiment_id, cmd, &file_system)?;
