@@ -354,9 +354,9 @@
 
             \subsubsection{Summary}
                 The \Prog{gourd} \Arg{continue} command schedules runs that are part of an existing
-                experiment, but have not yet been scheduled.
+                experiment, but have not yet been scheduled. This includes runs created by \Prog{gourd} \Arg{rerun}, as well as runs that were not scheduled due to a run limit.
                 For example, an experiment with 30,000 distinct runs can be scheduled in three batches
-                of 10,000 each if that is the maximum number of queued supercomputer jobs.
+                of 10,000 each if that is the maximum number of queued supercomputer jobs. 
 
             \subsubsection{Synopsis}
                 \Prog{gourd} \Arg{continue}
@@ -535,7 +535,8 @@ binary = "./executable3"
                 according to the newest available data.
 
                 The option \texttt{--format} can be used to specify whether the plot output
-                should be in PNG or SVG format.
+                should be in PNG or SVG format, for example: 
+                \Prog{gourd} \Arg{analyse} \Arg{plot} \Arg{--format="png"} (png is also the default output)
 
         \subsection{GOURD VERSION}
 
@@ -572,12 +573,10 @@ binary = "./executable3"
 
         \Prog{gourd.toml(5)}
 
-    \section{AUTHORS}
-    Rūta Giedrytė <\Email{r.giedryte@student.tudelft.nl}>\\[0.1cm]\MANbr
+    \section{CONTACT}
+    Ανδρέας Τσατσάνης <\Email{a.tsatsanis@tudelft.nl}>\\[0.1cm]\MANbr
     Lukáš Chládek <\Email{l@chla.cz}>\\[0.1cm]\MANbr
-    Jan Piotrowski <\Email{me@jan.wf}>\\[0.1cm]\MANbr
-    Mikołaj Gazeel <\Email{m.j.gazeel@student.tudelft.nl}>\\[0.1cm]\MANbr
-    Ανδρέας Τσατσάνης <\Email{a.tsatsanis@student.tudelft.nl}>\\[0.1cm]\MANbr
+    Mikołaj Gazeel <\Email{m.j.gazeel@tudelft.nl}>\\[0.1cm]\MANbr
 
 %@% IF LATEX %@%
 \end{adjustwidth}

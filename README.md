@@ -39,6 +39,8 @@ The distributed installers are: (One of these should be put in place of `[your s
 
 Customizing installation folders is explained [here](https://gourd.chla.cz/manpages/maintainer.pdf).
 
+See [the releases page on Github](https://github.com/ConSol-Lab/gourd/releases) for details on installing or updating to the latest version of `gourd`.
+
 ### Usage
 
 Verify that `gourd` is installed by running:
@@ -52,9 +54,9 @@ There are extensive tutorials and documentation which can be accessed in many di
 
 With a web browser:
 
-- [**gourd.1 in your browser!**](https://gourd.chla.cz/manpages/gourd.1.html), supports both dark and light mode!
-- [**gourd.toml.5 in your browser!**](https://gourd.chla.cz/manpages/gourd.toml.5.html), supports both dark and light mode!
-- [**gourd-tutorial.7 in your browser!**](https://gourd.chla.cz/manpages/gourd-tutorial.7.html), supports both dark and light mode!
+- [**gourd.1 in your browser!**](https://andreats.com/gourd/gourd.1.html), supports both dark and light mode!
+- [**gourd.toml.5 in your browser!**](https://andreats.com/gourd/gourd.toml.5.html), supports both dark and light mode!
+- [**gourd-tutorial.7 in your browser!**](https://andreats.com/gourd/gourd-tutorial.7.html), supports both dark and light mode!
 
 As a manpage, with the `man` command:
 ```
@@ -65,9 +67,9 @@ $ man gourd-tutorial
 
 As a PDF file:
 
-- [**gourd.1 in your PDF reader!**](https://gourd.chla.cz/manpages/gourd.1.pdf)
-- [**gourd.toml.5 in your PDF reader!**](https://gourd.chla.cz/manpages/gourd.toml.5.pdf)
-- [**gourd-tutorial.7 in your PDF reader!**](https://gourd.chla.cz/manpages/gourd-tutorial.7.pdf)
+- [**gourd.1 in your PDF reader!**](https://andreats.com/gourd/gourd.1.pdf)
+- [**gourd.toml.5 in your PDF reader!**](https://andreats.com/gourd/gourd.toml.5.pdf)
+- [**gourd-tutorial.7 in your PDF reader!**](https://andreats.com/gourd/gourd-tutorial.7.pdf)
 
 Please refer to these if you want to familiarize yourself with the software.
 
@@ -96,8 +98,12 @@ An artifact is available from the GitLab pipeline `documentation` job, or
 
 ### Authors
 
-- Mikołaj Gazeel, m.j.gazeel@student.tudelft.nl
+- Mikołaj Gazeel, m.j.gazeel@tudelft.nl
 - Lukáš Chládek, l@chla.cz
-- Ανδρέας Τσατσάνης, a.tsatsanis@student.tudelft.nl
-- Rūta Giedrytė, r.giedryte@student.tudelft.nl
+- Ανδρέας Τσατσάνης, a.tsatsanis@tudelft.nl
+- Rūta Giedrytė, r.giedryte@tudelft.nl
 - Jan Piotrowski, me@jan.wf
+
+### Maintainers
+- Ανδρέας Τσατσάνης, a.tsatsanis@tudelft.nl
+
