@@ -13,6 +13,7 @@ use gourd_lib::experiment::programs::expand_programs;
 use gourd_lib::experiment::Environment;
 use gourd_lib::experiment::Experiment;
 use gourd_lib::file_system::FileOperations;
+use log::debug;
 
 use crate::experiments::dfs::dfs;
 
@@ -101,7 +102,14 @@ impl ExperimentExt for Experiment {
             metrics_folder: fs.truncate_and_canonicalize_folder(&conf.metrics_path)?,
 
             env,
-            num_threads: conf.local.map_or_else(num_cpus::get, |l| l.num_threads),
+            num_threads: conf.local.map_or_else(
+                || {
+                    let cpus = num_cpus::get();
+                    debug!("detected {cpus} cpus, using {cpus} threads for local runs");
+                    cpus
+                },
+                |l| l.num_threads,
+            ),
             resource_limits: conf.resource_limits,
             labels: conf.labels.clone().unwrap_or_default(),
 
