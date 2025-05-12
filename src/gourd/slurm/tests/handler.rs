@@ -11,6 +11,7 @@ fn parse_optional_args_test_all() {
         experiment_name: "test experiment".to_string(),
         output_folder: Default::default(),
         partition: "memory".to_string(),
+        modules: Default::default(),
         array_size_limit: None,
         max_submit: None,
         account: "test-account".to_string(),
@@ -34,6 +35,7 @@ fn parse_optional_args_test_only_begin() {
         experiment_name: "test experiment".to_string(),
         output_folder: Default::default(),
         partition: "memory".to_string(),
+        modules: Default::default(),
         array_size_limit: None,
         max_submit: None,
         account: "test-account".to_string(),
@@ -69,6 +71,7 @@ fn parse_optional_args_test_custom_args() {
         experiment_name: "test experiment".to_string(),
         output_folder: Default::default(),
         partition: "memory".to_string(),
+        modules: Default::default(),
         array_size_limit: None,
         max_submit: None,
         account: "test-account".to_string(),
@@ -82,6 +85,50 @@ fn parse_optional_args_test_custom_args() {
 #SBATCH --mail-user=testUSER
 #SBATCH --custom-arg=value
 #SBATCH --second-custom-arg=second-value
+";
+
+    assert_eq!(output, desired_output)
+}
+
+#[test]
+fn parse_modules_test_empty() {
+    let config = SlurmConfig {
+        experiment_name: "test experiment".to_string(),
+        output_folder: Default::default(),
+        partition: "memory".to_string(),
+        modules: Vec::new(),
+        array_size_limit: None,
+        max_submit: None,
+        account: "test-account".to_string(),
+        begin: None,
+        mail_type: Some("ALL".to_string()),
+        mail_user: Some("testUSER".to_string()),
+        additional_args: None,
+    };
+    let output = parse_modules(&config);
+    let desired_output = "";
+
+    assert_eq!(output, desired_output)
+}
+
+#[test]
+fn parse_modules_test_not_empty() {
+    let config = SlurmConfig {
+        experiment_name: "test experiment".to_string(),
+        output_folder: Default::default(),
+        partition: "memory".to_string(),
+        modules: vec!["2024r1".to_string(), "r/3.4.0".to_string()],
+        array_size_limit: None,
+        max_submit: None,
+        account: "test-account".to_string(),
+        begin: None,
+        mail_type: Some("ALL".to_string()),
+        mail_user: Some("testUSER".to_string()),
+        additional_args: None,
+    };
+    let output = parse_modules(&config);
+    let desired_output = "module load 2024r1
+module load r/3.4.0
 ";
 
     assert_eq!(output, desired_output)
