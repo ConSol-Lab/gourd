@@ -143,6 +143,17 @@ pub fn parse_optional_args(slurm_config: &SlurmConfig) -> String {
     result
 }
 
+/// Helper function to create string with modules for slurm
+pub fn parse_modules(slurm_config: &SlurmConfig) -> String {
+    let mut result = "".to_string();
+
+    for module in &slurm_config.modules {
+        result.push_str(&format!("module load {module}\n"))
+    }
+
+    result
+}
+
 #[cfg(test)]
 #[path = "tests/handler.rs"]
 mod tests;

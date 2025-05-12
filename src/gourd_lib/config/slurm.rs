@@ -6,6 +6,8 @@ use std::time::Duration;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::constants::EMPTY_MODULES;
+
 /// The config options when running through Slurm
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -26,6 +28,10 @@ pub struct SlurmConfig {
     /// - "trans"
     /// - "visual"
     pub partition: String,
+
+    /// Which modules to load using the 'modules' command
+    #[serde(default = "EMPTY_MODULES")]
+    pub modules: Vec<String>,
 
     /// Override the maximum number of jobs to schedule in a Slurm array.
     ///
