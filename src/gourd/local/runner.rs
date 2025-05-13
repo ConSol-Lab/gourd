@@ -31,7 +31,6 @@ pub async fn run_locally(
         )
     }
 
-    #[cfg(not(tarpaulin_include))] // Tarpaulin can't calculate the coverage correctly
     tokio::spawn(async move {
         /// Error in case of wrapper failure.
         fn handle_output(join: io::Result<Output>) {

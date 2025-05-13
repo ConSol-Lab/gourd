@@ -1,4 +1,3 @@
-#![cfg(not(tarpaulin_include))]
 /// User interactions for SLURM reruns.
 /// This is interactive and SLURM-bound so cannot be checked locally.
 pub mod slurm;

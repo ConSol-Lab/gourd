@@ -113,7 +113,6 @@ fn scontrol_limit(field: &str) -> Result<String> {
 /// These are using functions specific to CLI version 21.8.x
 ///
 /// we don't know if other versions are supported.
-#[cfg(not(tarpaulin_include))]
 impl SlurmInteractor for SlurmCli {
     fn get_version(&self) -> Result<[u64; 2]> {
         let s_info_out = Command::new("sinfo").arg("--version").output()?;

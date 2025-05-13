@@ -20,7 +20,6 @@ use log::info;
 
 /// Correctly handles when the user cancels the operation
 /// during an Inquire prompt.
-#[cfg(not(tarpaulin_include))]
 pub fn ask<T>(inq: InquireResult<T>) -> Result<T> {
     match inq {
         Ok(answer) => Ok(answer),

@@ -28,7 +28,6 @@ use super::FsState;
 use super::SlurmState;
 use super::Status;
 
-#[cfg(not(tarpaulin_include))] // There are no meaningful tests for an enum's Display implementation
 impl Display for SlurmState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -132,7 +131,6 @@ impl Display for Status {
 /// Display the status of an experiment in a human readable from.
 ///
 /// Returns how many jobs are finished.
-#[cfg(not(tarpaulin_include))] // We won't test stdout
 pub fn display_statuses(
     f: &mut impl Write,
     experiment: &Experiment,
@@ -157,7 +155,6 @@ pub fn display_statuses(
 }
 
 /// Display a shortened status for a lot of runs.
-#[cfg(not(tarpaulin_include))] // We can't test stdout
 fn short_status(
     f: &mut impl Write,
     experiment: &Experiment,
@@ -252,7 +249,6 @@ fn format_input_name(exp: &Experiment, run: &Run, grouped: bool) -> String {
 }
 
 /// Display a shortened status for a small amount of runs.
-#[cfg(not(tarpaulin_include))] // We can't test stdout
 fn long_status(
     f: &mut impl Write,
     experiment: &Experiment,
@@ -405,7 +401,6 @@ fn display_runs(
 }
 
 /// Display the status of an experiment in a human-readable from.
-#[cfg(not(tarpaulin_include))] // We can't test stdout
 pub fn display_job(
     f: &mut impl Write,
     exp: &Experiment,

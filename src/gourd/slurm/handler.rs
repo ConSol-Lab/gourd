@@ -39,7 +39,6 @@ where
     }
 }
 
-#[cfg(not(tarpaulin_include))]
 impl<T> SlurmHandler<T>
 where
     T: SlurmInteractor,

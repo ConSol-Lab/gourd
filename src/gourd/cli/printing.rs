@@ -21,7 +21,6 @@ use inquire::validator::Validation;
 use crate::init::interactive::ask;
 
 /// Util function for getting the style for the CLI
-#[cfg(not(tarpaulin_include))]
 pub fn get_styles() -> clap::builder::Styles {
     clap::builder::Styles::styled()
         .usage(style_from_fg(AnsiColor::Yellow).bold())
@@ -34,7 +33,6 @@ pub fn get_styles() -> clap::builder::Styles {
 }
 
 /// Pretty print gourd's version
-#[cfg(not(tarpaulin_include))]
 pub fn print_version(script: bool) {
     if script {
         println!("{} {}", crate_name!(), crate_version!());
