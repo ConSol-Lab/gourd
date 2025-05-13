@@ -193,9 +193,34 @@ fn compile_rust_file(path: &Path) -> Result<()> {
 
     let str_compiled_path = compiled_path.to_str().ok_or_else(|| anyhow!(":("))?;
 
+    // on linux, we statically link the examples to musl in order to prevent glibc
+    // compatibility errors.
+    let target_triple = format!("{}-unknown-linux-musl", std::env::consts::ARCH);
+    let compile_args = if std::env::consts::OS == "linux" {
+        std::process::Command::new("rustup")
+            .arg("target")
+            .arg("add")
+            .arg(&target_triple)
+            .spawn()?
+            .wait()?;
+
+        vec![
+            "--target",
+            &target_triple,
+            "-C",
+            "target-feature=+crt-static",
+            "-O",
+            str_path,
+            "-o",
+            str_compiled_path,
+        ]
+    } else {
+        vec!["-O", str_path, "-o", str_compiled_path]
+    };
+
     let output = run_command(
         "rustc",
-        &vec!["-O", str_path, "-o", str_compiled_path],
+        &compile_args,
         Some(canon_path.parent().ok_or_else(|| anyhow!(":("))?.to_owned()),
     )?;
 
