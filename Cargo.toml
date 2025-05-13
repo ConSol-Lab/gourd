@@ -180,7 +180,7 @@ lto = true
 missing_docs = "warn"
 missing_debug_implementations = "warn"
 missing_copy_implementations = "warn"
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
+unexpected_cfgs = { level = "warn" }
 
 [lints.clippy]
 redundant_static_lifetimes = "allow"

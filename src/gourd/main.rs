@@ -49,7 +49,6 @@ pub mod slurm;
 pub mod init;
 
 /// The command line interface and relevant structures.
-#[cfg(not(tarpaulin_include))]
 pub mod cli;
 
 /// Functionality for checking and displaying the status of already
@@ -81,7 +80,6 @@ pub mod test_utils;
 ///
 /// This function parses command-line arguments and executes
 /// sub-commands as specified by the user.
-#[cfg(not(tarpaulin_include))]
 #[tokio::main]
 async fn main() {
     cli::process::parse_command().await;

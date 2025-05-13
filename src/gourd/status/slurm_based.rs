@@ -41,7 +41,6 @@ impl<T> StatusProvider<T, SlurmBasedStatus> for SlurmBasedProvider
 where
     T: SlurmInteractor,
 {
-    #[cfg(not(tarpaulin_include))]
     fn get_statuses(
         connection: &T,
         experiment: &Experiment,
