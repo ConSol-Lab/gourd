@@ -7,6 +7,7 @@ use gourd_lib::bailc;
 use gourd_lib::config::slurm::SlurmConfig;
 use gourd_lib::config::Config;
 use gourd_lib::constants::CMD_STYLE;
+use gourd_lib::constants::EMPTY_MODULES;
 use gourd_lib::constants::WRAPPER_DEFAULT;
 use gourd_lib::ctx;
 use gourd_lib::file_system::FileOperations;
@@ -103,6 +104,7 @@ pub fn init_interactive(
             experiment_name: "my-experiment".to_string(),
             output_folder: PathBuf::from("./slurmout/"),
             partition: "".to_string(),
+            modules: EMPTY_MODULES(),
             array_size_limit: None,
             max_submit: None,
             account: "".to_string(),

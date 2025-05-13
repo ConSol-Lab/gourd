@@ -139,6 +139,11 @@
                 For example one account available on DelftBlue is "Education-EEMCS-MSc-CS".
                 To get a list of available accounts on your cluster,
                 you can use Slurm's \Prog{sacctmgr}~\Arg{show}~\Arg{account} command
+              \item[\Opt{modules} = list of strings]
+                Modules to load when running through Slurm using the "module" utility.
+                These are loaded in sequential order.
+                For example, to use R in the DelftBlue cluster, \texttt{["2024r1", "r/3.4.0"]}.
+                By default, no modules are loaded.
               \item[\Opt{mail\_type} = string]        
                 Choose one of Slurm's options for sending emails when a run's status changes.
                 Default is "NONE". Valid options are: 
