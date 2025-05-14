@@ -6,11 +6,11 @@ version = "1.2.1"
 edition = "2021"
 default-run = "gourd"
 authors = [
-  "Mikołaj Gazeel <m.j.gazeel@student.tudelft.nl>",
+  "Mikołaj Gazeel <m.j.gazeel@tudelft.nl>",
   "Lukáš Chládek <l@chla.cz>",
-  "Ανδρέας Τσατσάνης <a.tsatsanis@student.tudelft.nl>",
+  "Ανδρέας Τσατσάνης <a.tsatsanis@tudelft.nl>",
   "Jan Piotrowski <me@jan.wf>",
-  "Rūta Giedrytė <r.giedryte@student.tudelft.nl>"
+  "Rūta Giedrytė <r.giedryte@tudelft.nl>"
 ]
 
 build = "build.rs"
