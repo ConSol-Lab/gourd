@@ -21,6 +21,7 @@ use log::debug;
 use log::info;
 use log::trace;
 
+use super::handler::parse_modules;
 use super::handler::parse_optional_args;
 use super::SacctOutput;
 use crate::chunks::Chunk;
@@ -214,6 +215,7 @@ impl SlurmInteractor for SlurmCli {
         let chunk_index = experiment.register_runs(&chunk.runs);
 
         let optional_args = parse_optional_args(slurm_config);
+        let modules = parse_modules(slurm_config);
 
         // `%A` gets replaced with array *job* id, `%a` with the array *task* id
         // this is read in `src/gourd/status/slurm_files.rs` to get the output.
@@ -238,6 +240,7 @@ impl SlurmInteractor for SlurmCli {
 #SBATCH --error={:?}
 {}
 set -x
+{}
 
 {} {} {} $SLURM_ARRAY_TASK_ID
 ",
@@ -252,6 +255,7 @@ set -x
             slurm_out,
             slurm_err,
             optional_args,
+            modules,
             experiment.wrapper,
             exp_path.display(),
             chunk_index

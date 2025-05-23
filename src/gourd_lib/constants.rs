@@ -36,6 +36,9 @@ pub const LABEL_OVERLAP_DEFAULT: fn() -> bool = || false;
 /// The default arguments for an input.
 pub const EMPTY_ARGS: fn() -> Vec<String> = Vec::new;
 
+/// The default modules for a Slurm job.
+pub const EMPTY_MODULES: fn() -> Vec<String> = Vec::new;
+
 /// The prefix which will cause an argument to be interpreted as a glob.
 /// Ensure matches:
 /// - docs/user/gourd.toml.5
