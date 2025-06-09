@@ -98,12 +98,13 @@ An artifact is available from the GitLab pipeline `documentation` job, or
 
 ### Authors
 
-- Mikołaj Gazeel, m.j.gazeel@tudelft.nl
+- Mikołaj Gazeel, mgazeel@ethz.ch
 - Lukáš Chládek, l@chla.cz
-- Ανδρέας Τσατσάνης, a.tsatsanis@tudelft.nl
-- Rūta Giedrytė, r.giedryte@tudelft.nl
+- Ανδρέας Τσατσάνης, atsatsanis@tudelft.nl
+- Rūta Giedrytė, rgiedryte@tudelft.nl
 - Jan Piotrowski, me@jan.wf
 
 ### Maintainers
-- Ανδρέας Τσατσάνης, a.tsatsanis@tudelft.nl
-
+- Ανδρέας Τσατσάνης, atsatsanis@tudelft.nl
+- Lukáš Chládek, l@chla.cz
+- Mikołaj Gazeel, m.j.gazeel@tudelft.nl
